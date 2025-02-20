@@ -8,7 +8,7 @@ import { Header } from "@/components/Header"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { Competition } from "@/services/competitionService"
-
+import { useRouter } from 'expo-router'
 const Container = styled.View`
   flex: 1;
   background-color: ${colors.backgroundDark};
@@ -116,7 +116,7 @@ const PrizePool = styled.Text`
 export default function Competicoes() {
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [competitionStats, setCompetitionStats] = useState<{[key: string]: { totalPlayers: number, totalGames: number }}>({});
-
+  const router = useRouter()
   useEffect(() => {
     loadCompetitions()
   }, [])
@@ -131,6 +131,7 @@ export default function Competicoes() {
           description,
           start_date,
           status,
+          community_id,
           competition_members (count),
           games (count)
         `)
@@ -179,6 +180,16 @@ export default function Competicoes() {
     }
   }
 
+  const handleCardPress = (competition: Competition) => {
+    router.push({
+      pathname: '/comunidade/[id]/competicao/[competitionId]',
+      params: { 
+        id: competition.community_id,
+        competitionId: competition.id 
+      }
+    });
+  }
+
   const fabActions = [
     {
       icon: "trophy-outline",
@@ -193,7 +204,7 @@ export default function Competicoes() {
       <ScrollContent>
         <Content>
           {competitions.map(competition => (
-            <CompetitionCard key={competition.id}>
+            <CompetitionCard key={competition.id} onPress={() => handleCardPress(competition)}>
               <CompetitionHeader>
                 <MaterialCommunityIcons 
                   name="trophy" 
