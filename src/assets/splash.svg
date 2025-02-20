@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024px" height="1024px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g id="splash" fill="none" fill-rule="evenodd">
+        <rect id="background" fill="#202020" x="0" y="0" width="1024" height="1024"/>
+        <g id="logo" transform="translate(256, 256)">
+            <rect id="notebook" stroke="#F8FAFC" stroke-width="32" x="16" y="16" width="480" height="480" rx="48"/>
+            <path d="M96,96 L416,96" stroke="#F8FAFC" stroke-width="32" stroke-linecap="round"/>
+            <path d="M96,192 L416,192" stroke="#F8FAFC" stroke-width="32" stroke-linecap="round"/>
+            <path d="M96,288 L416,288" stroke="#F8FAFC" stroke-width="32" stroke-linecap="round"/>
+            <path d="M96,384 L288,384" stroke="#F8FAFC" stroke-width="32" stroke-linecap="round"/>
+        </g>
+    </g>
+</svg>
