@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { activityService } from './activityService';
 
 export interface Competition {
     id: string;
@@ -41,10 +42,16 @@ export const competitionService = {
     async create(data: CreateCompetitionDTO) {
         try {
             console.log('Criando competição:', data);
+            const { data: user } = await supabase.auth.getUser();
+            if (!user?.user?.id) {
+                throw new Error('Usuário não autenticado');
+            }
+
             const { data: newCompetition, error } = await supabase
                 .from('competitions')
                 .insert([{
                     ...data,
+                    created_by: user.user.id,
                     start_date: new Date().toISOString()
                 }])
                 .select('*')
@@ -53,6 +60,43 @@ export const competitionService = {
             if (error) {
                 console.error('Erro Supabase:', error);
                 throw error;
+            }
+            // Registrar a atividade de criação da competição com sistema de retry
+            if (newCompetition) {
+                const maxRetries = 3;
+                const baseDelay = 1000; // 1 segundo
+
+                const createActivityWithRetry = async (attempt: number) => {
+                    try {
+                        console.log(`Tentativa ${attempt} de criar atividade...`);
+                        await activityService.createActivity({
+                            type: 'competition',
+                            description: `Nova competição "${data.name}" criada!`,
+                            metadata: {
+                                competition_id: newCompetition.id
+                            }
+                        });
+                        console.log('Atividade criada com sucesso!');
+                        return true;
+                    } catch (activityError) {
+                        console.error(`Erro na tentativa ${attempt}:`, activityError);
+                        
+                        if (attempt < maxRetries) {
+                            const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
+                            console.log(`Aguardando ${delay}ms antes da próxima tentativa...`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            return createActivityWithRetry(attempt + 1);
+                        }
+                        
+                        console.error('Todas as tentativas de criar atividade falharam');
+                        return false;
+                    }
+                };
+
+                // Inicia o processo de retry em background
+                createActivityWithRetry(1).catch(error => {
+                    console.error('Erro no processo de retry:', error);
+                });
             }
             
             console.log('Competição criada:', newCompetition);

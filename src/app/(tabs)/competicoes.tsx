@@ -112,7 +112,9 @@ const PrizePool = styled.Text`
   font-weight: bold;
   margin-top: 4px;
 `
-
+const handleCardPress = (competition: Competition) => {
+    router.push(`/comunidade/${competition.community_id}/competicao/${competition.id}`);
+};
 export default function Competicoes() {
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [competitionStats, setCompetitionStats] = useState<{[key: string]: { totalPlayers: number, totalGames: number }}>({});
@@ -131,7 +133,6 @@ export default function Competicoes() {
           description,
           start_date,
           status,
-          community_id,
           competition_members (count),
           games (count)
         `)
@@ -178,16 +179,6 @@ export default function Competicoes() {
       default:
         return colors.gray300
     }
-  }
-
-  const handleCardPress = (competition: Competition) => {
-    router.push({
-      pathname: '/comunidade/[id]/competicao/[competitionId]',
-      params: { 
-        id: competition.community_id,
-        competitionId: competition.id 
-      }
-    });
   }
 
   const fabActions = [

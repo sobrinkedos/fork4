@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { gameService, Game } from '@/services/gameService';
+import { Activity, activityService } from '@/services/activityService';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors } from '@/styles/colors';
 
 export function RecentActivities() {
-    const [activities, setActivities] = useState<Game[]>([]);
+    const [activities, setActivities] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -12,7 +14,7 @@ export function RecentActivities() {
 
     async function loadRecentActivities() {
         try {
-            const data = await gameService.getRecentActivities();
+            const data = await activityService.getRecentActivities();
             setActivities(data);
         } catch (error) {
             console.error('Erro ao carregar atividades recentes:', error);
@@ -21,32 +23,42 @@ export function RecentActivities() {
         }
     }
 
-    function renderActivity({ item }: { item: Game }) {
+    function renderActivity({ item }: { item: Activity }) {
+        const getIcon = (type: Activity['type']) => {
+            switch (type) {
+                case 'game':
+                    return 'cards-playing-outline';
+                case 'competition':
+                    return 'trophy-outline';
+                case 'community':
+                    return 'account-group';
+                case 'player':
+                    return 'account-star';
+                default:
+                    return 'information';
+            }
+        };
+
         return (
             <View style={styles.activityCard}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>Partida {item.status === 'finished' ? 'Finalizada' : 'Em Andamento'}</Text>
-                    <Text style={styles.date}>
-                        {new Date(item.created_at).toLocaleDateString('pt-BR')}
-                    </Text>
-                </View>
-                <View style={styles.scoreContainer}>
-                    <View style={styles.teamContainer}>
-                        <Text style={styles.teamName}>Time 1</Text>
-                        <Text style={styles.score}>{item.team1_score}</Text>
+                <View style={styles.activityHeader}>
+                    <View style={styles.iconContainer}>
+                        <MaterialCommunityIcons 
+                            name={getIcon(item.type)} 
+                            size={24} 
+                            color={colors.primary} 
+                        />
                     </View>
-                    <Text style={styles.vs}>VS</Text>
-                    <View style={styles.teamContainer}>
-                        <Text style={styles.teamName}>Time 2</Text>
-                        <Text style={styles.score}>{item.team2_score}</Text>
+                    <View style={styles.activityContent}>
+                        <Text style={styles.description}>{item.description}</Text>
+                        <Text style={styles.time}>
+                            {item.time.toLocaleDateString('pt-BR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                            })}
+                        </Text>
                     </View>
                 </View>
-                {item.is_buchuda && (
-                    <Text style={styles.specialEvent}>Buchuda!</Text>
-                )}
-                {item.is_buchuda_de_re && (
-                    <Text style={styles.specialEvent}>Buchuda de Ré!</Text>
-                )}
             </View>
         );
     }

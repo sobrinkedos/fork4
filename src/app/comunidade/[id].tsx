@@ -686,7 +686,6 @@ const CompetitionDateText = styled.Text`
     font-size: 14px;
     margin-left: 4px;
 `;
-
 const CompetitionStatus = styled.View`
     margin-left: 16px;
 `;
