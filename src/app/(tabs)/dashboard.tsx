@@ -11,6 +11,7 @@ import { ptBR } from "date-fns/locale";
 import { LineChart } from "react-native-chart-kit";
 import { useAuth } from "@/hooks/useAuth";
 import { statisticsService } from "@/services/statisticsService";
+import { rankingService } from "@/services/rankingService";
 
 interface Stats {
     totalGames: number;
@@ -272,81 +273,52 @@ const Dashboard: React.FC = () => {
         totalCommunities: 0
     });
 
-    const [topPlayers, setTopPlayers] = useState<Player[]>([
-        {
-            id: '1',
-            name: 'Eliane',
-            wins: 45,
-            buchudas: 3,
-            buchudasDeRe: 1,
-            winRate: 75
-        },
-        {
-            id: '2',
-            name: 'Bruna',
-            wins: 42,
-            buchudas: 2,
-            buchudasDeRe: 0,
-            winRate: 70
-        },
-        {
-            id: '3',
-            name: 'Mariana',
-            wins: 38,
-            buchudas: 2,
-            buchudasDeRe: 1,
-            winRate: 63
-        }
-    ]);
+    const [topPlayers, setTopPlayers] = useState<Player[]>([]);
 
-    const [topPairs, setTopPairs] = useState<Pair[]>([
-        {
-            id: '1',
-            player1: {
-                id: '1',
-                name: 'Eliane'
-            },
-            player2: {
-                id: '2',
-                name: 'Bruna'
-            },
-            wins: 32,
-            buchudas: 4,
-            buchudasDeRe: 1,
-            winRate: 80
-        },
-        {
-            id: '2',
-            player1: {
-                id: '3',
-                name: 'Mariana'
-            },
-            player2: {
-                id: '4',
-                name: 'João'
-            },
-            wins: 28,
-            buchudas: 3,
-            buchudasDeRe: 0,
-            winRate: 75
-        },
-        {
-            id: '3',
-            player1: {
-                id: '5',
-                name: 'Pedro'
-            },
-            player2: {
-                id: '6',
-                name: 'Ana'
-            },
-            wins: 25,
-            buchudas: 2,
-            buchudasDeRe: 1,
-            winRate: 70
+    useEffect(() => {
+        async function loadTopPlayers() {
+            try {
+                const rankings = await rankingService.getTopPlayers();
+                const top3Players = rankings.slice(0, 3).map(player => ({
+                    id: player.id,
+                    name: player.name,
+                    wins: player.wins,
+                    buchudas: player.buchudas,
+                    buchudasDeRe: player.buchudasDeRe,
+                    winRate: player.winRate
+                }));
+                setTopPlayers(top3Players);
+            } catch (error) {
+                console.error('Dashboard: Erro ao carregar top jogadores:', error);
+            }
         }
-    ]);
 
+        loadTopPlayers();
+    }, []);
+
+    const [topPairs, setTopPairs] = useState<Pair[]>([]);
+
+    useEffect(() => {
+        async function loadTopPairs() {
+            try {
+                const rankings = await rankingService.getTopPairs();
+                const top3Pairs = rankings.slice(0, 3).map(pair => ({
+                    id: pair.id,
+                    player1: pair.player1,
+                    player2: pair.player2,
+                    wins: pair.wins,
+                    buchudas: pair.buchudas,
+                    buchudasDeRe: pair.buchudasDeRe,
+                    winRate: pair.winRate
+                }));
+                setTopPairs(top3Pairs);
+            } catch (error) {
+                console.error('Dashboard: Erro ao carregar top duplas:', error);
+            }
+        }
+
+        loadTopPairs();
+    }, []);
     const [recentActivities, setRecentActivities] = useState<Activity[]>([
         {
             id: '1',

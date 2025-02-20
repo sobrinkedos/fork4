@@ -1,4 +1,6 @@
 Supabase
+Projeto: domino
+https://supabase.com/dashboard/project/evakdtqrtpqiuqhetkqr/settings/api
 
 Conta: riltons@gmail.com
 

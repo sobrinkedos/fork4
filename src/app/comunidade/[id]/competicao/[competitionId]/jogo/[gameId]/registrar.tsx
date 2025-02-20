@@ -82,15 +82,13 @@ export default function RegisterResult() {
             const game = await gameService.getById(gameId as string);
             if (!game) return;
 
-            const team1 = await Promise.all([
-                game.team1_player1_id && competitionService.getPlayerById(game.team1_player1_id),
-                game.team1_player2_id && competitionService.getPlayerById(game.team1_player2_id)
-            ].filter(Boolean));
+            const team1 = await Promise.all(
+                game.team1.map(playerId => competitionService.getPlayerById(playerId))
+            );
 
-            const team2 = await Promise.all([
-                game.team2_player1_id && competitionService.getPlayerById(game.team2_player1_id),
-                game.team2_player2_id && competitionService.getPlayerById(game.team2_player2_id)
-            ].filter(Boolean));
+            const team2 = await Promise.all(
+                game.team2.map(playerId => competitionService.getPlayerById(playerId))
+            );
 
             setTeam1Players(team1.filter(Boolean));
             setTeam2Players(team2.filter(Boolean));

@@ -26,14 +26,13 @@ const PairCard = styled.View`
 
 const Position = styled.Text`
     color: ${colors.primary};
-    font-size: 18px;
+    font-size: 24px;
     font-weight: bold;
-    margin-bottom: 8px;
+    min-width: 40px;
 `;
 
-const PlayersContainer = styled.View`
-    flex-direction: row;
-    align-items: center;
+const CardHeader = styled.View`
+    flex-direction: column;
     margin-bottom: 12px;
 `;
 
@@ -71,7 +70,7 @@ const SeparatorText = styled.Text`
 
 const StatsContainer = styled.View`
     flex-direction: row;
-    justify-content: space-around;
+    justify-content: space-between;
     padding-top: 12px;
     border-top-width: 1px;
     border-top-color: ${colors.backgroundLight};
@@ -157,32 +156,33 @@ export default function TopDuplas() {
 
     const renderPair = ({ item, index }: { item: PairRanking; index: number }) => (
         <PairCard>
-            <Position>{index + 1}º Lugar</Position>
-            <PlayersContainer>
+            <CardHeader>
+                <Position>{index + 1}º</Position>
                 <PlayerInfo>
                     <PlayerIcon>
                         <MaterialCommunityIcons name="account" size={20} color={colors.primary} />
                     </PlayerIcon>
                     <PlayerName>{item.player1.name}</PlayerName>
                 </PlayerInfo>
-                <Separator>
-                    <SeparatorText>&</SeparatorText>
-                </Separator>
                 <PlayerInfo>
                     <PlayerIcon>
                         <MaterialCommunityIcons name="account" size={20} color={colors.primary} />
                     </PlayerIcon>
                     <PlayerName>{item.player2.name}</PlayerName>
                 </PlayerInfo>
-            </PlayersContainer>
+            </CardHeader>
             <StatsContainer>
                 <StatItem>
                     <StatValue>{item.winRate.toFixed(1)}%</StatValue>
-                    <StatLabel>Taxa de Vitória</StatLabel>
+                    <StatLabel>Taxa de{"\n"}Vitória</StatLabel>
                 </StatItem>
                 <StatItem>
                     <StatValue>{item.wins}</StatValue>
                     <StatLabel>Vitórias</StatLabel>
+                </StatItem>
+                <StatItem>
+                    <StatValue>{item.totalGames}</StatValue>
+                    <StatLabel>Total de{"\n"}Jogos</StatLabel>
                 </StatItem>
                 <StatItem>
                     <StatValue>{item.buchudas}</StatValue>
@@ -190,7 +190,7 @@ export default function TopDuplas() {
                 </StatItem>
                 <StatItem>
                     <StatValue>{item.buchudasDeRe}</StatValue>
-                    <StatLabel>Buchudas de Ré</StatLabel>
+                    <StatLabel>Buchudas{"\n"}de Ré</StatLabel>
                 </StatItem>
             </StatsContainer>
         </PairCard>

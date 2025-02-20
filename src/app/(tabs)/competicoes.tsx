@@ -5,6 +5,9 @@ import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { SlideTransition } from "@/components/Transitions"
 import { FloatingButton } from "@/components/FloatingButton"
 import { Header } from "@/components/Header"
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase"
+import { Competition } from "@/services/competitionService"
 
 const Container = styled.View`
   flex: 1;
@@ -111,46 +114,68 @@ const PrizePool = styled.Text`
 `
 
 export default function Competicoes() {
-  const competitions = [
-    {
-      id: 1,
-      name: "Torneio de Verão",
-      game: "Counter-Strike 2",
-      status: "open" as const,
-      prizePool: "R$ 5.000",
-      startDate: "15/02",
-      teams: 8
-    },
-    {
-      id: 2,
-      name: "Copa League of Legends",
-      game: "League of Legends",
-      status: "in_progress" as const,
-      prizePool: "R$ 10.000",
-      startDate: "10/02",
-      teams: 16
-    },
-    {
-      id: 3,
-      name: "Valorant Championship",
-      game: "Valorant",
-      status: "finished" as const,
-      prizePool: "R$ 3.000",
-      startDate: "01/02",
-      teams: 12
+  const [competitions, setCompetitions] = useState<Competition[]>([])
+  const [competitionStats, setCompetitionStats] = useState<{[key: string]: { totalPlayers: number, totalGames: number }}>({});
+
+  useEffect(() => {
+    loadCompetitions()
+  }, [])
+
+  const loadCompetitions = async () => {
+    try {
+      const { data: userCompetitions, error } = await supabase
+        .from('competitions')
+        .select(`
+          id,
+          name,
+          description,
+          start_date,
+          status,
+          competition_members (count),
+          games (count)
+        `)
+        .eq('created_by', (await supabase.auth.getUser()).data.user?.id)
+
+      if (error) throw error
+
+      const stats: {[key: string]: { totalPlayers: number, totalGames: number }} = {};
+      userCompetitions.forEach((comp) => {
+        stats[comp.id] = {
+          totalPlayers: comp.competition_members[0]?.count || 0,
+          totalGames: comp.games[0]?.count || 0
+        };
+      });
+
+      setCompetitionStats(stats);
+      setCompetitions(userCompetitions);
+    } catch (error) {
+      console.error('Error loading competitions:', error)
     }
-  ]
+  }
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'open':
-        return 'Inscrições Abertas'
+      case 'pending':
+        return 'Aguardando Início'
       case 'in_progress':
         return 'Em Andamento'
       case 'finished':
         return 'Finalizado'
       default:
         return status
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return colors.warning
+      case 'in_progress':
+        return colors.success
+      case 'finished':
+        return colors.primary
+      default:
+        return colors.gray300
     }
   }
 
@@ -173,7 +198,7 @@ export default function Competicoes() {
                 <MaterialCommunityIcons 
                   name="trophy" 
                   size={40} 
-                  color={colors.accent}
+                  color={getStatusColor(competition.status)}
                 />
                 <CompetitionInfo>
                   <HeaderContent>
@@ -183,7 +208,9 @@ export default function Competicoes() {
                         <StatusText>{getStatusText(competition.status)}</StatusText>
                       </StatusBadge>
                     </TitleRow>
-                    <CompetitionGame>{competition.game}</CompetitionGame>
+                    {competition.description && (
+                      <CompetitionDescription>{competition.description}</CompetitionDescription>
+                    )}
                   </HeaderContent>
                 </CompetitionInfo>
               </CompetitionHeader>
@@ -191,22 +218,11 @@ export default function Competicoes() {
               <CompetitionDetails>
                 <DetailItem>
                   <MaterialCommunityIcons 
-                    name="cash" 
-                    size={24} 
-                    color={colors.accent}
-                  />
-                  <PrizePool>{competition.prizePool}</PrizePool>
-                  <DetailText>Premiação</DetailText>
-                </DetailItem>
-
-                <DetailItem>
-                  <MaterialCommunityIcons 
                     name="calendar" 
                     size={24} 
                     color={colors.accent}
                   />
-                  <PrizePool>{competition.startDate}</PrizePool>
-                  <DetailText>Início</DetailText>
+                  <DetailText>Início: {new Date(competition.start_date).toLocaleDateString('pt-BR')}</DetailText>
                 </DetailItem>
 
                 <DetailItem>
@@ -215,15 +231,31 @@ export default function Competicoes() {
                     size={24} 
                     color={colors.accent}
                   />
-                  <PrizePool>{competition.teams}</PrizePool>
-                  <DetailText>Times</DetailText>
+                  <DetailText>{competitionStats[competition.id]?.totalPlayers || 0} jogadores</DetailText>
                 </DetailItem>
+
+                <DetailItem>
+                  <MaterialCommunityIcons 
+                    name="cards-playing-outline" 
+                    size={24} 
+                    color={colors.accent}
+                  />
+                  <DetailText>{competitionStats[competition.id]?.totalGames || 0} jogos</DetailText>
+                </DetailItem>
+
+                {competition.status === 'in_progress' && (
+                  <ProgressBar>
+                    <ProgressIndicator 
+                      width={`${Math.min((competitionStats[competition.id]?.totalGames || 0) * 10, 100)}%`}
+                      status={competition.status}
+                    />
+                  </ProgressBar>
+                )}
               </CompetitionDetails>
             </CompetitionCard>
           ))}
         </Content>
       </ScrollContent>
-
       <FloatingButton actions={fabActions} />
     </Container>
   )

@@ -17,10 +17,8 @@ export interface GameRound {
 export interface Game {
     id: string;
     competition_id: string;
-    team1_player1_id: string;
-    team1_player2_id: string;
-    team2_player1_id: string;
-    team2_player2_id: string;
+    team1: string[];
+    team2: string[];
     team1_score: number;
     team2_score: number;
     status: 'pending' | 'in_progress' | 'finished';
@@ -46,18 +44,12 @@ export const gameService = {
             const session = await supabase.auth.getSession();
             console.log('Sessão atual:', session);
 
-            // Extrair jogadores dos arrays
-            const [team1Player1, team1Player2] = data.team1;
-            const [team2Player1, team2Player2] = data.team2;
-
             const { data: newGame, error } = await supabase
                 .from('games')
                 .insert([{
                     competition_id: data.competition_id,
-                    team1_player1_id: team1Player1,
-                    team1_player2_id: team1Player2,
-                    team2_player1_id: team2Player1,
-                    team2_player2_id: team2Player2,
+                    team1: data.team1,
+                    team2: data.team2,
                     team1_score: 0,
                     team2_score: 0,
                     status: 'pending',
@@ -246,13 +238,7 @@ export const gameService = {
         try {
             const { data, error } = await supabase
                 .from('games')
-                .select(`
-                    *,
-                    team1_player1_id,
-                    team1_player2_id,
-                    team2_player1_id,
-                    team2_player2_id
-                `)
+                .select('*')
                 .eq('competition_id', competitionId)
                 .order('created_at', { ascending: false });
 
@@ -268,13 +254,7 @@ export const gameService = {
         try {
             const { data, error } = await supabase
                 .from('games')
-                .select(`
-                    *,
-                    team1_player1_id,
-                    team1_player2_id,
-                    team2_player1_id,
-                    team2_player2_id
-                `)
+                .select('*')
                 .eq('id', id)
                 .single();
 
@@ -284,5 +264,41 @@ export const gameService = {
             console.error('Erro ao buscar jogo:', error);
             throw error;
         }
-    }
+    },
+    async getRecentActivities() {
+        try {
+            const { data: userData, error: userError } = await supabase.auth.getUser();
+            if (userError) throw userError;
+
+            const { data: playerData, error: playerError } = await supabase
+                .from('players')
+                .select('id')
+                .eq('created_by', userData.user.id);
+
+            if (playerError) throw playerError;
+
+            if (!playerData || playerData.length === 0) {
+                return [];
+            }
+
+            const playerIds = playerData.map(player => player.id);
+
+            const { data, error } = await supabase
+                .from('games')
+                .select('*')
+                .or(`team1.cs.{${playerIds.join(',')}},team2.cs.{${playerIds.join(',')}}`)  // Filtra jogos onde o jogador está em qualquer time
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            if (error) {
+                console.error('Erro ao buscar atividades recentes:', error);
+                throw new Error('Erro ao buscar atividades recentes');
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Erro ao buscar atividades recentes:', error);
+            throw error;
+        }
+    },
 };

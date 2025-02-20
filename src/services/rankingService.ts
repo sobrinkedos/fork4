@@ -31,10 +31,11 @@ export const rankingService = {
     async getTopPlayers(): Promise<PlayerRanking[]> {
         console.log('RankingService: Iniciando busca de jogadores...');
 
-        // Buscar todos os jogadores
+        // Buscar jogadores criados pelo usuário autenticado
         const { data: players, error: playersError } = await supabase
             .from('players')
-            .select('*');
+            .select('*')
+            .eq('created_by', (await supabase.auth.getUser()).data.user?.id);
 
         if (playersError) {
             console.error('RankingService: Erro ao buscar jogadores:', playersError);
@@ -100,8 +101,8 @@ export const rankingService = {
             });
 
             // Verificar se o jogo tem jogadores vinculados
-            const team1Players = [game.team1_player1_id, game.team1_player2_id].filter(Boolean) as string[];
-            const team2Players = [game.team2_player1_id, game.team2_player2_id].filter(Boolean) as string[];
+            const team1Players = game.team1 || [];
+            const team2Players = game.team2 || [];
 
             if (team1Players.length === 0 && team2Players.length === 0) {
                 console.log('RankingService: Jogo sem jogadores:', game.id);
@@ -113,7 +114,7 @@ export const rankingService = {
                 const stats = playerStats.get(playerId);
                 if (stats) {
                     stats.totalGames++;
-                    if (game.winner_team === 1) {
+                    if (game.team1_score > game.team2_score) {
                         stats.wins++;
                         if (game.is_buchuda && game.team2_score === 0) {
                             console.log('RankingService: Buchuda para time 1:', playerId);
@@ -132,7 +133,7 @@ export const rankingService = {
                 const stats = playerStats.get(playerId);
                 if (stats) {
                     stats.totalGames++;
-                    if (game.winner_team === 2) {
+                    if (game.team2_score > game.team1_score) {
                         stats.wins++;
                         if (game.is_buchuda && game.team1_score === 0) {
                             console.log('RankingService: Buchuda para time 2:', playerId);
@@ -216,9 +217,9 @@ export const rankingService = {
 
             // Processar jogos
             games.forEach(game => {
-                // Extrair IDs dos jogadores dos campos individuais
-                const team1Players = [game.team1_player1_id, game.team1_player2_id].filter(Boolean) as string[];
-                const team2Players = [game.team2_player1_id, game.team2_player2_id].filter(Boolean) as string[];
+                // Extrair IDs dos jogadores dos arrays team1 e team2
+                const team1Players = game.team1 || [];
+                const team2Players = game.team2 || [];
 
                 // Processar time 1
                 if (team1Players.length === 2) {
@@ -239,12 +240,12 @@ export const rankingService = {
                         };
 
                         stats.totalGames++;
-                        if (game.winner_team === 1) {
+                        if (game.team1_score > game.team2_score) {
                             stats.wins++;
-                            if (game.score_team1 === 6 && game.score_team2 === 0) {
+                            if (game.is_buchuda && game.team2_score === 0) {
                                 stats.buchudas++;
                             }
-                            if (game.score_team1 === 6 && game.score_team2 === 5) {
+                            if (game.is_buchuda_de_re) {
                                 stats.buchudasDeRe++;
                             }
                         }
@@ -272,12 +273,12 @@ export const rankingService = {
                         };
 
                         stats.totalGames++;
-                        if (game.winner_team === 2) {
+                        if (game.team2_score > game.team1_score) {
                             stats.wins++;
-                            if (game.score_team2 === 6 && game.score_team1 === 0) {
+                            if (game.is_buchuda && game.team1_score === 0) {
                                 stats.buchudas++;
                             }
-                            if (game.score_team2 === 6 && game.score_team1 === 5) {
+                            if (game.is_buchuda_de_re) {
                                 stats.buchudasDeRe++;
                             }
                         }
