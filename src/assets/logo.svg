@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo circular -->
+  <circle cx="256" cy="256" r="240" fill="#122a13"/>
+  
+  <!-- Peça de dominó estilizada -->
+  <rect x="156" y="156" width="200" height="200" rx="20" fill="white"/>
+  <line x1="256" y1="156" x2="256" y2="356" stroke="#122a13" stroke-width="4"/>
+  
+  <!-- Pontos do dominó -->
+  <circle cx="206" cy="206" r="12" fill="#122a13"/>
+  <circle cx="306" cy="306" r="12" fill="#122a13"/>
+  
+  <!-- Texto estilizado -->
+  <text x="256" y="420" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="48" fill="white">DOMINÓ</text>
+</svg>

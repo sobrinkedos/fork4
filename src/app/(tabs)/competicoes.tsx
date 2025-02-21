@@ -127,7 +127,16 @@ export default function Competicoes() {
     try {
       const { data: userCompetitions, error } = await supabase
         .from('competitions')
-        .select('id, name, description, start_date, status, community_id')
+        .select(`
+          id,
+          name,
+          description,
+          start_date,
+          status,
+          community_id,
+          (select count(*) from competition_members cm where cm.competition_id = competitions.id) as members_count,
+          (select count(*) from games g where g.competition_id = competitions.id) as games_count
+        `)
         .eq('created_by', (await supabase.auth.getUser()).data.user?.id)
 
       if (error) throw error
@@ -264,14 +273,12 @@ export default function Competicoes() {
                 </DetailItem>
 
                 {competition.status === 'in_progress' && (
-                  <DetailItem>
-                    <MaterialCommunityIcons 
-                      name="progress-check" 
-                      size={24} 
-                      color={colors.accent}
+                  <ProgressBar>
+                    <ProgressIndicator 
+                      width={`${Math.min((competitionStats[competition.id]?.totalGames || 0) * 10, 100)}%`}
+                      status={competition.status}
                     />
-                    <DetailText>Progresso: {Math.min((competitionStats[competition.id]?.totalGames || 0) * 10, 100)}%</DetailText>
-                  </DetailItem>
+                  </ProgressBar>
                 )}
               </CompetitionDetails>
             </CompetitionCard>
