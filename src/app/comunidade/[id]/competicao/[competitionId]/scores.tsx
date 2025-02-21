@@ -29,6 +29,13 @@ export default function CompetitionScores() {
         loadResults();
     }, [loadResults]);
 
+    const calculatePosition = (index: number, items: Array<any>, scoreKey: string = 'score'): number => {
+        if (index === 0) return 1;
+        const currentScore = items[index][scoreKey];
+        const previousScore = items[index - 1][scoreKey];
+        return currentScore === previousScore ? calculatePosition(index - 1, items, scoreKey) : index + 1;
+    };
+
     if (loading) {
         return (
             <LoadingContainer>
@@ -52,7 +59,7 @@ export default function CompetitionScores() {
                         <SectionTitle>Classificação Individual</SectionTitle>
                         {results?.players.map((player, index) => (
                             <PlayerCard key={player.id}>
-                                <Position>{index + 1}º</Position>
+                                <Position>{calculatePosition(index, results.players)}º</Position>
                                 <PlayerInfo>
                                     <PlayerName>{player.name}</PlayerName>
                                     <PlayerStats>
@@ -82,7 +89,7 @@ export default function CompetitionScores() {
                         <SectionTitle>Classificação por Duplas</SectionTitle>
                         {results?.pairs.map((pair, index) => (
                             <PairCard key={pair.players.join('_')}>
-                                <Position>{index + 1}º</Position>
+                                <Position>{calculatePosition(index, results.pairs)}º</Position>
                                 <PairInfo>
                                     <PairPlayers>
                                         {pair.players.map(playerId => {

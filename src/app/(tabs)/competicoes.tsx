@@ -112,7 +112,7 @@ const PrizePool = styled.Text`
   font-weight: bold;
   margin-top: 4px;
 `
-const handleCardPress = (competition: Competition) => {
+const handleCardPress = (competition: Competition, router: any) => {
     router.push(`/comunidade/${competition.community_id}/competicao/${competition.id}`);
 };
 export default function Competicoes() {
@@ -127,29 +127,45 @@ export default function Competicoes() {
     try {
       const { data: userCompetitions, error } = await supabase
         .from('competitions')
-        .select(`
-          id,
-          name,
-          description,
-          start_date,
-          status,
-          competition_members (count),
-          games (count)
-        `)
+        .select('id, name, description, start_date, status, community_id')
         .eq('created_by', (await supabase.auth.getUser()).data.user?.id)
 
       if (error) throw error
 
+      // Verifica e atualiza o status das competições
+      const updatedCompetitions = await Promise.all(userCompetitions.map(async (comp) => {
+        const { data: games } = await supabase
+          .from('games')
+          .select('status')
+          .eq('competition_id', comp.id);
+
+        if (games && games.length > 0) {
+          const hasFinishedGames = games.some(game => game.status === 'finished');
+          const hasUnfinishedGames = games.some(game => 
+            game.status === 'pending' || game.status === 'in_progress'
+          );
+
+          if (hasFinishedGames && !hasUnfinishedGames && comp.status !== 'finished') {
+            await supabase
+              .from('competitions')
+              .update({ status: 'finished' })
+              .eq('id', comp.id);
+            return { ...comp, status: 'finished' };
+          }
+        }
+        return comp;
+      }));
+
       const stats: {[key: string]: { totalPlayers: number, totalGames: number }} = {};
-      userCompetitions.forEach((comp) => {
+      updatedCompetitions.forEach((comp) => {
         stats[comp.id] = {
-          totalPlayers: comp.competition_members[0]?.count || 0,
-          totalGames: comp.games[0]?.count || 0
+          totalPlayers: comp.members_count || 0,
+          totalGames: comp.games_count || 0
         };
       });
 
       setCompetitionStats(stats);
-      setCompetitions(userCompetitions);
+      setCompetitions(updatedCompetitions);
     } catch (error) {
       console.error('Error loading competitions:', error)
     }
@@ -195,7 +211,7 @@ export default function Competicoes() {
       <ScrollContent>
         <Content>
           {competitions.map(competition => (
-            <CompetitionCard key={competition.id} onPress={() => handleCardPress(competition)}>
+            <CompetitionCard key={competition.id} onPress={() => handleCardPress(competition, router)}>
               <CompetitionHeader>
                 <MaterialCommunityIcons 
                   name="trophy" 
@@ -211,7 +227,9 @@ export default function Competicoes() {
                       </StatusBadge>
                     </TitleRow>
                     {competition.description && (
-                      <CompetitionDescription>{competition.description}</CompetitionDescription>
+                      <CompetitionGame>
+                        {competition.description}
+                      </CompetitionGame>
                     )}
                   </HeaderContent>
                 </CompetitionInfo>
@@ -246,12 +264,14 @@ export default function Competicoes() {
                 </DetailItem>
 
                 {competition.status === 'in_progress' && (
-                  <ProgressBar>
-                    <ProgressIndicator 
-                      width={`${Math.min((competitionStats[competition.id]?.totalGames || 0) * 10, 100)}%`}
-                      status={competition.status}
+                  <DetailItem>
+                    <MaterialCommunityIcons 
+                      name="progress-check" 
+                      size={24} 
+                      color={colors.accent}
                     />
-                  </ProgressBar>
+                    <DetailText>Progresso: {Math.min((competitionStats[competition.id]?.totalGames || 0) * 10, 100)}%</DetailText>
+                  </DetailItem>
                 )}
               </CompetitionDetails>
             </CompetitionCard>

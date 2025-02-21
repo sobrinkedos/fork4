@@ -262,6 +262,13 @@ const StatText = styled.Text`
     margin-right: 8px;
 `;
 
+const calculatePosition = (index: number, items: Array<any>): number => {
+    if (index === 0) return 1;
+    const currentWinRate = items[index].winRate;
+    const previousWinRate = items[index - 1].winRate;
+    return currentWinRate === previousWinRate ? calculatePosition(index - 1, items) : index + 1;
+};
+
 const Dashboard: React.FC = () => {
     const router = useRouter();
     const { session } = useAuth();
@@ -279,7 +286,7 @@ const Dashboard: React.FC = () => {
         async function loadTopPlayers() {
             try {
                 const rankings = await rankingService.getTopPlayers();
-                const top3Players = rankings.slice(0, 3).map(player => ({
+                const top4Players = rankings.slice(0, 4).map(player => ({
                     id: player.id,
                     name: player.name,
                     wins: player.wins,
@@ -287,7 +294,7 @@ const Dashboard: React.FC = () => {
                     buchudasDeRe: player.buchudasDeRe,
                     winRate: player.winRate
                 }));
-                setTopPlayers(top3Players);
+                setTopPlayers(top4Players);
             } catch (error) {
                 console.error('Dashboard: Erro ao carregar top jogadores:', error);
             }
@@ -302,7 +309,7 @@ const Dashboard: React.FC = () => {
         async function loadTopPairs() {
             try {
                 const rankings = await rankingService.getTopPairs();
-                const top3Pairs = rankings.slice(0, 3).map(pair => ({
+                const top4Pairs = rankings.slice(0, 4).map(pair => ({
                     id: pair.id,
                     player1: pair.player1,
                     player2: pair.player2,
@@ -311,7 +318,7 @@ const Dashboard: React.FC = () => {
                     buchudasDeRe: pair.buchudasDeRe,
                     winRate: pair.winRate
                 }));
-                setTopPairs(top3Pairs);
+                setTopPairs(top4Pairs);
             } catch (error) {
                 console.error('Dashboard: Erro ao carregar top duplas:', error);
             }
@@ -461,21 +468,24 @@ const Dashboard: React.FC = () => {
                                 </SeeAllButton>
                             </SectionHeader>
 
-                            {topPlayers.map((player, index) => (
-                                <PlayerCard key={player.id} onPress={() => router.push(`/jogador/${player.id}`)}>
-                                    <MaterialCommunityIcons 
-                                        name={index === 0 ? "crown" : "star"} 
-                                        size={24} 
-                                        color={index === 0 ? "#FFD700" : colors.gray300} 
-                                    />
-                                    <PlayerInfo>
-                                        <PlayerName>{player.name}</PlayerName>
-                                        <PlayerStats>
-                                            {player.wins} vitórias • {player.buchudas} buchudas • {player.winRate}% aproveitamento
-                                        </PlayerStats>
-                                    </PlayerInfo>
-                                </PlayerCard>
-                            ))}
+                            {topPlayers.map((player, index) => {
+                                const position = calculatePosition(index, topPlayers);
+                                return (
+                                    <PlayerCard key={player.id} onPress={() => router.push(`/jogador/${player.id}`)}>
+                                        <MaterialCommunityIcons 
+                                            name={position === 1 ? "crown" : "star"} 
+                                            size={24} 
+                                            color={position === 1 ? "#FFD700" : colors.gray300} 
+                                        />
+                                        <PlayerInfo>
+                                            <PlayerName>{player.name}</PlayerName>
+                                            <PlayerStats>
+                                                {player.wins} vitórias • {player.buchudas} buchudas • {player.winRate.toFixed(2)}% aproveitamento
+                                            </PlayerStats>
+                                        </PlayerInfo>
+                                    </PlayerCard>
+                                );
+                            })}
                         </SectionContainer>
 
                         <SectionContainer>
@@ -486,21 +496,24 @@ const Dashboard: React.FC = () => {
                                 </SeeAllButton>
                             </SectionHeader>
 
-                            {topPairs.map((pair, index) => (
-                                <PlayerCard key={pair.id}>
-                                    <MaterialCommunityIcons 
-                                        name={index === 0 ? "crown" : "star"} 
-                                        size={24} 
-                                        color={index === 0 ? "#FFD700" : colors.gray300} 
-                                    />
-                                    <PlayerInfo>
-                                        <PlayerName>{pair.player1.name} & {pair.player2.name}</PlayerName>
-                                        <PlayerStats>
-                                            {pair.wins} vitórias • {pair.buchudas} buchudas • {pair.buchudasDeRe} buchudas de ré • {pair.winRate}% aproveitamento
-                                        </PlayerStats>
-                                    </PlayerInfo>
-                                </PlayerCard>
-                            ))}
+                            {topPairs.map((pair, index) => {
+                                const position = calculatePosition(index, topPairs);
+                                return (
+                                    <PlayerCard key={pair.id}>
+                                        <MaterialCommunityIcons 
+                                            name={position === 1 ? "crown" : "star"} 
+                                            size={24} 
+                                            color={position === 1 ? "#FFD700" : colors.gray300} 
+                                        />
+                                        <PlayerInfo>
+                                            <PlayerName>{pair.player1.name} & {pair.player2.name}</PlayerName>
+                                            <PlayerStats>
+                                                {pair.wins} vitórias • {pair.buchudas} buchudas • {pair.buchudasDeRe} buchudas de ré • {pair.winRate.toFixed(2)}% aproveitamento
+                                            </PlayerStats>
+                                        </PlayerInfo>
+                                    </PlayerCard>
+                                );
+                            })}
                         </SectionContainer>
 
                         <SectionContainer>

@@ -164,10 +164,17 @@ export default function TopJogadores() {
         );
     }
 
+    const calculatePosition = (index: number, items: PlayerRanking[]): number => {
+        if (index === 0) return 1;
+        const currentWinRate = items[index].winRate;
+        const previousWinRate = items[index - 1].winRate;
+        return currentWinRate === previousWinRate ? calculatePosition(index - 1, items) : index + 1;
+    };
+    
     const renderPlayer = ({ item, index }: { item: PlayerRanking; index: number }) => (
         <PlayerCard onPress={() => router.push(`/jogador/${item.id}/jogos`)}>
             <CardHeader>
-                <Position>{index + 1}º</Position>
+                <Position>{calculatePosition(index, players)}º</Position>
                 <PlayerInfo>
                     <PlayerName>{item.name}</PlayerName>
                 </PlayerInfo>
@@ -175,7 +182,7 @@ export default function TopJogadores() {
             <StatsContainer>
                 <StatItem>
                     <StatValue>{item.winRate.toFixed(1)}%</StatValue>
-                    <StatLabel>Taxa de{'\n'}Vitória</StatLabel>
+                    <StatLabel>Taxa de{"\n"}Vitória</StatLabel>
                 </StatItem>
                 <StatItem>
                     <StatValue>{item.wins}</StatValue>
@@ -183,7 +190,7 @@ export default function TopJogadores() {
                 </StatItem>
                 <StatItem>
                     <StatValue>{item.totalGames}</StatValue>
-                    <StatLabel>Total de{'\n'}Jogos</StatLabel>
+                    <StatLabel>Total de{"\n"}Jogos</StatLabel>
                 </StatItem>
                 <StatItem>
                     <StatValue>{item.buchudas}</StatValue>
@@ -191,7 +198,7 @@ export default function TopJogadores() {
                 </StatItem>
                 <StatItem>
                     <StatValue>{item.buchudasDeRe}</StatValue>
-                    <StatLabel>Buchudas{'\n'}de Ré</StatLabel>
+                    <StatLabel>Buchudas{"\n"}de Ré</StatLabel>
                 </StatItem>
             </StatsContainer>
         </PlayerCard>

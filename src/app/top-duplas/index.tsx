@@ -154,10 +154,17 @@ export default function TopDuplas() {
         );
     }
 
+    const calculatePosition = (index: number, items: PairRanking[]): number => {
+        if (index === 0) return 1;
+        const currentWinRate = items[index].winRate;
+        const previousWinRate = items[index - 1].winRate;
+        return currentWinRate === previousWinRate ? calculatePosition(index - 1, items) : index + 1;
+    };
+
     const renderPair = ({ item, index }: { item: PairRanking; index: number }) => (
         <PairCard>
             <CardHeader>
-                <Position>{index + 1}º</Position>
+                <Position>{calculatePosition(index, pairs)}º</Position>
                 <PlayerInfo>
                     <PlayerIcon>
                         <MaterialCommunityIcons name="account" size={20} color={colors.primary} />

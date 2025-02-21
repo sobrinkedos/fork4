@@ -50,6 +50,7 @@ export default function CommunityDetails() {
     const [modalVisible, setModalVisible] = useState(false);
     const [showMembers, setShowMembers] = useState(false);
     const [rotateAnim] = useState(new Animated.Value(0));
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
@@ -207,11 +208,31 @@ export default function CommunityDetails() {
             </PageHeader>
 
             <MainContent>
-                <SectionHeader>
-                    <SectionTitle>Detalhes</SectionTitle>
-                </SectionHeader>
+                {community.description && (
+                    <>
+                        <SectionHeader>
+                            <SectionTitle>Detalhes</SectionTitle>
+                        </SectionHeader>
 
-                <Description>{community.description}</Description>
+                        <Description numberOfLines={isDescriptionExpanded ? undefined : 2}>
+                            {community.description}
+                        </Description>
+                        {community.description.length > 80 && (
+                            <TouchableOpacity onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+                                <ShowMoreContainer>
+                                    <Feather 
+                                        name={isDescriptionExpanded ? "chevron-up" : "chevron-down"} 
+                                        size={20} 
+                                        color={colors.primary} 
+                                    />
+                                    <ShowMoreText>
+                                        {isDescriptionExpanded ? 'Ver menos' : 'Ver mais'}
+                                    </ShowMoreText>
+                                </ShowMoreContainer>
+                            </TouchableOpacity>
+                        )}
+                    </>
+                )}
 
                 <MembersSection>
                     <SectionHeader>
@@ -319,13 +340,19 @@ export default function CommunityDetails() {
                                         </CompetitionDateText>
                                     </CompetitionDate>
                                     <CompetitionStatus>
-                                        {new Date(item.start_date) > new Date() ? (
-                                            <StatusBadge status="upcoming">
-                                                <StatusText>Em breve</StatusText>
+                                        {item.status === 'pending' && (
+                                            <StatusBadge status="pending">
+                                                <StatusText>Aguardando início</StatusText>
                                             </StatusBadge>
-                                        ) : (
-                                            <StatusBadge status="active">
+                                        )}
+                                        {item.status === 'in_progress' && (
+                                            <StatusBadge status="in_progress">
                                                 <StatusText>Em andamento</StatusText>
+                                            </StatusBadge>
+                                        )}
+                                        {item.status === 'finished' && (
+                                            <StatusBadge status="finished">
+                                                <StatusText>Finalizada</StatusText>
                                             </StatusBadge>
                                         )}
                                     </CompetitionStatus>
@@ -469,7 +496,7 @@ const SectionHeader = styled.View`
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
-    margin-top: 24px;
+    margin-top: 16px;
 `;
 
 const SectionTitle = styled.Text`
@@ -690,10 +717,21 @@ const CompetitionStatus = styled.View`
     margin-left: 16px;
 `;
 
-const StatusBadge = styled.View<{ status: 'upcoming' | 'active' }>`
-    background-color: ${props => props.status === 'upcoming' ? colors.primary : colors.success};
+const StatusBadge = styled.View<{ status: string }>`
     padding: 4px 8px;
     border-radius: 4px;
+    background-color: ${({ status }) => {
+        switch (status) {
+            case 'pending':
+                return colors.warning
+            case 'in_progress':
+                return colors.success
+            case 'finished':
+                return colors.primary
+            default:
+                return colors.gray300
+        }
+    }};
 `;
 
 const StatusText = styled.Text`
@@ -760,4 +798,21 @@ const RemoveButtonText = styled.Text`
     color: ${colors.white};
     font-size: 16px;
     font-weight: bold;
+`;
+
+const ShowMoreButton = styled.TouchableOpacity`
+    margin-top: 8px;
+`;
+
+const ShowMoreContainer = styled.View`
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+`;
+
+const ShowMoreText = styled.Text`
+    color: ${colors.primary};
+    font-size: 16px;
+    margin-left: 4px;
 `;

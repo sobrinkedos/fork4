@@ -111,7 +111,7 @@ export const competitionService = {
         try {
             const { data: competitions, error } = await supabase
                 .from('competitions')
-                .select('*')
+                .select('id, name, description, start_date, status, community_id')
                 .eq('community_id', communityId)
                 .order('start_date', { ascending: true });
 
