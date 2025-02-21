@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
 import { playersService } from '@/services/playersService';
@@ -12,10 +13,11 @@ type Player = {
 
 type PlayersListProps = {
     excludeIds?: string[];
-    onSelectPlayer: (playerId: string) => void;
+    onSelectPlayer?: (playerId: string) => void;
 };
 
 export function PlayersList({ excludeIds = [], onSelectPlayer }: PlayersListProps) {
+    const router = useRouter();
     const [players, setPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -38,6 +40,14 @@ export function PlayersList({ excludeIds = [], onSelectPlayer }: PlayersListProp
         }
     };
 
+    const handlePlayerPress = (playerId: string) => {
+        if (onSelectPlayer) {
+            onSelectPlayer(playerId);
+        } else {
+            router.push(`/jogador/${playerId}/jogos`);
+        }
+    };
+
     if (loading) {
         return (
             <LoadingText>Carregando jogadores...</LoadingText>
@@ -53,7 +63,7 @@ export function PlayersList({ excludeIds = [], onSelectPlayer }: PlayersListProp
                     data={players}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
-                        <PlayerCard onPress={() => onSelectPlayer(item.id)}>
+                        <PlayerCard onPress={() => handlePlayerPress(item.id)}>
                             <PlayerName>{item.name}</PlayerName>
                         </PlayerCard>
                     )}

@@ -5,6 +5,7 @@ import { colors } from '@/styles/colors';
 import { Header } from '@/components/Header';
 import { PageTransition } from '@/components/Transitions';
 import { rankingService, PlayerRanking } from '@/services/rankingService';
+import { useRouter } from 'expo-router';
 
 const Container = styled.View`
     flex: 1;
@@ -16,7 +17,7 @@ const Content = styled.View`
     padding: 20px;
 `;
 
-const PlayerCard = styled.View`
+const PlayerCard = styled.TouchableOpacity`
     background-color: ${colors.backgroundMedium};
     border-radius: 12px;
     padding: 16px;
@@ -107,6 +108,7 @@ const EmptyText = styled.Text`
 `;
 
 export default function TopJogadores() {
+    const router = useRouter();
     const [players, setPlayers] = useState<PlayerRanking[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -163,7 +165,7 @@ export default function TopJogadores() {
     }
 
     const renderPlayer = ({ item, index }: { item: PlayerRanking; index: number }) => (
-        <PlayerCard>
+        <PlayerCard onPress={() => router.push(`/jogador/${item.id}/jogos`)}>
             <CardHeader>
                 <Position>{index + 1}º</Position>
                 <PlayerInfo>
