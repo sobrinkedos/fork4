@@ -134,8 +134,8 @@ export default function Competicoes() {
           start_date,
           status,
           community_id,
-          (select count(*) from competition_members cm where cm.competition_id = competitions.id) as members_count,
-          (select count(*) from games g where g.competition_id = competitions.id) as games_count
+          (select count(*) from competition_members where competition_id = competitions.id) as members_count,
+          (select count(*) from games where competition_id = competitions.id) as games_count
         `)
         .eq('created_by', (await supabase.auth.getUser()).data.user?.id)
 

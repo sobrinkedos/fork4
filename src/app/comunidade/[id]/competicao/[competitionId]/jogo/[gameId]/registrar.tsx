@@ -167,26 +167,29 @@ export default function RegisterResult() {
             >
                 <SectionTitle>Tipo de Vitória</SectionTitle>
 
-                {victoryOptions.map(option => (
-                    <VictoryOption
-                        key={option.type}
-                        onPress={() => {
-                            setSelectedType(option.type);
-                            if (option.type === 'empate') {
-                                setWinnerTeam(null);
-                            }
-                        }}
-                        selected={selectedType === option.type}
-                    >
-                        <VictoryOptionContent>
-                            <VictoryTitle>{option.label}</VictoryTitle>
-                            <VictoryDescription>{option.description}</VictoryDescription>
-                        </VictoryOptionContent>
-                        {selectedType === option.type && (
-                            <Feather name="check" size={24} color={colors.primary} />
-                        )}
-                    </VictoryOption>
-                ))}
+                <VictoryOptionsGrid>
+                    {victoryOptions.map(option => (
+                        <VictoryOptionWrapper key={option.type}>
+                            <VictoryOption
+                                onPress={() => {
+                                    setSelectedType(option.type);
+                                    if (option.type === 'empate') {
+                                        setWinnerTeam(null);
+                                    }
+                                }}
+                                selected={selectedType === option.type}
+                            >
+                                <VictoryOptionContent>
+                                    <VictoryTitle>{option.label}</VictoryTitle>
+                                    <VictoryDescription>{option.description}</VictoryDescription>
+                                </VictoryOptionContent>
+                                {selectedType === option.type && (
+                                    <Feather name="check" size={24} color={colors.primary} />
+                                )}
+                            </VictoryOption>
+                        </VictoryOptionWrapper>
+                    ))}
+                </VictoryOptionsGrid>
 
                 {selectedType && selectedType !== 'empate' && (
                     <>
@@ -343,4 +346,15 @@ const RegisterButtonText = styled.Text`
     color: ${colors.textPrimary};
     font-size: 16px;
     font-weight: bold;
+`;
+
+const VictoryOptionsGrid = styled.View`
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: -4px;
+`;
+
+const VictoryOptionWrapper = styled.View`
+    width: 50%;
+    padding: 4px;
 `;
