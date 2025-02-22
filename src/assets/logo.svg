@@ -3,13 +3,22 @@
   <!-- Fundo circular -->
   <circle cx="256" cy="256" r="240" fill="#122a13"/>
   
-  <!-- Peça de dominó estilizada -->
-  <rect x="156" y="156" width="200" height="200" rx="20" fill="white"/>
-  <line x1="256" y1="156" x2="256" y2="356" stroke="#122a13" stroke-width="4"/>
-  
-  <!-- Pontos do dominó -->
-  <circle cx="206" cy="206" r="12" fill="#122a13"/>
-  <circle cx="306" cy="306" r="12" fill="#122a13"/>
+  <!-- Peça de dominó em perspectiva -->
+  <g transform="translate(256 256) rotate(-45) skewX(15) translate(-256 -256)">
+    <!-- Face frontal -->
+    <rect x="156" y="156" width="200" height="280" rx="20" fill="white"/>
+    
+    <!-- Linha divisória em perspectiva -->
+    <line x1="156" y1="296" x2="356" y2="296" stroke="#122a13" stroke-width="4"/>
+    
+    <!-- Pontos do dominó -->
+    <circle cx="206" cy="226" r="15" fill="#122a13"/>
+    <circle cx="256" cy="226" r="15" fill="#122a13"/>
+    <circle cx="306" cy="366" r="15" fill="#122a13"/>
+    
+    <!-- Sombras para dar profundidade -->
+    <rect x="156" y="156" width="200" height="280" rx="20" fill="#000000" opacity="0.1"/>
+  </g>
   
   <!-- Texto estilizado -->
   <text x="256" y="420" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="48" fill="white">DOMINÓ</text>

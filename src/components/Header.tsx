@@ -6,6 +6,14 @@ import { useAuth } from '../hooks/useAuth';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { SvgXml } from 'react-native-svg';
+
+const logoSvg = `
+<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="30" height="30" rx="8" fill="#1E1E1E"/>
+    <path d="M7 7h4v4H7zM7 13h4v4H7zM7 19h4v4H7zM13 7h4v4h-4zM13 13h4v4h-4zM13 19h4v4h-4zM19 7h4v4h-4zM19 13h4v4h-4zM19 19h4v4h-4z" fill="#FFF"/>
+</svg>
+`;
 
 const Container = styled.View<{ statusBarHeight: number }>`
     width: 100%;
@@ -103,9 +111,13 @@ export function Header({ onNotificationPress, onProfilePress, title }: HeaderPro
             ) : (
                 <LogoContainer>
                     <LogoIconContainer>
-                        <MaterialCommunityIcons name="cards" size={24} color={colors.accent} />
+                        <SvgXml
+                            width="30"
+                            height="30"
+                            xml={logoSvg}
+                        />
                     </LogoIconContainer>
-                    <LogoText>Dominô</LogoText>
+                    <LogoText>Dominó</LogoText>
                 </LogoContainer>
             )}
             
