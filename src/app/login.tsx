@@ -116,7 +116,10 @@ const LoginButton = styled.TouchableOpacity`
     padding: 16px;
     border-radius: 8px;
     margin-top: 8px;
-    opacity: ${props => props.disabled ? 0.7 : 1};
+    style: {
+        pointerEvents: ${props => props.disabled ? 'none' : 'auto'};
+        opacity: ${props => props.disabled ? 0.7 : 1};
+    }
 `;
 
 const LoginButtonText = styled.Text`
@@ -129,7 +132,10 @@ const LoginButtonText = styled.Text`
 const SignUpButton = styled.TouchableOpacity`
     padding: 16px;
     margin-top: 8px;
-    opacity: ${props => props.disabled ? 0.7 : 1};
+    style: {
+        pointerEvents: ${props => props.disabled ? 'none' : 'auto'};
+        opacity: ${props => props.disabled ? 0.7 : 1};
+    }
 `;
 
 const SignUpButtonText = styled.Text`

@@ -30,135 +30,97 @@ export interface PairRanking {
 export const rankingService = {
     async getTopPlayers(): Promise<PlayerRanking[]> {
         console.log('RankingService: Iniciando busca de jogadores...');
+        const userId = (await supabase.auth.getUser()).data.user?.id;
 
-        // Buscar jogadores criados pelo usuário autenticado
-        const { data: players, error: playersError } = await supabase
-            .from('players')
-            .select('*')
-            .eq('created_by', (await supabase.auth.getUser()).data.user?.id);
-
-        if (playersError) {
-            console.error('RankingService: Erro ao buscar jogadores:', playersError);
+        if (!userId) {
+            console.error('RankingService: Usuário não autenticado');
             return [];
         }
 
-        console.log('RankingService: Jogadores encontrados:', players?.length);
+        // Buscar IDs das comunidades onde o usuário é membro
+        const { data: memberCommunities } = await supabase
+            .from('community_members')
+            .select('community_id')
+            .eq('player_id', userId);
 
-        // Se não houver jogadores, retornar array vazio
-        if (!players || players.length === 0) {
+        // Buscar IDs das comunidades onde o usuário é organizador
+        const { data: organizerCommunities } = await supabase
+            .from('community_organizers')
+            .select('community_id')
+            .eq('user_id', userId);
+
+        // Combinar os IDs das comunidades
+        const communityIds = [
+            ...(memberCommunities?.map(c => c.community_id) || []),
+            ...(organizerCommunities?.map(c => c.community_id) || [])
+        ];
+
+        if (communityIds.length === 0) {
+            console.log('RankingService: Usuário não pertence a nenhuma comunidade');
             return [];
         }
 
-        // Buscar todos os jogos
-        const { data: games, error: gamesError } = await supabase
+        // Buscar jogadores das comunidades
+        const { data: communityMembers } = await supabase
+            .from('community_members')
+            .select(`
+                player_id,
+                players (id, name)
+            `)
+            .in('community_id', communityIds);
+
+        if (!communityMembers || communityMembers.length === 0) {
+            console.log('RankingService: Nenhum jogador encontrado nas comunidades');
+            return [];
+        }
+
+        // Extrair IDs únicos dos jogadores
+        const playerIds = [...new Set(communityMembers
+            .filter(member => member.players)
+            .map(member => member.players.id))];
+
+        // Buscar estatísticas dos jogadores
+        const { data: games } = await supabase
             .from('games')
-            .select('*, is_buchuda, is_buchuda_de_re')
-            .neq('status', 'pending');
+            .select('*')
+            .in('winner_id', playerIds);
 
-        if (gamesError) {
-            console.error('RankingService: Erro ao buscar jogos:', gamesError);
-            return players.map(player => ({
-                id: player.id,
-                name: player.name,
-                wins: 0,
-                totalGames: 0,
-                winRate: 0,
-                buchudas: 0,
-                buchudasDeRe: 0
-            }));
-        }
+        // Calcular estatísticas para cada jogador
+        const playerStats = playerIds.map(playerId => {
+            const playerGames = games?.filter(game =>
+                game.team1_player1_id === playerId ||
+                game.team1_player2_id === playerId ||
+                game.team2_player1_id === playerId ||
+                game.team2_player2_id === playerId
+            ) || [];
 
-        console.log('RankingService: Jogos encontrados:', games?.length);
+            const wins = games?.filter(game => game.winner_id === playerId).length || 0;
+            const buchudas = games?.filter(game =>
+                game.winner_id === playerId && game.is_buchuda
+            ).length || 0;
+            const buchudasDeRe = games?.filter(game =>
+                game.winner_id === playerId && game.is_buchuda_de_re
+            ).length || 0;
 
-        // Inicializar estatísticas para todos os jogadores
-        const playerStats = new Map<string, PlayerRanking>();
-        players.forEach(player => {
-            playerStats.set(player.id, {
-                id: player.id,
-                name: player.name,
-                wins: 0,
-                totalGames: 0,
-                winRate: 0,
-                buchudas: 0,
-                buchudasDeRe: 0
-            });
+            const player = communityMembers.find(member =>
+                member.players?.id === playerId
+            )?.players;
+
+            return {
+                id: playerId,
+                name: player?.name || 'Jogador Desconhecido',
+                wins,
+                totalGames: playerGames.length,
+                buchudas,
+                buchudasDeRe,
+                winRate: playerGames.length > 0
+                    ? (wins / playerGames.length) * 100
+                    : 0
+            };
         });
 
-        // Se não houver jogos, retornar todos os jogadores com estatísticas zeradas
-        if (!games || games.length === 0) {
-            return Array.from(playerStats.values());
-        }
-
-        // Processar jogos
-        games.forEach(game => {
-            console.log('RankingService: Processando jogo:', {
-                id: game.id,
-                winner: game.winner_team,
-                score1: game.team1_score,
-                score2: game.team2_score,
-                buchuda: game.is_buchuda,
-                buchudaDeRe: game.is_buchuda_de_re
-            });
-
-            // Verificar se o jogo tem jogadores vinculados
-            const team1Players = game.team1 || [];
-            const team2Players = game.team2 || [];
-
-            if (team1Players.length === 0 && team2Players.length === 0) {
-                console.log('RankingService: Jogo sem jogadores:', game.id);
-                return;
-            }
-
-            // Processar time 1
-            team1Players.forEach(playerId => {
-                const stats = playerStats.get(playerId);
-                if (stats) {
-                    stats.totalGames++;
-                    if (game.team1_score > game.team2_score) {
-                        stats.wins++;
-                        if (game.is_buchuda && game.team2_score === 0) {
-                            console.log('RankingService: Buchuda para time 1:', playerId);
-                            stats.buchudas++;
-                        }
-                        if (game.is_buchuda_de_re) {
-                            console.log('RankingService: Buchuda de Ré para time 1:', playerId);
-                            stats.buchudasDeRe++;
-                        }
-                    }
-                }
-            });
-
-            // Processar time 2
-            team2Players.forEach(playerId => {
-                const stats = playerStats.get(playerId);
-                if (stats) {
-                    stats.totalGames++;
-                    if (game.team2_score > game.team1_score) {
-                        stats.wins++;
-                        if (game.is_buchuda && game.team1_score === 0) {
-                            console.log('RankingService: Buchuda para time 2:', playerId);
-                            stats.buchudas++;
-                        }
-                        if (game.is_buchuda_de_re) {
-                            console.log('RankingService: Buchuda de Ré para time 2:', playerId);
-                            stats.buchudasDeRe++;
-                        }
-                    }
-                }
-            });
-        });
-
-        // Calcular taxa de vitória e ordenar
-        const rankings = Array.from(playerStats.values()).map(stats => ({
-            ...stats,
-            winRate: stats.totalGames > 0 ? (stats.wins / stats.totalGames) * 100 : 0
-        }));
-
-        // Ordenar por taxa de vitória (decrescente)
-        rankings.sort((a, b) => b.winRate - a.winRate);
-
-        console.log('RankingService: Rankings calculados:', rankings.length);
-        return rankings;
+        // Ordenar por taxa de vitórias
+        return playerStats.sort((a, b) => b.winRate - a.winRate);
     },
 
     async getTopPairs(): Promise<PairRanking[]> {
