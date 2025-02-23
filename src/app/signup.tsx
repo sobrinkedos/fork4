@@ -53,7 +53,19 @@ export default function SignUp() {
         try {
             setLoading(true);
 
-            // Passo 1: Criar usuário
+            // Passo 1: Verificar se o email já existe
+            const { data: existingUser, error: checkEmailError } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('email', formData.email.trim().toLowerCase())
+                .single();
+
+            if (existingUser) {
+                Alert.alert('Erro', 'Este e-mail já está cadastrado');
+                return;
+            }
+
+            // Passo 2: Criar usuário
             console.log('Criando usuário...');
             const { data: { user }, error: signUpError } = await supabase.auth.signUp({
                 email: formData.email.trim().toLowerCase(),
@@ -66,12 +78,8 @@ export default function SignUp() {
             });
 
             if (signUpError) {
-                if (signUpError.message === 'User already registered') {
-                    Alert.alert('Erro', 'Este e-mail já está cadastrado');
-                } else {
-                    console.error('Erro ao criar usuário:', signUpError);
-                    Alert.alert('Erro', 'Não foi possível criar sua conta. Tente novamente.');
-                }
+                console.error('Erro ao criar usuário:', signUpError);
+                Alert.alert('Erro', 'Não foi possível criar sua conta. Tente novamente.');
                 return;
             }
 
@@ -82,20 +90,6 @@ export default function SignUp() {
             }
 
             console.log('Usuário criado com sucesso:', user.id);
-            Alert.alert('Sucesso', 'Conta criada com sucesso! Faça login para continuar.');
-            router.replace('/login');
-
-            // Passo 2: Fazer login
-            console.log('Fazendo login...');
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-                email: formData.email.trim().toLowerCase(),
-                password: formData.password
-            });
-
-            if (signInError) {
-                console.error('Erro ao fazer login:', signInError);
-                throw signInError;
-            }
 
             // Passo 3: Criar perfil
             console.log('Criando perfil...');
@@ -115,9 +109,8 @@ export default function SignUp() {
             }
 
             console.log('Perfil criado com sucesso');
-
-            // Redirecionar para o dashboard
-            router.replace('/(tabs)/dashboard');
+            Alert.alert('Sucesso', 'Conta criada com sucesso! Faça login para continuar.');
+            router.replace('/login');
 
         } catch (error: any) {
             console.error('Erro detalhado:', error);

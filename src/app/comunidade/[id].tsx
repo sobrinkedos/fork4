@@ -8,6 +8,7 @@ import { communityService } from '@/services/communityService';
 import { communityMembersService } from '@/services/communityMembersService';
 import { playersService } from '@/services/playersService';
 import { competitionService } from '@/services/competitionService';
+import { communityOrganizerService } from '@/services/communityOrganizerService';
 
 type Community = {
     id: string;
@@ -49,18 +50,17 @@ export default function CommunityDetails() {
     const [refreshing, setRefreshing] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [showMembers, setShowMembers] = useState(false);
-    const [rotateAnim] = useState(new Animated.Value(0));
-    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-
-    const toggleMembers = () => {
-        setShowMembers(!showMembers);
-        Animated.spring(rotateAnim, {
+    const [rotateAnim] = useState(new Animated.Value(0));
+    const toggleMembers = useCallback(() => {
+        setShowMembers(prev => !prev);
+        Animated.timing(rotateAnim, {
             toValue: showMembers ? 0 : 1,
-            useNativeDriver: true,
+            duration: 200,
+            useNativeDriver: true
         }).start();
-    };
+    }, [showMembers, rotateAnim]);
 
     const rotate = rotateAnim.interpolate({
         inputRange: [0, 1],
@@ -815,4 +815,41 @@ const ShowMoreText = styled.Text`
     color: ${colors.primary};
     font-size: 16px;
     margin-left: 4px;
+`;
+
+const ButtonsContainer = styled.View`
+    flex-direction: row;
+    gap: 8px;
+`;
+
+const InputContainer = styled.View`
+    margin: 16px;
+    background-color: ${colors.gray800};
+    border-radius: 8px;
+    padding: 4px;
+`;
+
+const Input = styled.TextInput`
+    color: ${colors.gray100};
+    padding: 8px;
+    font-size: 16px;
+`;
+
+const AddButton = styled.TouchableOpacity`
+    background-color: ${colors.primary};
+    padding: 12px;
+    border-radius: 8px;
+    margin: 16px;
+    align-items: center;
+    opacity: ${props => props.disabled ? 0.5 : 1};
+`;
+
+const AddButtonText = styled.Text`
+    color: ${colors.white};
+    font-size: 16px;
+    font-weight: bold;
+`;
+
+const CloseButton = styled.TouchableOpacity`
+    padding: 8px;
 `;

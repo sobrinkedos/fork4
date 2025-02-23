@@ -26,10 +26,7 @@ export default function Register() {
 
         setLoading(true);
         try {
-            // 1. Verificar se já existe usuário com este telefone
-            const { data: existingUser } = await userService.findByPhoneNumber(form.phoneNumber);
-
-            // 2. Criar conta de autenticação
+            // 1. Criar conta de autenticação
             const { data, error: signUpError } = await signUp(form.email, form.password);
             
             if (signUpError) {
@@ -41,6 +38,9 @@ export default function Register() {
                 console.error('Usuário não criado após signUp');
                 throw new Error('Erro ao criar usuário. Por favor, tente novamente.');
             }
+
+            // 2. Verificar se já existe usuário com este telefone
+            const { data: existingUser } = await userService.findByPhoneNumber(form.phoneNumber);
 
             // 3. Criar ou atualizar perfil
             const { error: profileError } = await userService.createProfile(
