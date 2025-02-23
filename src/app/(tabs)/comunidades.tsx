@@ -33,11 +33,25 @@ const CommunityCard = styled.TouchableOpacity`
 const CommunityHeader = styled.View`
     flex-direction: row;
     align-items: flex-start;
+    justify-content: space-between;
 `;
 
 const CommunityInfo = styled.View`
     flex: 1;
-    margin-left: 12px;
+    margin-right: 12px;
+`;
+
+const OrganizerBadge = styled.View`
+    background-color: ${colors.accent};
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+`;
+
+const OrganizerText = styled.Text`
+    color: ${colors.white};
+    font-size: 12px;
+    font-weight: bold;
 `;
 
 const CommunityName = styled.Text`
@@ -277,38 +291,39 @@ export default function Comunidades() {
 
     const renderCommunity = (community: Community) => (
         <CommunityCard
-            key={community.id}
+            key={`community-${community.id}`}
             onPress={() => router.push(`/comunidade/${community.id}`)}
         >
             <CommunityHeader>
-                <MaterialCommunityIcons
-                    name="account-group"
-                    size={32}
-                    color={colors.primary}
-                />
                 <CommunityInfo>
                     <CommunityName>{community.name}</CommunityName>
                     <CommunityDescription>{community.description}</CommunityDescription>
-                    <CommunityStats>
-                        <StatItem>
-                            <MaterialCommunityIcons
-                                name="account-multiple"
-                                size={16}
-                                color={colors.gray300}
-                            />
-                            <StatText>{community.members_count} membros</StatText>
-                        </StatItem>
-                        <StatItem>
-                            <MaterialCommunityIcons
-                                name="cards-playing-outline"
-                                size={16}
-                                color={colors.gray300}
-                            />
-                            <StatText>{community.games_count} jogos</StatText>
-                        </StatItem>
-                    </CommunityStats>
                 </CommunityInfo>
+                {community.is_organizer && (
+                    <OrganizerBadge>
+                        <OrganizerText>Organizador</OrganizerText>
+                    </OrganizerBadge>
+                )}
             </CommunityHeader>
+
+            <CommunityStats>
+                <StatItem>
+                    <MaterialCommunityIcons
+                        name="account-multiple"
+                        size={16}
+                        color={colors.gray300}
+                    />
+                    <StatText>{community.members_count} membros</StatText>
+                </StatItem>
+                <StatItem>
+                    <MaterialCommunityIcons
+                        name="cards-playing-outline"
+                        size={16}
+                        color={colors.gray300}
+                    />
+                    <StatText>{community.games_count} jogos</StatText>
+                </StatItem>
+            </CommunityStats>
         </CommunityCard>
     );
 
@@ -327,20 +342,52 @@ export default function Comunidades() {
         <Container>
             <Header title="Comunidades" onNotificationPress={() => {}} onProfilePress={() => {}} />
             <ScrollContent>
-                {communities.length === 0 ? (
+                {loading ? (
+                    <LoadingContainer>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                    </LoadingContainer>
+                ) : communities.length === 0 ? (
                     <EmptyContainer>
-                        <MaterialCommunityIcons 
-                            name="account-group-outline" 
-                            size={48} 
-                            color={colors.gray400}
-                        />
-                        <EmptyText>
-                            Nenhuma comunidade encontrada{'\n'}
-                            Toque no + para criar
-                        </EmptyText>
+                        <EmptyText>Nenhuma comunidade encontrada</EmptyText>
                     </EmptyContainer>
                 ) : (
-                    communities.map(renderCommunity)
+                    communities.map((community) => (
+                        <CommunityCard
+                            key={`community-${community.id}`}
+                            onPress={() => router.push(`/comunidade/${community.id}`)}
+                        >
+                            <CommunityHeader>
+                                <CommunityInfo>
+                                    <CommunityName>{community.name}</CommunityName>
+                                    <CommunityDescription>{community.description}</CommunityDescription>
+                                </CommunityInfo>
+                                {community.is_organizer && (
+                                    <OrganizerBadge>
+                                        <OrganizerText>Organizador</OrganizerText>
+                                    </OrganizerBadge>
+                                )}
+                            </CommunityHeader>
+
+                            <CommunityStats>
+                                <StatItem>
+                                    <MaterialCommunityIcons
+                                        name="account-multiple"
+                                        size={16}
+                                        color={colors.gray300}
+                                    />
+                                    <StatText>{community.members_count} membros</StatText>
+                                </StatItem>
+                                <StatItem>
+                                    <MaterialCommunityIcons
+                                        name="cards-playing-outline"
+                                        size={16}
+                                        color={colors.gray300}
+                                    />
+                                    <StatText>{community.games_count} jogos</StatText>
+                                </StatItem>
+                            </CommunityStats>
+                        </CommunityCard>
+                    ))
                 )}
             </ScrollContent>
 

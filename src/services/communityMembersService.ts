@@ -16,7 +16,9 @@ export const communityMembersService = {
             const { data, error } = await supabase
                 .from('community_members')
                 .select(`
-                    *,
+                    id,
+                    community_id,
+                    player_id,
                     players (
                         id,
                         name
@@ -25,7 +27,15 @@ export const communityMembersService = {
                 .eq('community_id', communityId);
 
             if (error) throw error;
-            return data;
+
+            // Filtra membros sem dados do jogador
+            const validMembers = data?.filter(member => member.players) || [];
+            
+            if (data?.length !== validMembers.length) {
+                console.warn(`Encontrados ${data?.length - validMembers.length} membros sem dados de jogador`);
+            }
+
+            return validMembers;
         } catch (error) {
             console.error('Erro ao listar membros:', error);
             throw error;

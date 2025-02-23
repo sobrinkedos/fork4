@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Alert, FlatList, RefreshControl } from 'react-native';
+import { Alert, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../styles/colors';
@@ -11,15 +11,17 @@ import { useRouter } from 'expo-router';
 
 export default function Jogadores() {
     const router = useRouter();
-    const [players, setPlayers] = useState<Player[]>([]);
+    const [myPlayers, setMyPlayers] = useState<Player[]>([]);
+    const [communityPlayers, setCommunityPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     const loadPlayers = async () => {
         try {
             setLoading(true);
-            const data = await playerService.list();
-            setPlayers(data || []);
+            const { myPlayers: my, communityPlayers: community } = await playerService.list();
+            setMyPlayers(my || []);
+            setCommunityPlayers(community || []);
         } catch (error) {
             console.error('Erro ao carregar jogadores:', error);
             Alert.alert('Erro', 'Não foi possível carregar os jogadores');
@@ -70,7 +72,7 @@ export default function Jogadores() {
         );
     };
 
-    const renderItem = ({ item }: { item: Player }) => (
+    const renderPlayerItem = ({ item, isMyPlayer }: { item: Player; isMyPlayer: boolean }) => (
         <PlayerCard>
             <PlayerInfo>
                 <PlayerName>{item.name}</PlayerName>
@@ -81,51 +83,90 @@ export default function Jogadores() {
                     <PlayerPhone>{item.phone}</PlayerPhone>
                 )}
             </PlayerInfo>
-            <ActionsContainer>
-                <ActionButton onPress={() => handleDelete(item)}>
-                    <MaterialCommunityIcons
-                        name="delete"
-                        size={24}
-                        color={colors.error}
-                    />
-                </ActionButton>
-            </ActionsContainer>
+            {isMyPlayer && (
+                <ActionsContainer>
+                    <ActionButton onPress={() => handleDelete(item)}>
+                        <MaterialCommunityIcons
+                            name="delete"
+                            size={24}
+                            color={colors.error}
+                        />
+                    </ActionButton>
+                </ActionsContainer>
+            )}
         </PlayerCard>
     );
+
+    const renderSectionHeader = (title: string) => (
+        <SectionTitle>{title}</SectionTitle>
+    );
+
+    const renderItem = ({ item }: { item: any }) => {
+        if (item.sectionTitle) {
+            return renderSectionHeader(item.sectionTitle);
+        }
+
+        if (item.emptyMessage) {
+            return <EmptyText>{item.emptyMessage}</EmptyText>;
+        }
+
+        return renderPlayerItem({
+            item,
+            isMyPlayer: item.section === 'myPlayers'
+        });
+    };
+
+    // Preparar dados para a FlatList
+    const sections = [];
+    
+    // Seção "Meus Jogadores"
+    sections.push({ sectionTitle: 'Meus Jogadores' });
+    if (myPlayers.length === 0) {
+        sections.push({ emptyMessage: 'Você ainda não criou nenhum jogador' });
+    } else {
+        myPlayers.forEach(player => sections.push({ ...player, section: 'myPlayers' }));
+    }
+
+    // Seção "Jogadores das Comunidades"
+    sections.push({ sectionTitle: 'Jogadores das Comunidades' });
+    if (communityPlayers.length === 0) {
+        sections.push({ emptyMessage: 'Nenhum jogador disponível nas suas comunidades' });
+    } else {
+        communityPlayers.forEach(player => sections.push({ ...player, section: 'communityPlayers' }));
+    }
+
+    if (loading) {
+        return (
+            <Container>
+                <Header title="Jogadores" onNotificationPress={() => {}} onProfilePress={() => {}} />
+                <LoadingContainer>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </LoadingContainer>
+            </Container>
+        );
+    }
 
     return (
         <Container>
             <Header title="Jogadores" onNotificationPress={() => {}} onProfilePress={() => {}} />
 
             <FlatList
-                data={players}
+                data={sections}
                 renderItem={renderItem}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={{
-                    padding: 20,
-                }}
-                ListEmptyComponent={
-                    !loading ? (
-                        <EmptyContainer>
-                            <EmptyText>Nenhum jogador encontrado</EmptyText>
-                        </EmptyContainer>
-                    ) : null
-                }
+                keyExtractor={(item, index) => item.id || `section-${index}`}
+                contentContainerStyle={{ padding: 16 }}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={handleRefresh}
                         colors={[colors.primary]}
-                        tintColor={colors.primary}
                     />
                 }
             />
 
-            <CreateButton 
-                onPress={() => router.push('/jogador/novo')}
-            >
+            <FAB onPress={() => router.push('/jogador/novo')}>
                 <Feather name="plus" size={24} color={colors.gray100} />
-            </CreateButton>
+            </FAB>
         </Container>
     );
 }
@@ -135,14 +176,27 @@ const Container = styled.View`
     background-color: ${colors.backgroundDark};
 `;
 
+const LoadingContainer = styled.View`
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+`;
+
+const SectionTitle = styled.Text`
+    font-size: 18px;
+    font-weight: bold;
+    color: ${colors.gray100};
+    margin: 24px 0 12px;
+`;
+
 const PlayerCard = styled.View`
-    background-color: ${colors.secondary};
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    padding: 16px;
+    background-color: ${colors.secondary};
+    border-radius: 8px;
+    margin-bottom: 8px;
 `;
 
 const PlayerInfo = styled.View`
@@ -150,20 +204,20 @@ const PlayerInfo = styled.View`
 `;
 
 const PlayerName = styled.Text`
-    color: ${colors.gray100};
     font-size: 16px;
+    color: ${colors.gray100};
     font-weight: bold;
 `;
 
 const PlayerNickname = styled.Text`
-    color: ${colors.gray300};
     font-size: 14px;
+    color: ${colors.gray300};
     margin-top: 4px;
 `;
 
 const PlayerPhone = styled.Text`
-    color: ${colors.gray300};
     font-size: 14px;
+    color: ${colors.gray300};
     margin-top: 4px;
 `;
 
@@ -173,24 +227,10 @@ const ActionsContainer = styled.View`
 `;
 
 const ActionButton = styled.TouchableOpacity`
-    margin-left: 16px;
+    padding: 8px;
 `;
 
-const EmptyContainer = styled.View`
-    flex: 1;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-`;
-
-const EmptyText = styled.Text`
-    color: ${colors.gray300};
-    font-size: 16px;
-    text-align: center;
-    line-height: 24px;
-`;
-
-const CreateButton = styled.TouchableOpacity`
+const FAB = styled.TouchableOpacity`
     position: absolute;
     right: 16px;
     bottom: 16px;
@@ -201,4 +241,11 @@ const CreateButton = styled.TouchableOpacity`
     justify-content: center;
     align-items: center;
     elevation: 4;
+`;
+
+const EmptyText = styled.Text`
+    color: ${colors.gray300};
+    font-size: 14px;
+    text-align: center;
+    margin: 12px 0;
 `;

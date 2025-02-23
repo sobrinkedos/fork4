@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Alert, Modal, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
+import { Alert, Modal, TouchableOpacity, ActivityIndicator, Animated, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
@@ -39,6 +39,19 @@ type Competition = {
     start_date: string;
 };
 
+interface CommunityOrganizer {
+    id: string;
+    community_id: string;
+    user_id: string;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+    user_profile?: {
+        name: string;
+        email: string;
+    };
+}
+
 export default function CommunityDetails() {
     const router = useRouter();
     const params = useLocalSearchParams();
@@ -46,13 +59,19 @@ export default function CommunityDetails() {
     const [members, setMembers] = useState<Member[]>([]);
     const [allPlayers, setAllPlayers] = useState<Player[]>([]);
     const [competitions, setCompetitions] = useState<Competition[]>([]);
+    const [organizers, setOrganizers] = useState<CommunityOrganizer[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [showMembers, setShowMembers] = useState(false);
-    const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+    const [selectedOrganizers, setSelectedOrganizers] = useState<string[]>([]);
     const [rotateAnim] = useState(new Animated.Value(0));
+    const [addOrganizerModalVisible, setAddOrganizerModalVisible] = useState(false);
+    const [newOrganizerEmail, setNewOrganizerEmail] = useState('');
+    const [addingOrganizer, setAddingOrganizer] = useState(false);
+    const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+
     const toggleMembers = useCallback(() => {
         setShowMembers(prev => !prev);
         Animated.timing(rotateAnim, {
@@ -72,18 +91,20 @@ export default function CommunityDetails() {
             setLoading(true);
             const communityData = await communityService.getById(params.id as string);
             const membersData = await communityMembersService.listMembers(params.id as string);
-            const playersData = await playersService.list();
+            const { myPlayers, communityPlayers } = await playersService.list();
             const competitionsData = await competitionService.listByCommunity(params.id as string);
+            const { data: organizersData } = await communityOrganizerService.listOrganizers(params.id as string);
 
             setCommunity(communityData);
             setMembers(membersData);
-            setAllPlayers(playersData);
+            setAllPlayers([...myPlayers, ...communityPlayers]);
             setCompetitions(competitionsData);
+            setOrganizers(organizersData || []);
         } catch (error) {
-            console.error(error);
+            console.error('Erro ao carregar dados:', error);
+            Alert.alert('Erro', 'Erro ao carregar dados da comunidade');
         } finally {
             setLoading(false);
-            setRefreshing(false);
         }
     };
 
@@ -110,44 +131,6 @@ export default function CommunityDetails() {
             await loadData();
         } catch (error) {
             console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSelectPlayer = (playerId: string) => {
-        setSelectedPlayers(prev => {
-            if (prev.includes(playerId)) {
-                return prev.filter(id => id !== playerId);
-            }
-            return [...prev, playerId];
-        });
-    };
-
-    const handleSelectAll = () => {
-        const availablePlayers = allPlayers.filter(player => 
-            !members.some(member => member.player_id === player.id)
-        );
-        
-        if (selectedPlayers.length === availablePlayers.length) {
-            setSelectedPlayers([]);
-        } else {
-            setSelectedPlayers(availablePlayers.map(player => player.id));
-        }
-    };
-
-    const handleSaveMembers = async () => {
-        if (!community || selectedPlayers.length === 0) return;
-
-        try {
-            setLoading(true);
-            await communityMembersService.addMembers(community.id, selectedPlayers);
-            setModalVisible(false);
-            setSelectedPlayers([]);
-            await loadData();
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Erro', 'Não foi possível adicionar os membros');
         } finally {
             setLoading(false);
         }
@@ -188,6 +171,100 @@ export default function CommunityDetails() {
         }
     };
 
+    const handleSelectOrganizer = (organizerId: string) => {
+        setSelectedOrganizers(prev => {
+            if (prev.includes(organizerId)) {
+                return prev.filter(id => id !== organizerId);
+            }
+            return [...prev, organizerId];
+        });
+    };
+
+    const handleRemoveOrganizer = async (userId: string) => {
+        if (!community) return;
+
+        try {
+            setLoading(true);
+            const { error } = await communityOrganizerService.removeOrganizer(community.id, userId);
+            
+            if (error) {
+                Alert.alert('Erro', error.message);
+                return;
+            }
+
+            Alert.alert('Sucesso', 'Organizador removido com sucesso');
+            await loadData();
+        } catch (error: any) {
+            Alert.alert('Erro', error.message || 'Erro ao remover organizador');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAddOrganizer = async () => {
+        if (!newOrganizerEmail) {
+            Alert.alert('Erro', 'Por favor, insira um email válido');
+            return;
+        }
+
+        try {
+            setAddingOrganizer(true);
+            const { error } = await communityOrganizerService.addOrganizer(params.id as string, newOrganizerEmail);
+            
+            if (error) {
+                Alert.alert('Erro', error.message);
+                return;
+            }
+
+            Alert.alert('Sucesso', 'Organizador adicionado com sucesso');
+            setNewOrganizerEmail('');
+            setAddOrganizerModalVisible(false);
+            loadData(); // Recarrega a lista de organizadores
+        } catch (error: any) {
+            Alert.alert('Erro', error.message || 'Erro ao adicionar organizador');
+        } finally {
+            setAddingOrganizer(false);
+        }
+    };
+
+    const handleSelectPlayer = (playerId: string) => {
+        setSelectedPlayers(prev => {
+            if (prev.includes(playerId)) {
+                return prev.filter(id => id !== playerId);
+            }
+            return [...prev, playerId];
+        });
+    };
+
+    const handleSelectAll = () => {
+        const availablePlayers = allPlayers?.filter(player => 
+            !members.some(member => member.player_id === player.id)
+        ) || [];
+        
+        if (selectedPlayers.length === availablePlayers.length) {
+            setSelectedPlayers([]);
+        } else {
+            setSelectedPlayers(availablePlayers.map(player => player.id));
+        }
+    };
+
+    const handleSaveMembers = async () => {
+        if (!community || selectedPlayers.length === 0) return;
+
+        try {
+            setLoading(true);
+            await communityMembersService.addMembers(community.id, selectedPlayers);
+            setModalVisible(false);
+            setSelectedPlayers([]);
+            await loadData();
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Erro', 'Não foi possível adicionar os membros');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading || !community) {
         return (
             <Container>
@@ -214,23 +291,9 @@ export default function CommunityDetails() {
                             <SectionTitle>Detalhes</SectionTitle>
                         </SectionHeader>
 
-                        <Description numberOfLines={isDescriptionExpanded ? undefined : 2}>
+                        <Description numberOfLines={2}>
                             {community.description}
                         </Description>
-                        {community.description.length > 80 && (
-                            <TouchableOpacity onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
-                                <ShowMoreContainer>
-                                    <Feather 
-                                        name={isDescriptionExpanded ? "chevron-up" : "chevron-down"} 
-                                        size={20} 
-                                        color={colors.primary} 
-                                    />
-                                    <ShowMoreText>
-                                        {isDescriptionExpanded ? 'Ver menos' : 'Ver mais'}
-                                    </ShowMoreText>
-                                </ShowMoreContainer>
-                            </TouchableOpacity>
-                        )}
                     </>
                 )}
 
@@ -273,7 +336,7 @@ export default function CommunityDetails() {
                                             selected={selectedMembers.includes(item.player_id)}
                                         >
                                             <MemberInfo>
-                                                <MemberName>{item.players.name}</MemberName>
+                                                <MemberName>{item.players?.name || 'Jogador não encontrado'}</MemberName>
                                             </MemberInfo>
                                             <Feather 
                                                 name={selectedMembers.includes(item.player_id) ? "check-square" : "square"} 
@@ -307,6 +370,87 @@ export default function CommunityDetails() {
                         </MembersListContainer>
                     )}
                 </MembersSection>
+
+                <OrganizersSection>
+                    <OrganizersSectionHeader>
+                        <SectionTitle>Organizadores</SectionTitle>
+                        <AddButton onPress={() => setAddOrganizerModalVisible(true)}>
+                            <Feather name="plus" size={24} color={colors.white} />
+                        </AddButton>
+                    </OrganizersSectionHeader>
+                    
+                    <OrganizersListContainer>
+                        <OrganizersListScrollView>
+                            {organizers.map((organizer) => (
+                                <OrganizerCard key={organizer.id}>
+                                    <OrganizerInfo>
+                                        <OrganizerName>{organizer.user_profile?.name || 'Usuário não encontrado'}</OrganizerName>
+                                        <OrganizerEmail>{organizer.user_profile?.email || 'Email não encontrado'}</OrganizerEmail>
+                                    </OrganizerInfo>
+                                    <RemoveOrganizerButton 
+                                        onPress={() => handleRemoveOrganizer(organizer.user_id)}
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator size="small" color={colors.white} />
+                                        ) : (
+                                            <Feather name="trash-2" size={20} color={colors.white} />
+                                        )}
+                                    </RemoveOrganizerButton>
+                                </OrganizerCard>
+                            ))}
+                        </OrganizersListScrollView>
+                    </OrganizersListContainer>
+
+                    <Modal
+                        animationType="slide"
+                        transparent={true}
+                        visible={addOrganizerModalVisible}
+                        onRequestClose={() => setAddOrganizerModalVisible(false)}
+                    >
+                        <ModalOverlay>
+                            <ModalCard>
+                                <ModalHeader>
+                                    <ModalTitle>Adicionar Organizador</ModalTitle>
+                                    <CloseButton onPress={() => setAddOrganizerModalVisible(false)}>
+                                        <Feather name="x" size={24} color={colors.white} />
+                                    </CloseButton>
+                                </ModalHeader>
+
+                                <View style={{
+                                    backgroundColor: '#1A1A1A',
+                                    borderRadius: 8,
+                                    marginBottom: 16,
+                                }}>
+                                    <TextInput
+                                        placeholder="Email do organizador"
+                                        value={newOrganizerEmail}
+                                        onChangeText={setNewOrganizerEmail}
+                                        autoCapitalize="none"
+                                        keyboardType="email-address"
+                                        style={{
+                                            color: '#FFFFFF',
+                                            fontSize: 16,
+                                            padding: 16,
+                                        }}
+                                        placeholderTextColor="#666666"
+                                    />
+                                </View>
+
+                                <ModalButton 
+                                    onPress={handleAddOrganizer}
+                                    disabled={addingOrganizer}
+                                >
+                                    {addingOrganizer ? (
+                                        <ActivityIndicator color={colors.white} />
+                                    ) : (
+                                        <ModalButtonText>Adicionar</ModalButtonText>
+                                    )}
+                                </ModalButton>
+                            </ModalCard>
+                        </ModalOverlay>
+                    </Modal>
+                </OrganizersSection>
 
                 <SectionHeader>
                     <SectionTitle>Competições</SectionTitle>
@@ -382,25 +526,21 @@ export default function CommunityDetails() {
                 visible={modalVisible}
                 onRequestClose={() => {
                     setModalVisible(false);
-                    setSelectedPlayers([]);
                 }}
             >
-                <ModalContainer>
-                    <ModalContent>
+                <MembersModalContainer>
+                    <MembersModalContent>
                         <ModalHeader>
                             <ModalTitle>Adicionar Membros</ModalTitle>
-                            <TouchableOpacity onPress={() => {
-                                setModalVisible(false);
-                                setSelectedPlayers([]);
-                            }}>
-                                <Feather name="x" size={24} color={colors.gray100} />
-                            </TouchableOpacity>
+                            <CloseButton onPress={() => setModalVisible(false)}>
+                                <Feather name="x" size={24} color={colors.white} />
+                            </CloseButton>
                         </ModalHeader>
 
                         <SelectAllHeader>
                             <SelectAllButton onPress={handleSelectAll}>
                                 <Feather 
-                                    name={selectedPlayers.length === allPlayers.filter(player => 
+                                    name={selectedPlayers.length === allPlayers?.filter(player => 
                                         !members.some(member => member.player_id === player.id)
                                     ).length ? "check-square" : "square"} 
                                     size={24} 
@@ -411,14 +551,14 @@ export default function CommunityDetails() {
                         </SelectAllHeader>
 
                         <PlayersList
-                            data={allPlayers.filter(player => 
+                            data={allPlayers?.filter(player => 
                                 !members.some(member => member.player_id === player.id)
-                            )}
-                            keyExtractor={(item) => item.id}
+                            ) || []}
+                            keyExtractor={item => item.id}
                             renderItem={({ item }) => (
                                 <PlayerCard 
-                                    onPress={() => handleSelectPlayer(item.id)}
                                     selected={selectedPlayers.includes(item.id)}
+                                    onPress={() => handleSelectPlayer(item.id)}
                                 >
                                     <PlayerInfo>
                                         <PlayerName>{item.name}</PlayerName>
@@ -426,7 +566,7 @@ export default function CommunityDetails() {
                                     <Feather 
                                         name={selectedPlayers.includes(item.id) ? "check-square" : "square"} 
                                         size={24} 
-                                        color={selectedPlayers.includes(item.id) ? colors.primary : colors.gray300} 
+                                        color={colors.primary} 
                                     />
                                 </PlayerCard>
                             )}
@@ -437,20 +577,14 @@ export default function CommunityDetails() {
                             }
                         />
 
-                        <SaveButton 
+                        <ModalButton 
                             onPress={handleSaveMembers}
-                            disabled={selectedPlayers.length === 0 || loading}
+                            disabled={selectedPlayers.length === 0}
                         >
-                            {loading ? (
-                                <ActivityIndicator color={colors.white} />
-                            ) : (
-                                <SaveButtonText>
-                                    Adicionar {selectedPlayers.length} {selectedPlayers.length === 1 ? 'membro' : 'membros'}
-                                </SaveButtonText>
-                            )}
-                        </SaveButton>
-                    </ModalContent>
-                </ModalContainer>
+                            <ModalButtonText>Adicionar Selecionados</ModalButtonText>
+                        </ModalButton>
+                    </MembersModalContent>
+                </MembersModalContainer>
             </Modal>
         </Container>
     );
@@ -568,18 +702,85 @@ const MemberName = styled.Text`
     font-weight: 500;
 `;
 
-const ModalContainer = styled.View`
-    flex: 1;
-    background-color: rgba(0, 0, 0, 0.5);
-    justify-content: flex-end;
+const OrganizersSection = styled.View`
+    margin-top: 24px;
 `;
 
-const ModalContent = styled.View`
-    background-color: ${colors.backgroundDark};
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
+const OrganizersListContainer = styled.View`
+    margin-top: 16px;
+`;
+
+const OrganizersListScrollView = styled.ScrollView`
+    max-height: 200px;
+`;
+
+const OrganizerCard = styled.View`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background-color: ${colors.gray800};
+    border-radius: 8px;
+    margin-bottom: 8px;
+`;
+
+const OrganizerInfo = styled.View`
+    flex: 1;
+`;
+
+const OrganizerName = styled.Text`
+    color: ${colors.gray100};
+    font-size: 16px;
+    font-weight: bold;
+`;
+
+const OrganizerEmail = styled.Text`
+    color: ${colors.gray300};
+    font-size: 14px;
+    margin-top: 4px;
+`;
+
+const RemoveOrganizerButton = styled.TouchableOpacity`
+    padding: 8px;
+    background-color: ${colors.red500};
+    border-radius: 4px;
+    margin-left: auto;
+`;
+
+const OrganizersSectionHeader = styled.View`
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+`;
+
+const AddButton = styled.TouchableOpacity`
+    background-color: ${colors.primary};
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    justify-content: center;
+    align-items: center;
+`;
+
+const ModalOverlay = styled.View`
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.8);
     padding: 20px;
-    height: 80%;
+`;
+
+const ModalCard = styled.View`
+    background-color: ${colors.gray800};
+    padding: 20px;
+    border-radius: 12px;
+    width: 100%;
+    shadow-color: #000;
+    shadow-offset: 0px 2px;
+    shadow-opacity: 0.25;
+    shadow-radius: 3.84px;
+    elevation: 5;
 `;
 
 const ModalHeader = styled.View`
@@ -591,45 +792,27 @@ const ModalHeader = styled.View`
 
 const ModalTitle = styled.Text`
     font-size: 20px;
+    color: ${colors.white};
     font-weight: bold;
-    color: ${colors.gray100};
 `;
 
-const PlayersList = styled.FlatList`
-    flex: 1;
+const CloseButton = styled.TouchableOpacity`
+    padding: 5px;
 `;
 
-const PlayerCard = styled.TouchableOpacity<{ selected: boolean }>`
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
-    background-color: ${props => props.selected ? colors.primary + '20' : colors.secondary};
+const ModalButton = styled.TouchableOpacity`
+    background-color: ${colors.primary};
+    padding: 12px;
     border-radius: 8px;
-    margin-bottom: 8px;
-`;
-
-const PlayerInfo = styled.View`
-    flex: 1;
-`;
-
-const PlayerName = styled.Text`
-    font-size: 16px;
-    color: ${colors.gray100};
-    font-weight: 500;
-`;
-
-const EmptyContainer = styled.View`
-    flex: 1;
-    justify-content: center;
     align-items: center;
-    padding: 20px;
+    justify-content: center;
+    opacity: ${props => props.disabled ? 0.7 : 1};
 `;
 
-const EmptyText = styled.Text`
-    color: ${colors.gray300};
+const ModalButtonText = styled.Text`
+    color: ${colors.white};
     font-size: 16px;
-    text-align: center;
+    font-weight: bold;
 `;
 
 const FAB = styled.TouchableOpacity`
@@ -751,7 +934,6 @@ const SaveButton = styled.TouchableOpacity<{ disabled?: boolean }>`
     align-items: center;
     justify-content: center;
     opacity: ${props => props.disabled ? 0.7 : 1};
-    margin-top: 16px;
 `;
 
 const SaveButtonText = styled.Text`
@@ -761,10 +943,9 @@ const SaveButtonText = styled.Text`
 `;
 
 const SelectAllHeader = styled.View`
-    flex-direction: row;
-    justify-content: flex-end;
-    padding: 8px 0;
-    margin-bottom: 8px;
+    padding: 16px;
+    border-bottom-width: 1px;
+    border-bottom-color: ${colors.gray800};
 `;
 
 const SelectAllButton = styled.TouchableOpacity`
@@ -800,56 +981,50 @@ const RemoveButtonText = styled.Text`
     font-weight: bold;
 `;
 
-const ShowMoreButton = styled.TouchableOpacity`
-    margin-top: 8px;
-`;
-
-const ShowMoreContainer = styled.View`
-    flex-direction: row;
-    align-items: center;
+const EmptyContainer = styled.View`
+    flex: 1;
     justify-content: center;
-    padding: 8px;
-`;
-
-const ShowMoreText = styled.Text`
-    color: ${colors.primary};
-    font-size: 16px;
-    margin-left: 4px;
-`;
-
-const ButtonsContainer = styled.View`
-    flex-direction: row;
-    gap: 8px;
-`;
-
-const InputContainer = styled.View`
-    margin: 16px;
-    background-color: ${colors.gray800};
-    border-radius: 8px;
-    padding: 4px;
-`;
-
-const Input = styled.TextInput`
-    color: ${colors.gray100};
-    padding: 8px;
-    font-size: 16px;
-`;
-
-const AddButton = styled.TouchableOpacity`
-    background-color: ${colors.primary};
-    padding: 12px;
-    border-radius: 8px;
-    margin: 16px;
     align-items: center;
-    opacity: ${props => props.disabled ? 0.5 : 1};
+    padding: 20px;
 `;
 
-const AddButtonText = styled.Text`
-    color: ${colors.white};
+const EmptyText = styled.Text`
+    color: ${colors.gray300};
     font-size: 16px;
-    font-weight: bold;
+    text-align: center;
 `;
 
-const CloseButton = styled.TouchableOpacity`
-    padding: 8px;
+const PlayersList = styled.FlatList`
+    flex: 1;
+`;
+
+const PlayerCard = styled.TouchableOpacity<{ selected: boolean }>`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background-color: ${props => props.selected ? colors.primary + '20' : colors.secondary};
+    border-radius: 8px;
+    margin-bottom: 8px;
+`;
+
+const PlayerInfo = styled.View`
+    flex: 1;
+`;
+
+const PlayerName = styled.Text`
+    font-size: 16px;
+    color: ${colors.gray100};
+    font-weight: 500;
+`;
+
+const MembersModalContainer = styled(ModalOverlay)`
+    justify-content: flex-end;
+`;
+
+const MembersModalContent = styled(ModalCard)`
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    height: 80%;
+    width: 100%;
 `;

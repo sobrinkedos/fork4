@@ -9,6 +9,7 @@ export interface Community {
     updated_at: string;
     members_count: number;
     games_count: number;
+    is_organizer?: boolean;
 }
 
 export interface CreateCommunityDTO {
@@ -45,60 +46,68 @@ class CommunityService {
 
     async list() {
         try {
-            // Busca as comunidades com contagem de membros
-            const { data: communities, error: communitiesError } = await supabase
+            const userId = (await supabase.auth.getUser()).data.user?.id;
+            if (!userId) throw new Error('Usuário não autenticado');
+
+            console.log('Buscando comunidades para o usuário:', userId);
+
+            // Busca todas as comunidades onde o usuário é criador
+            const { data: createdCommunities = [], error: createdError } = await supabase
                 .from('communities')
                 .select(`
                     *,
                     members:community_members(count)
                 `)
-                .order('name');
+                .eq('created_by', userId);
 
-            if (communitiesError) {
-                console.error('Erro ao listar comunidades:', communitiesError);
+            if (createdError) {
+                console.error('Erro ao listar comunidades criadas:', createdError);
                 throw new Error('Erro ao listar comunidades');
             }
 
-            // Para cada comunidade, busca suas competições
-            const communitiesPromises = communities.map(async (community) => {
-                const { data: competitions, error: competitionsError } = await supabase
-                    .from('competitions')
-                    .select('id')
-                    .eq('community_id', community.id);
+            // Primeiro busca os IDs das comunidades onde o usuário é organizador
+            const { data: organizedIds = [], error: organizedIdsError } = await supabase
+                .from('community_organizers')
+                .select('community_id')
+                .eq('user_id', userId);
 
-                if (competitionsError) {
-                    console.error('Erro ao buscar competições:', competitionsError);
-                    return { ...community, games_count: 0 };
-                }
+            if (organizedIdsError) {
+                console.error('Erro ao buscar IDs de comunidades organizadas:', organizedIdsError);
+                throw new Error('Erro ao listar comunidades');
+            }
 
-                // Para cada competição, busca seus jogos
-                const gamesPromises = competitions?.map(async (competition) => {
-                    const { data: games, error: gamesError } = await supabase
-                        .from('games')
-                        .select('id')
-                        .eq('competition_id', competition.id);
+            // Depois busca os detalhes dessas comunidades
+            const { data: organizedCommunities = [], error: organizedError } = await supabase
+                .from('communities')
+                .select(`
+                    id,
+                    name,
+                    description,
+                    created_at,
+                    created_by,
+                    members:community_members(count)
+                `)
+                .in('id', organizedIds.map(org => org.community_id));
 
-                    if (gamesError) {
-                        console.error('Erro ao buscar jogos:', gamesError);
-                        return 0;
-                    }
+            if (organizedError) {
+                console.error('Erro ao listar comunidades organizadas:', organizedError);
+                throw new Error('Erro ao listar comunidades');
+            }
 
-                    return games?.length || 0;
-                }) || [];
+            // Combina as comunidades e remove duplicatas
+            const allCommunities = [
+                ...createdCommunities.map(c => ({ ...c, is_organizer: false })),
+                ...organizedCommunities.map(c => ({ ...c, is_organizer: true }))
+            ];
 
-                const gamesCounts = await Promise.all(gamesPromises);
-                const totalGames = gamesCounts.reduce((acc, count) => acc + count, 0);
+            console.log('Todas as comunidades:', allCommunities);
 
-                return {
-                    ...community,
-                    members_count: community.members[0]?.count || 0,
-                    games_count: totalGames
-                };
-            });
+            return allCommunities.map(community => ({
+                ...community,
+                members_count: community.members?.[0]?.count || 0,
+                games_count: 0
+            }));
 
-            const communitiesWithCounts = await Promise.all(communitiesPromises);
-            this.communities = communitiesWithCounts;
-            return communitiesWithCounts;
         } catch (error) {
             console.error('Erro ao listar comunidades:', error);
             throw error;

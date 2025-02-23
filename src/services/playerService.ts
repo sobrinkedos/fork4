@@ -75,18 +75,58 @@ class PlayerService {
 
     async list() {
         try {
-            const { data, error } = await supabase
+            // Buscar jogadores criados pelo usuário
+            const { data: myPlayers, error: myPlayersError } = await supabase
                 .from('players')
                 .select('*')
+                .eq('created_by', (await supabase.auth.getUser()).data.user?.id)
                 .order('name');
 
-            if (error) {
-                console.error('Erro ao listar jogadores:', error);
-                throw new Error('Erro ao listar jogadores');
+            if (myPlayersError) {
+                console.error('Erro ao buscar meus jogadores:', myPlayersError);
+                throw myPlayersError;
             }
 
-            this.players = data;
-            return data;
+            // Buscar jogadores das comunidades onde sou organizador
+            const { data: communityPlayers, error: communityPlayersError } = await supabase
+                .from('players')
+                .select(`
+                    *,
+                    community_members!inner (
+                        community_id,
+                        communities!inner (
+                            id,
+                            community_organizers!inner (
+                                user_id
+                            )
+                        )
+                    )
+                `)
+                .neq('created_by', (await supabase.auth.getUser()).data.user?.id)
+                .eq('community_members.communities.community_organizers.user_id', (await supabase.auth.getUser()).data.user?.id)
+                .order('name');
+
+            if (communityPlayersError) {
+                console.error('Erro ao buscar jogadores das comunidades:', communityPlayersError);
+                throw communityPlayersError;
+            }
+
+            // Remover duplicatas dos jogadores das comunidades
+            const uniqueCommunityPlayers = communityPlayers ? Array.from(new Set(communityPlayers.map(p => p.id)))
+                .map(id => communityPlayers.find(p => p.id === id))
+                .filter(p => p !== undefined)
+                .map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    phone: p.phone,
+                    created_at: p.created_at
+                })) : [];
+
+            this.players = [...myPlayers, ...uniqueCommunityPlayers];
+            return {
+                myPlayers: myPlayers || [],
+                communityPlayers: uniqueCommunityPlayers
+            };
         } catch (error) {
             console.error('Erro ao listar jogadores:', error);
             throw error;
