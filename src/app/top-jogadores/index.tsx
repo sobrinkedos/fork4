@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
+import { useTheme } from '@/contexts/ThemeProvider';
 import { Header } from '@/components/Header';
 import { PageTransition } from '@/components/Transitions';
 import { rankingService, PlayerRanking } from '@/services/rankingService';
@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
 const Content = styled.View`
@@ -18,7 +18,7 @@ const Content = styled.View`
 `;
 
 const PlayerCard = styled.TouchableOpacity`
-    background-color: ${colors.backgroundMedium};
+    background-color: ${({ theme }) => theme.colors.backgroundMedium};
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 12px;
@@ -31,7 +31,7 @@ const CardHeader = styled.View`
 `;
 
 const Position = styled.Text`
-    color: ${colors.primary};
+    color: ${({ theme }) => theme.colors.primary};
     font-size: 24px;
     font-weight: bold;
     min-width: 40px;
@@ -43,7 +43,7 @@ const PlayerInfo = styled.View`
 `;
 
 const PlayerName = styled.Text`
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.gray100};
     font-size: 18px;
     font-weight: bold;
 `;
@@ -53,7 +53,7 @@ const StatsContainer = styled.View`
     justify-content: space-between;
     padding-top: 12px;
     border-top-width: 1px;
-    border-top-color: ${colors.backgroundLight};
+    border-top-color: ${({ theme }) => theme.colors.backgroundLight};
 `;
 
 const StatItem = styled.View`
@@ -62,13 +62,13 @@ const StatItem = styled.View`
 `;
 
 const StatValue = styled.Text`
-    color: ${colors.primary};
+    color: ${({ theme }) => theme.colors.primary};
     font-size: 16px;
     font-weight: bold;
 `;
 
 const StatLabel = styled.Text`
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.gray300};
     font-size: 12px;
     margin-top: 4px;
     text-align: center;
@@ -89,7 +89,7 @@ const ErrorContainer = styled.View`
 `;
 
 const ErrorText = styled.Text`
-    color: ${colors.error};
+    color: ${({ theme }) => theme.colors.error};
     font-size: 16px;
     text-align: center;
 `;
@@ -102,41 +102,40 @@ const EmptyContainer = styled.View`
 `;
 
 const EmptyText = styled.Text`
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.gray300};
     font-size: 16px;
     text-align: center;
 `;
 
 export default function TopJogadores() {
-    const router = useRouter();
-    const [players, setPlayers] = useState<PlayerRanking[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+  const [players, setPlayers] = useState<PlayerRanking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const theme = useTheme();
 
-    useEffect(() => {
-        loadPlayers();
-    }, []);
+  useEffect(() => {
+    loadPlayers();
+  }, []);
 
-    const loadPlayers = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const rankings = await rankingService.getTopPlayers();
-            setPlayers(rankings);
-        } catch (error) {
-            console.error('TopJogadores: Erro ao carregar jogadores:', error);
-            setError('Não foi possível carregar o ranking de jogadores');
-        } finally {
-            setLoading(false);
-        }
-    };
+  async function loadPlayers() {
+    try {
+      const data = await rankingService.getTopPlayers();
+      setPlayers(data);
+    } catch (error) {
+      console.error('Erro ao carregar jogadores:', error);
+      setError('Erro ao carregar jogadores. Tente novamente mais tarde.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
     if (loading) {
         return (
             <Container>
                 <Header title="Top Jogadores" showBackButton />
                 <LoadingContainer>
-                    <ActivityIndicator size="large" color={colors.primary} />
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
                 </LoadingContainer>
             </Container>
         );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Alert, Modal, TouchableOpacity, ActivityIndicator, Animated, TextInput, View, Text } from 'react-native';
+import { Alert, Modal, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
@@ -9,6 +9,16 @@ import { communityMembersService } from '@/services/communityMembersService';
 import { playersService } from '@/services/playersService';
 import { competitionService } from '@/services/competitionService';
 import { communityOrganizerService } from '@/services/communityOrganizerService';
+
+type CommunityOrganizer = {
+    id: string;
+    community_id: string;
+    user_id: string;
+    user_profile?: {
+        name: string;
+        email: string;
+    };
+};
 
 type Community = {
     id: string;
@@ -39,18 +49,349 @@ type Competition = {
     start_date: string;
 };
 
-interface CommunityOrganizer {
-    id: string;
-    community_id: string;
-    user_id: string;
-    created_by: string;
-    created_at: string;
-    updated_at: string;
-    user_profile?: {
-        name: string;
-        email: string;
-    };
-}
+const Container = styled.View`
+    flex: 1;
+    background-color: ${colors.background};
+`;
+
+const PageHeader = styled.View`
+    padding: 24px;
+    background-color: ${colors.background};
+    border-bottom-width: 1px;
+    border-bottom-color: ${colors.gray200};
+`;
+
+const BackButton = styled.TouchableOpacity`
+    padding: 8px;
+`;
+
+const HeaderTitle = styled.Text`
+    font-size: 24px;
+    font-weight: bold;
+    color: ${colors.gray100};
+    margin-left: 16px;
+`;
+
+const MainContent = styled.View`
+    padding: 24px;
+`;
+
+const SectionHeader = styled.View`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+`;
+
+const SectionTitle = styled.Text`
+    font-size: 18px;
+    font-weight: bold;
+    color: ${colors.gray100};
+`;
+
+const ExpandButton = styled.TouchableOpacity`
+    padding: 8px;
+`;
+
+const ManageButton = styled.TouchableOpacity`
+    padding: 8px;
+    background-color: ${colors.primary};
+    border-radius: 4px;
+    margin-left: auto;
+`;
+
+const ManageButtonText = styled.Text`
+    color: ${colors.white};
+    font-size: 14px;
+    margin-left: 8px;
+`;
+
+const MembersSection = styled.View`
+    margin-bottom: 24px;
+`;
+
+const MembersListContainer = styled.View`
+    margin-top: 16px;
+`;
+
+const MembersListScrollView = styled.ScrollView`
+    max-height: 200px;
+`;
+
+const MembersList = styled.FlatList`
+    width: 100%;
+`;
+
+const MemberCard = styled.TouchableOpacity`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background-color: ${colors.gray800};
+    border-radius: 8px;
+    margin-bottom: 8px;
+`;
+
+const MemberInfo = styled.View`
+    flex: 1;
+`;
+
+const MemberName = styled.Text`
+    color: ${colors.gray100};
+    font-size: 16px;
+    font-weight: bold;
+`;
+
+const SelectAllHeader = styled.View`
+    margin-bottom: 16px;
+`;
+
+const SelectAllButton = styled.TouchableOpacity`
+    flex-direction: row;
+    align-items: center;
+`;
+
+const SelectAllText = styled.Text`
+    color: ${colors.gray100};
+    font-size: 14px;
+    margin-left: 8px;
+`;
+
+const RemoveButton = styled.TouchableOpacity`
+    padding: 8px;
+    background-color: ${colors.red500};
+    border-radius: 4px;
+    margin-top: 16px;
+`;
+
+const RemoveButtonText = styled.Text`
+    color: ${colors.white};
+    font-size: 14px;
+`;
+
+const OrganizersSection = styled.View`
+    margin-top: 24px;
+`;
+
+const OrganizersListContainer = styled.View`
+    margin-top: 16px;
+`;
+
+const OrganizersListScrollView = styled.ScrollView`
+    max-height: 200px;
+`;
+
+const OrganizersList = styled.FlatList`
+    width: 100%;
+`;
+
+const OrganizerCard = styled.View`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background-color: ${colors.gray800};
+    border-radius: 8px;
+    margin-bottom: 8px;
+`;
+
+const OrganizerInfo = styled.View`
+    flex: 1;
+`;
+
+const OrganizerName = styled.Text`
+    color: ${colors.gray100};
+    font-size: 16px;
+    font-weight: bold;
+`;
+
+const OrganizerEmail = styled.Text`
+    color: ${colors.gray300};
+    font-size: 14px;
+    margin-top: 4px;
+`;
+
+const RemoveOrganizerButton = styled.TouchableOpacity`
+    padding: 8px;
+    background-color: ${colors.red500};
+    border-radius: 4px;
+    margin-left: auto;
+`;
+
+const ModalContainer = styled.View`
+    flex: 1;
+    background-color: ${colors.background};
+    padding: 24px;
+`;
+
+const ModalContent = styled.View`
+    background-color: ${colors.background};
+    padding: 24px;
+    border-radius: 8px;
+`;
+
+const ModalHeader = styled.View`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+`;
+
+const ModalTitle = styled.Text`
+    font-size: 18px;
+    font-weight: bold;
+    color: ${colors.gray100};
+`;
+
+const ModalInput = styled.TextInput`
+    width: 100%;
+    height: 48px;
+    background-color: ${colors.gray800};
+    border-radius: 8px;
+    padding: 0 16px;
+    color: ${colors.gray100};
+    margin-bottom: 16px;
+`;
+
+const SaveButton = styled.TouchableOpacity`
+    padding: 8px;
+    background-color: ${colors.primary};
+    border-radius: 4px;
+`;
+
+const SaveButtonText = styled.Text`
+    color: ${colors.white};
+    font-size: 14px;
+`;
+
+const FAB = styled.TouchableOpacity`
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    padding: 16px;
+    background-color: ${colors.primary};
+    border-radius: 50px;
+`;
+
+const LoadingContainer = styled.View`
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+`;
+
+const EmptyContainer = styled.View`
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+`;
+
+const EmptyText = styled.Text`
+    color: ${colors.gray300};
+    font-size: 14px;
+`;
+
+const PlayerCard = styled.TouchableOpacity`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background-color: ${colors.gray800};
+    border-radius: 8px;
+    margin-bottom: 8px;
+`;
+
+const PlayerInfo = styled.View`
+    flex: 1;
+`;
+
+const PlayerName = styled.Text`
+    color: ${colors.gray100};
+    font-size: 16px;
+    font-weight: bold;
+`;
+
+const PlayersList = styled.FlatList`
+    width: 100%;
+`;
+
+const CompetitionCard = styled.TouchableOpacity`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background-color: ${colors.gray800};
+    border-radius: 8px;
+    margin-bottom: 8px;
+`;
+
+const CompetitionInfo = styled.View`
+    flex: 1;
+`;
+
+const CompetitionName = styled.Text`
+    color: ${colors.gray100};
+    font-size: 16px;
+    font-weight: bold;
+`;
+
+const CompetitionDescription = styled.Text`
+    color: ${colors.gray300};
+    font-size: 14px;
+    margin-top: 4px;
+`;
+
+const CompetitionDetails = styled.View`
+    flex-direction: row;
+    align-items: center;
+    margin-top: 8px;
+`;
+
+const CompetitionDate = styled.View`
+    flex-direction: row;
+    align-items: center;
+    margin-right: 16px;
+`;
+
+const CompetitionDateText = styled.Text`
+    color: ${colors.gray300};
+    font-size: 14px;
+    margin-left: 4px;
+`;
+
+const CompetitionStatus = styled.View`
+    flex-direction: row;
+    align-items: center;
+`;
+
+const StatusBadge = styled.View`
+    padding: 4px 8px;
+    background-color: ${props => props.status === 'pending' ? colors.warning : props.status === 'in_progress' ? colors.primary : colors.success};
+    border-radius: 4px;
+    margin-left: 8px;
+`;
+
+const StatusText = styled.Text`
+    color: ${colors.white};
+    font-size: 12px;
+`;
+
+const Description = styled.Text`
+    color: ${colors.gray300};
+    font-size: 14px;
+    margin-top: 8px;
+`;
+
+const ShowMoreContainer = styled.TouchableOpacity`
+    flex-direction: row;
+    align-items: center;
+    margin-top: 8px;
+`;
+
+const ShowMoreText = styled.Text`
+    color: ${colors.primary};
+    font-size: 14px;
+    margin-left: 4px;
+`;
 
 export default function CommunityDetails() {
     const router = useRouter();
@@ -59,18 +400,75 @@ export default function CommunityDetails() {
     const [members, setMembers] = useState<Member[]>([]);
     const [allPlayers, setAllPlayers] = useState<Player[]>([]);
     const [competitions, setCompetitions] = useState<Competition[]>([]);
-    const [organizers, setOrganizers] = useState<CommunityOrganizer[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [showMembers, setShowMembers] = useState(false);
-    const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-    const [selectedOrganizers, setSelectedOrganizers] = useState<string[]>([]);
-    const [rotateAnim] = useState(new Animated.Value(0));
-    const [addOrganizerModalVisible, setAddOrganizerModalVisible] = useState(false);
-    const [newOrganizerEmail, setNewOrganizerEmail] = useState('');
-    const [addingOrganizer, setAddingOrganizer] = useState(false);
     const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+    const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+    const [rotateAnim] = useState(new Animated.Value(0));
+    const [organizers, setOrganizers] = useState<CommunityOrganizer[]>([]);
+    const [showOrganizers, setShowOrganizers] = useState(false);
+    const [organizerModalVisible, setOrganizerModalVisible] = useState(false);
+    const [organizerEmail, setOrganizerEmail] = useState('');
+    const [rotateOrganizersAnim] = useState(new Animated.Value(0));
+
+    const toggleOrganizers = useCallback(() => {
+        setShowOrganizers(prev => !prev);
+        Animated.timing(rotateOrganizersAnim, {
+            toValue: showOrganizers ? 0 : 1,
+            duration: 200,
+            useNativeDriver: true
+        }).start();
+    }, [showOrganizers, rotateOrganizersAnim]);
+
+    const rotateOrganizers = rotateOrganizersAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '180deg'],
+    });
+
+    const handleAddOrganizer = async () => {
+        if (!community || !organizerEmail) return;
+
+        try {
+            setLoading(true);
+            const { error } = await communityOrganizerService.addOrganizer(community.id, organizerEmail);
+            if (error) throw error;
+
+            const { data: updatedOrganizers } = await communityOrganizerService.listOrganizers(community.id);
+            if (updatedOrganizers) {
+                setOrganizers(updatedOrganizers);
+            }
+
+            setOrganizerModalVisible(false);
+            setOrganizerEmail('');
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Erro', 'Não foi possível adicionar o organizador');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRemoveOrganizer = async (userId: string) => {
+        if (!community) return;
+
+        try {
+            setLoading(true);
+            const { error } = await communityOrganizerService.removeOrganizer(community.id, userId);
+            if (error) throw error;
+
+            const { data: updatedOrganizers } = await communityOrganizerService.listOrganizers(community.id);
+            if (updatedOrganizers) {
+                setOrganizers(updatedOrganizers);
+            }
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Erro', 'Não foi possível remover o organizador');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const toggleMembers = useCallback(() => {
         setShowMembers(prev => !prev);
@@ -91,20 +489,18 @@ export default function CommunityDetails() {
             setLoading(true);
             const communityData = await communityService.getById(params.id as string);
             const membersData = await communityMembersService.listMembers(params.id as string);
-            const { myPlayers, communityPlayers } = await playersService.list();
+            const playersData = await playersService.list();
             const competitionsData = await competitionService.listByCommunity(params.id as string);
-            const { data: organizersData } = await communityOrganizerService.listOrganizers(params.id as string);
 
             setCommunity(communityData);
             setMembers(membersData);
-            setAllPlayers([...myPlayers, ...communityPlayers]);
+            setAllPlayers(playersData);
             setCompetitions(competitionsData);
-            setOrganizers(organizersData || []);
         } catch (error) {
-            console.error('Erro ao carregar dados:', error);
-            Alert.alert('Erro', 'Erro ao carregar dados da comunidade');
+            console.error(error);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
@@ -136,103 +532,6 @@ export default function CommunityDetails() {
         }
     };
 
-    const handleSelectMember = (memberId: string) => {
-        setSelectedMembers(prev => {
-            if (prev.includes(memberId)) {
-                return prev.filter(id => id !== memberId);
-            }
-            return [...prev, memberId];
-        });
-    };
-
-    const handleSelectAllMembers = () => {
-        if (selectedMembers.length === members.length) {
-            setSelectedMembers([]);
-        } else {
-            setSelectedMembers(members.map(member => member.player_id));
-        }
-    };
-
-    const navigateToRanking = () => {
-    if (community) {
-        router.push(`/comunidade/${community.id}/ranking`);
-    }
-};
-
-const handleRemoveMembers = async () => {
-        if (!community || selectedMembers.length === 0) return;
-
-        try {
-            setLoading(true);
-            for (const memberId of selectedMembers) {
-                await communityMembersService.removeMember(community.id, memberId);
-            }
-            setSelectedMembers([]);
-            await loadData();
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Erro', 'Não foi possível remover os membros');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSelectOrganizer = (organizerId: string) => {
-        setSelectedOrganizers(prev => {
-            if (prev.includes(organizerId)) {
-                return prev.filter(id => id !== organizerId);
-            }
-            return [...prev, organizerId];
-        });
-    };
-
-    const handleRemoveOrganizer = async (userId: string) => {
-        if (!community) return;
-
-        try {
-            setLoading(true);
-            const { error } = await communityOrganizerService.removeOrganizer(community.id, userId);
-            
-            if (error) {
-                Alert.alert('Erro', error.message);
-                return;
-            }
-
-            Alert.alert('Sucesso', 'Organizador removido com sucesso');
-            await loadData();
-        } catch (error: any) {
-            Alert.alert('Erro', error.message || 'Erro ao remover organizador');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleAddOrganizer = async () => {
-        if (!newOrganizerEmail) {
-            Alert.alert('Erro', 'Por favor, insira um email válido');
-            return;
-        }
-
-        try {
-            setAddingOrganizer(true);
-            const { error } = await communityOrganizerService.addOrganizer(params.id as string, newOrganizerEmail);
-            
-            if (error) {
-                Alert.alert('Erro', error.message);
-                return;
-            }
-
-            Alert.alert('Sucesso', 'Organizador adicionado com sucesso');
-            setNewOrganizerEmail('');
-            setAddOrganizerModalVisible(false);
-            loadData(); // Recarrega a lista de organizadores
-        } catch (error: any) {
-            Alert.alert('Erro', error.message || 'Erro ao adicionar organizador');
-        } finally {
-            setAddingOrganizer(false);
-        }
-    };
-
     const handleSelectPlayer = (playerId: string) => {
         setSelectedPlayers(prev => {
             if (prev.includes(playerId)) {
@@ -243,9 +542,9 @@ const handleRemoveMembers = async () => {
     };
 
     const handleSelectAll = () => {
-        const availablePlayers = allPlayers?.filter(player => 
+        const availablePlayers = allPlayers.filter(player => 
             !members.some(member => member.player_id === player.id)
-        ) || [];
+        );
         
         if (selectedPlayers.length === availablePlayers.length) {
             setSelectedPlayers([]);
@@ -271,6 +570,41 @@ const handleRemoveMembers = async () => {
         }
     };
 
+    const handleSelectMember = (memberId: string) => {
+        setSelectedMembers(prev => {
+            if (prev.includes(memberId)) {
+                return prev.filter(id => id !== memberId);
+            }
+            return [...prev, memberId];
+        });
+    };
+
+    const handleSelectAllMembers = () => {
+        if (selectedMembers.length === members.length) {
+            setSelectedMembers([]);
+        } else {
+            setSelectedMembers(members.map(member => member.player_id));
+        }
+    };
+
+    const handleRemoveMembers = async () => {
+        if (!community || selectedMembers.length === 0) return;
+
+        try {
+            setLoading(true);
+            for (const memberId of selectedMembers) {
+                await communityMembersService.removeMember(community.id, memberId);
+            }
+            setSelectedMembers([]);
+            await loadData();
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Erro', 'Não foi possível remover os membros');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading || !community) {
         return (
             <Container>
@@ -288,9 +622,6 @@ const handleRemoveMembers = async () => {
                     <Feather name="arrow-left" size={24} color={colors.gray100} />
                 </BackButton>
                 <HeaderTitle>{community.name}</HeaderTitle>
-                <TouchableOpacity onPress={navigateToRanking} style={{ marginLeft: 'auto' }}>
-                    <Feather name="award" size={24} color={colors.gray100} />
-                </TouchableOpacity>
             </PageHeader>
 
             <MainContent>
@@ -303,6 +634,12 @@ const handleRemoveMembers = async () => {
                         <Description numberOfLines={2}>
                             {community.description}
                         </Description>
+                        {community.description.length > 80 && (
+                            <ShowMoreContainer>
+                                <Feather name="chevron-down" size={20} color={colors.primary} />
+                                <ShowMoreText>Ver mais</ShowMoreText>
+                            </ShowMoreContainer>
+                        )}
                     </>
                 )}
 
@@ -345,7 +682,7 @@ const handleRemoveMembers = async () => {
                                             selected={selectedMembers.includes(item.player_id)}
                                         >
                                             <MemberInfo>
-                                                <MemberName>{item.players?.name || 'Jogador não encontrado'}</MemberName>
+                                                <MemberName>{item.players.name}</MemberName>
                                             </MemberInfo>
                                             <Feather 
                                                 name={selectedMembers.includes(item.player_id) ? "check-square" : "square"} 
@@ -381,90 +718,54 @@ const handleRemoveMembers = async () => {
                 </MembersSection>
 
                 <OrganizersSection>
-                    <OrganizersSectionHeader>
-                        <SectionTitle>Organizadores</SectionTitle>
-                        <AddButton onPress={() => setAddOrganizerModalVisible(true)}>
-                            <Feather name="plus" size={24} color={colors.white} />
-                        </AddButton>
-                    </OrganizersSectionHeader>
-                    
-                    <OrganizersListContainer>
-                        <OrganizersListScrollView>
-                            {organizers.map((organizer) => (
-                                <OrganizerCard key={organizer.id}>
-                                    <OrganizerInfo>
-                                        <OrganizerName>{organizer.user_profile?.name || 'Usuário não encontrado'}</OrganizerName>
-                                        <OrganizerEmail>{organizer.user_profile?.email || 'Email não encontrado'}</OrganizerEmail>
-                                    </OrganizerInfo>
-                                    <RemoveOrganizerButton 
-                                        onPress={() => handleRemoveOrganizer(organizer.user_id)}
-                                        disabled={loading}
-                                    >
-                                        {loading ? (
-                                            <ActivityIndicator size="small" color={colors.white} />
-                                        ) : (
-                                            <Feather name="trash-2" size={20} color={colors.white} />
-                                        )}
-                                    </RemoveOrganizerButton>
-                                </OrganizerCard>
-                            ))}
-                        </OrganizersListScrollView>
-                    </OrganizersListContainer>
-
-                    <Modal
-                        animationType="slide"
-                        transparent={true}
-                        visible={addOrganizerModalVisible}
-                        onRequestClose={() => setAddOrganizerModalVisible(false)}
-                    >
-                        <ModalOverlay>
-                            <ModalCard>
-                                <ModalHeader>
-                                    <ModalTitle>Adicionar Organizador</ModalTitle>
-                                    <CloseButton onPress={() => setAddOrganizerModalVisible(false)}>
-                                        <Feather name="x" size={24} color={colors.white} />
-                                    </CloseButton>
-                                </ModalHeader>
-
-                                <View style={{
-                                    backgroundColor: '#1A1A1A',
-                                    borderRadius: 8,
-                                    marginBottom: 16,
-                                }}>
-                                    <TextInput
-                                        placeholder="Email do organizador"
-                                        value={newOrganizerEmail}
-                                        onChangeText={setNewOrganizerEmail}
-                                        autoCapitalize="none"
-                                        keyboardType="email-address"
-                                        style={{
-                                            color: '#FFFFFF',
-                                            fontSize: 16,
-                                            padding: 16,
-                                        }}
-                                        placeholderTextColor="#666666"
-                                    />
-                                </View>
-
-                                <ModalButton 
-                                    onPress={handleAddOrganizer}
-                                    disabled={addingOrganizer}
-                                >
-                                    {addingOrganizer ? (
-                                        <ActivityIndicator color={colors.white} />
-                                    ) : (
-                                        <ModalButtonText>Adicionar</ModalButtonText>
+                    <SectionHeader>
+                        <HeaderLeft>
+                            <SectionTitle>Organizadores</SectionTitle>
+                            <ExpandButton onPress={toggleOrganizers}>
+                                <Animated.View style={{ transform: [{ rotate: rotateOrganizers }] }}>
+                                    <Feather name="chevron-down" size={24} color={colors.gray300} />
+                                </Animated.View>
+                            </ExpandButton>
+                        </HeaderLeft>
+                        <ManageButton onPress={() => setOrganizerModalVisible(true)}>
+                            <ManageButtonText>Adicionar</ManageButtonText>
+                            <Feather name="user-plus" size={20} color={colors.gray100} />
+                        </ManageButton>
+                    </SectionHeader>
+                    {showOrganizers && (
+                        <OrganizersListContainer>
+                            <OrganizersListScrollView>
+                                <OrganizersList
+                                    data={organizers}
+                                    keyExtractor={(item) => item.id}
+                                    renderItem={({ item }) => (
+                                        <OrganizerCard>
+                                            <OrganizerInfo>
+                                                <OrganizerName>{item.user_profile?.name}</OrganizerName>
+                                                <OrganizerEmail>{item.user_profile?.email}</OrganizerEmail>
+                                            </OrganizerInfo>
+                                            <RemoveOrganizerButton
+                                                onPress={() => handleRemoveOrganizer(item.user_id)}
+                                                disabled={loading}
+                                            >
+                                                <Feather name="x" size={20} color={colors.error} />
+                                            </RemoveOrganizerButton>
+                                        </OrganizerCard>
                                     )}
-                                </ModalButton>
-                            </ModalCard>
-                        </ModalOverlay>
-                    </Modal>
+                                    ListEmptyComponent={
+                                        <EmptyContainer>
+                                            <EmptyText>Nenhum organizador encontrado</EmptyText>
+                                        </EmptyContainer>
+                                    }
+                                    scrollEnabled={false}
+                                />
+                            </OrganizersListScrollView>
+                        </OrganizersListContainer>
+                    )}
                 </OrganizersSection>
-
                 <SectionHeader>
                     <SectionTitle>Competições</SectionTitle>
                 </SectionHeader>
-
                 <CompetitionsList
                     data={competitions}
                     keyExtractor={(item) => item.id}
@@ -521,35 +822,36 @@ const handleRemoveMembers = async () => {
                     }
                 />
             </MainContent>
-
             <FAB onPress={() => router.push({
                 pathname: '/comunidade/[id]/competicao/nova',
                 params: { id: community.id }
             })}>
                 <Feather name="plus" size={24} color={colors.gray100} />
             </FAB>
-
             <Modal
                 animationType="slide"
                 transparent={true}
                 visible={modalVisible}
                 onRequestClose={() => {
                     setModalVisible(false);
+                    setSelectedPlayers([]);
                 }}
             >
-                <MembersModalContainer>
-                    <MembersModalContent>
+                <ModalContainer>
+                    <ModalContent>
                         <ModalHeader>
                             <ModalTitle>Adicionar Membros</ModalTitle>
-                            <CloseButton onPress={() => setModalVisible(false)}>
-                                <Feather name="x" size={24} color={colors.white} />
-                            </CloseButton>
+                            <TouchableOpacity onPress={() => {
+                                setModalVisible(false);
+                                setSelectedPlayers([]);
+                            }}>
+                                <Feather name="x" size={24} color={colors.gray100} />
+                            </TouchableOpacity>
                         </ModalHeader>
-
                         <SelectAllHeader>
                             <SelectAllButton onPress={handleSelectAll}>
                                 <Feather 
-                                    name={selectedPlayers.length === allPlayers?.filter(player => 
+                                    name={selectedPlayers.length === allPlayers.filter(player => 
                                         !members.some(member => member.player_id === player.id)
                                     ).length ? "check-square" : "square"} 
                                     size={24} 
@@ -558,16 +860,15 @@ const handleRemoveMembers = async () => {
                                 <SelectAllText>Selecionar Todos</SelectAllText>
                             </SelectAllButton>
                         </SelectAllHeader>
-
                         <PlayersList
-                            data={allPlayers?.filter(player => 
+                            data={allPlayers.filter(player => 
                                 !members.some(member => member.player_id === player.id)
-                            ) || []}
-                            keyExtractor={item => item.id}
+                            )}
+                            keyExtractor={(item) => item.id}
                             renderItem={({ item }) => (
                                 <PlayerCard 
-                                    selected={selectedPlayers.includes(item.id)}
                                     onPress={() => handleSelectPlayer(item.id)}
+                                    selected={selectedPlayers.includes(item.id)}
                                 >
                                     <PlayerInfo>
                                         <PlayerName>{item.name}</PlayerName>
@@ -575,7 +876,7 @@ const handleRemoveMembers = async () => {
                                     <Feather 
                                         name={selectedPlayers.includes(item.id) ? "check-square" : "square"} 
                                         size={24} 
-                                        color={colors.primary} 
+                                        color={selectedPlayers.includes(item.id) ? colors.primary : colors.gray300} 
                                     />
                                 </PlayerCard>
                             )}
@@ -585,449 +886,21 @@ const handleRemoveMembers = async () => {
                                 </EmptyContainer>
                             }
                         />
-
-                        <ModalButton 
+                        <SaveButton 
                             onPress={handleSaveMembers}
-                            disabled={selectedPlayers.length === 0}
+                            disabled={selectedPlayers.length === 0 || loading}
                         >
-                            <ModalButtonText>Adicionar Selecionados</ModalButtonText>
-                        </ModalButton>
-                    </MembersModalContent>
-                </MembersModalContainer>
+                            {loading ? (
+                                <ActivityIndicator color={colors.white} />
+                            ) : (
+                                <SaveButtonText>
+                                    Adicionar {selectedPlayers.length} {selectedPlayers.length === 1 ? 'membro' : 'membros'}
+                                </SaveButtonText>
+                            )}
+                        </SaveButton>
+                    </ModalContent>
+                </ModalContainer>
             </Modal>
         </Container>
     );
 }
-
-const Container = styled.View`
-    flex: 1;
-    background-color: ${colors.backgroundDark};
-`;
-
-const LoadingContainer = styled.View`
-    flex: 1;
-    justify-content: center;
-    align-items: center;
-`;
-
-const PageHeader = styled.View`
-    padding: 20px;
-    background-color: ${colors.secondary};
-    padding-top: 60px;
-    flex-direction: row;
-    align-items: center;
-`;
-
-const BackButton = styled.TouchableOpacity`
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
-    color: ${colors.gray100};
-    flex: 1;
-`;
-
-const MainContent = styled.View`
-    flex: 1;
-    padding: 20px;
-`;
-
-const SectionHeader = styled.View`
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    margin-top: 16px;
-`;
-
-const SectionTitle = styled.Text`
-    font-size: 18px;
-    font-weight: bold;
-    color: ${colors.gray100};
-`;
-
-const Description = styled.Text`
-    font-size: 16px;
-    color: ${colors.gray300};
-    margin-bottom: 24px;
-`;
-
-const MembersSection = styled.View`
-    margin-top: 24px;
-`;
-
-const MembersHeader = styled.TouchableOpacity`
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    background-color: ${colors.secondary};
-    border-radius: 8px;
-`;
-
-const HeaderLeft = styled.View`
-    flex-direction: row;
-    align-items: center;
-`;
-
-const AnimatedIcon = styled(Animated.View)`
-    margin-left: 8px;
-`;
-
-const MembersListContainer = styled.View`
-    margin-top: 8px;
-    background-color: ${colors.secondary};
-    border-radius: 8px;
-    padding: 12px;
-`;
-
-const MembersListScrollView = styled.ScrollView`
-    max-height: 300px;
-`;
-
-const MembersList = styled.FlatList`
-    flex-grow: 0;
-`;
-
-const MemberCard = styled.TouchableOpacity<{ selected: boolean }>`
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px;
-    background-color: ${props => props.selected ? colors.error + '20' : colors.backgroundDark};
-    border-radius: 8px;
-    margin-bottom: 8px;
-`;
-
-const MemberInfo = styled.View`
-    flex: 1;
-`;
-
-const MemberName = styled.Text`
-    font-size: 16px;
-    color: ${colors.gray100};
-    font-weight: 500;
-`;
-
-const OrganizersSection = styled.View`
-    margin-top: 24px;
-`;
-
-const OrganizersListContainer = styled.View`
-    margin-top: 16px;
-`;
-
-const OrganizersListScrollView = styled.ScrollView`
-    max-height: 200px;
-`;
-
-const OrganizerCard = styled.View`
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px;
-    background-color: ${colors.gray800};
-    border-radius: 8px;
-    margin-bottom: 8px;
-`;
-
-const OrganizerInfo = styled.View`
-    flex: 1;
-`;
-
-const OrganizerName = styled.Text`
-    color: ${colors.gray100};
-    font-size: 16px;
-    font-weight: bold;
-`;
-
-const OrganizerEmail = styled.Text`
-    color: ${colors.gray300};
-    font-size: 14px;
-    margin-top: 4px;
-`;
-
-const RemoveOrganizerButton = styled.TouchableOpacity`
-    padding: 8px;
-    background-color: ${colors.red500};
-    border-radius: 4px;
-    margin-left: auto;
-`;
-
-const OrganizersSectionHeader = styled.View`
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-`;
-
-const AddButton = styled.TouchableOpacity`
-    background-color: ${colors.primary};
-    width: 40px;
-    height: 40px;
-    border-radius: 20px;
-    justify-content: center;
-    align-items: center;
-`;
-
-const ModalOverlay = styled.View`
-    flex: 1;
-    justify-content: center;
-    align-items: center;
-    background-color: rgba(0, 0, 0, 0.8);
-    padding: 20px;
-`;
-
-const ModalCard = styled.View`
-    background-color: ${colors.gray800};
-    padding: 20px;
-    border-radius: 12px;
-    width: 100%;
-    box-shadow: 0px 2px 3.84px rgba(0, 0, 0, 0.25);
-    elevation: 5;
-`;
-
-const ModalHeader = styled.View`
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-`;
-
-const ModalTitle = styled.Text`
-    font-size: 20px;
-    color: ${colors.white};
-    font-weight: bold;
-`;
-
-const CloseButton = styled.TouchableOpacity`
-    padding: 5px;
-`;
-
-const ModalButton = styled.TouchableOpacity`
-    background-color: ${colors.primary};
-    padding: 12px;
-    border-radius: 8px;
-    align-items: center;
-    justify-content: center;
-    opacity: ${props => props.disabled ? 0.7 : 1};
-`;
-
-const ModalButtonText = styled.Text`
-    color: ${colors.white};
-    font-size: 16px;
-    font-weight: bold;
-`;
-
-const FAB = styled.TouchableOpacity`
-    position: absolute;
-    right: 16px;
-    bottom: 16px;
-    width: 56px;
-    height: 56px;
-    border-radius: 28px;
-    background-color: ${colors.primary};
-    align-items: center;
-    justify-content: center;
-    elevation: 5;
-    box-shadow: 0px 2px 3.84px ${colors.primary};
-`;
-
-const ManageButton = styled.TouchableOpacity`
-    flex-direction: row;
-    align-items: center;
-    background-color: ${colors.primary};
-    padding: 8px 16px;
-    border-radius: 8px;
-`;
-
-const ManageButtonText = styled.Text`
-    color: ${colors.gray100};
-    font-size: 14px;
-    font-weight: 500;
-    margin-right: 8px;
-`;
-
-const CompetitionsList = styled.FlatList`
-    flex-grow: 0;
-    margin-top: 8px;
-`;
-
-const CompetitionCard = styled.TouchableOpacity`
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
-    background-color: ${colors.secondary};
-    border-radius: 8px;
-    margin-bottom: 8px;
-`;
-
-const CompetitionInfo = styled.View`
-    flex: 1;
-    margin-right: 16px;
-`;
-
-const CompetitionName = styled.Text`
-    font-size: 16px;
-    font-weight: bold;
-    color: ${colors.gray100};
-`;
-
-const CompetitionDescription = styled.Text`
-    font-size: 14px;
-    color: ${colors.gray300};
-    margin-top: 4px;
-`;
-
-const CompetitionDetails = styled.View`
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 8px;
-`;
-
-const CompetitionDate = styled.View`
-    flex-direction: row;
-    align-items: center;
-`;
-
-const CompetitionDateText = styled.Text`
-    color: ${colors.gray300};
-    font-size: 14px;
-    margin-left: 4px;
-`;
-const CompetitionStatus = styled.View`
-    margin-left: 16px;
-`;
-
-const StatusBadge = styled.View<{ status: string }>`
-    padding: 4px 8px;
-    border-radius: 4px;
-    background-color: ${({ status }) => {
-        switch (status) {
-            case 'pending':
-                return colors.warning
-            case 'in_progress':
-                return colors.success
-            case 'finished':
-                return colors.primary
-            default:
-                return colors.gray300
-        }
-    }};
-`;
-
-const StatusText = styled.Text`
-    color: ${colors.gray100};
-    font-size: 12px;
-    font-weight: bold;
-`;
-
-const SelectButton = styled.TouchableOpacity<{ selected: boolean }>`
-    padding: 4px;
-`;
-
-const SaveButton = styled.TouchableOpacity<{ disabled?: boolean }>`
-    background-color: ${colors.primary};
-    padding: 16px;
-    border-radius: 8px;
-    align-items: center;
-    justify-content: center;
-    opacity: ${props => props.disabled ? 0.7 : 1};
-`;
-
-const SaveButtonText = styled.Text`
-    color: ${colors.white};
-    font-size: 16px;
-    font-weight: bold;
-`;
-
-const SelectAllHeader = styled.View`
-    padding: 16px;
-    border-bottom-width: 1px;
-    border-bottom-color: ${colors.gray800};
-`;
-
-const SelectAllButton = styled.TouchableOpacity`
-    flex-direction: row;
-    align-items: center;
-`;
-
-const SelectAllText = styled.Text`
-    color: ${colors.gray100};
-    font-size: 16px;
-    margin-left: 8px;
-`;
-
-const ExpandButton = styled.TouchableOpacity`
-    padding: 4px;
-    margin-left: 8px;
-`;
-
-const RemoveButton = styled.TouchableOpacity<{ disabled?: boolean }>`
-    background-color: ${colors.error};
-    padding: 16px;
-    border-radius: 8px;
-    align-items: center;
-    justify-content: center;
-    opacity: ${props => props.disabled ? 0.7 : 1};
-    margin-top: 16px;
-    margin-bottom: 16px;
-`;
-
-const RemoveButtonText = styled.Text`
-    color: ${colors.white};
-    font-size: 16px;
-    font-weight: bold;
-`;
-
-const EmptyContainer = styled.View`
-    flex: 1;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-`;
-
-const EmptyText = styled.Text`
-    color: ${colors.gray300};
-    font-size: 16px;
-    text-align: center;
-`;
-
-const PlayersList = styled.FlatList`
-    flex: 1;
-`;
-
-const PlayerCard = styled.TouchableOpacity<{ selected: boolean }>`
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
-    background-color: ${props => props.selected ? colors.primary + '20' : colors.secondary};
-    border-radius: 8px;
-    margin-bottom: 8px;
-`;
-
-const PlayerInfo = styled.View`
-    flex: 1;
-`;
-
-const PlayerName = styled.Text`
-    font-size: 16px;
-    color: ${colors.gray100};
-    font-weight: 500;
-`;
-
-const MembersModalContainer = styled(ModalOverlay)`
-    justify-content: flex-end;
-`;
-
-const MembersModalContent = styled(ModalCard)`
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
-    height: 80%;
-    width: 100%;
-`;

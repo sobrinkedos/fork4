@@ -7,34 +7,35 @@ import { rankingService, PlayerRanking, PairRanking } from '@/services/rankingSe
 
 const Container = styled.View`
   flex: 1;
-  background-color: ${colors.background};
+  background-color: ${colors.backgroundDark};
   padding: 16px;
 `;
 
 const Title = styled.Text`
   font-size: 24px;
   font-weight: bold;
-  color: ${colors.text};
+  color: ${colors.textPrimary};
   margin-bottom: 16px;
 `;
 
 const SectionTitle = styled.Text`
   font-size: 20px;
   font-weight: bold;
-  color: ${colors.text};
+  color: ${colors.textPrimary};
   margin-top: 24px;
   margin-bottom: 12px;
 `;
 
 const RankingCard = styled.View`
-  background-color: ${colors.card};
+  background-color: ${colors.backgroundMedium};
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 8px;
+  border: 1px solid ${colors.border};
 `;
 
 const RankingText = styled.Text`
-  color: ${colors.text};
+  color: ${colors.textPrimary};
   font-size: 16px;
   margin-bottom: 4px;
 `;
@@ -50,12 +51,12 @@ const StatItem = styled.View`
 `;
 
 const StatLabel = styled.Text`
-  color: ${colors.textSecondary};
+  color: ${colors.textTertiary};
   font-size: 12px;
 `;
 
 const StatValue = styled.Text`
-  color: ${colors.text};
+  color: ${colors.textPrimary};
   font-size: 14px;
   font-weight: bold;
 `;

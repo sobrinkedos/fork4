@@ -9,7 +9,6 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { Competition } from "@/services/competitionService"
 import { useRouter } from 'expo-router'
-
 const Container = styled.View`
   flex: 1;
   background-color: ${colors.backgroundDark};
@@ -113,12 +112,13 @@ const PrizePool = styled.Text`
   font-weight: bold;
   margin-top: 4px;
 `
-
+const handleCardPress = (competition: Competition, router: any) => {
+    router.push(`/comunidade/${competition.community_id}/competicao/${competition.id}`);
+};
 export default function Competicoes() {
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [competitionStats, setCompetitionStats] = useState<{[key: string]: { totalPlayers: number, totalGames: number }}>({});
   const router = useRouter()
-
   useEffect(() => {
     loadCompetitions()
   }, [])
@@ -133,23 +133,48 @@ export default function Competicoes() {
           description,
           start_date,
           status,
-          competition_members (count),
-          games (count)
+          community_id,
+          (select count(*) from competition_members cm where cm.competition_id = competitions.id) as members_count,
+          (select count(*) from games g where g.competition_id = competitions.id) as games_count
         `)
         .eq('created_by', (await supabase.auth.getUser()).data.user?.id)
 
       if (error) throw error
 
+      // Verifica e atualiza o status das competições
+      const updatedCompetitions = await Promise.all(userCompetitions.map(async (comp) => {
+        const { data: games } = await supabase
+          .from('games')
+          .select('status')
+          .eq('competition_id', comp.id);
+
+        if (games && games.length > 0) {
+          const hasFinishedGames = games.some(game => game.status === 'finished');
+          const hasUnfinishedGames = games.some(game => 
+            game.status === 'pending' || game.status === 'in_progress'
+          );
+
+          if (hasFinishedGames && !hasUnfinishedGames && comp.status !== 'finished') {
+            await supabase
+              .from('competitions')
+              .update({ status: 'finished' })
+              .eq('id', comp.id);
+            return { ...comp, status: 'finished' };
+          }
+        }
+        return comp;
+      }));
+
       const stats: {[key: string]: { totalPlayers: number, totalGames: number }} = {};
-      userCompetitions.forEach((comp) => {
+      updatedCompetitions.forEach((comp) => {
         stats[comp.id] = {
-          totalPlayers: comp.competition_members[0]?.count || 0,
-          totalGames: comp.games[0]?.count || 0
+          totalPlayers: comp.members_count || 0,
+          totalGames: comp.games_count || 0
         };
       });
 
       setCompetitionStats(stats);
-      setCompetitions(userCompetitions);
+      setCompetitions(updatedCompetitions);
     } catch (error) {
       console.error('Error loading competitions:', error)
     }
@@ -188,10 +213,6 @@ export default function Competicoes() {
       onPress: () => console.log("Nova Competição"),
     },
   ];
-
-  const handleCardPress = (competition: Competition, router: any) => {
-    // implementação do handleCardPress
-  }
 
   return (
     <Container>
