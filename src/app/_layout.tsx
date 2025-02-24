@@ -24,39 +24,13 @@ export default function RootLayout() {
                         translucent
                     />
                     <Stack screenOptions={{ headerShown: false }}>
-                    {!session ? (
-                        // Rotas públicas
-                        <>
-                            <Stack.Screen
-                                name="login"
-                                options={{
-                                    title: 'Login'
-                                }}
-                            />
-                            <Stack.Screen
-                                name="register"
-                                options={{
-                                    title: 'Criar Conta'
-                                }} 
-                            />
-                        </>
-                    ) : (
-                        // Rotas protegidas
-                        <>
-                            <Stack.Screen 
-                                name="(tabs)" 
-                                options={{ 
-                                    headerShown: false,
-                                }} 
-                            />
-                            <Stack.Screen 
-                                name="comunidade/[id]/competicao/[competitionId]" 
-                                options={{ 
-                                    headerShown: false,
-                                }} 
-                            />
-                        </>
-                    )}
+                        <Stack.Screen name="login" options={{ headerShown: false }} />
+                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                        <Stack.Screen name="comunidade/[id]" options={{ headerShown: false }} />
+                        <Stack.Screen name="competicao/[id]" options={{ headerShown: false }} />
+                        <Stack.Screen name="jogo/[id]" options={{ headerShown: false }} />
+                        <Stack.Screen name="jogador/[id]" options={{ headerShown: false }} />
+                        <Stack.Screen name="top-jogadores" options={{ headerShown: false }} />
                     </Stack>
                 </SafeContainer>
             </ThemeProvider>

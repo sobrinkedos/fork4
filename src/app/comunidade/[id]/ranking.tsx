@@ -97,8 +97,8 @@ export default function CommunityRanking() {
   }
 
   return (
-    <ScrollView>
-      <Container>
+    <Container>
+      <ScrollView>
         <Title>Classificação da Comunidade</Title>
 
         <SectionTitle>Jogadores</SectionTitle>
@@ -160,7 +160,7 @@ export default function CommunityRanking() {
             </StatsContainer>
           </RankingCard>
         ))}
-      </Container>
-    </ScrollView>
+      </ScrollView>
+    </Container>
   );
 }

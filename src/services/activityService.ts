@@ -4,7 +4,6 @@ export interface Activity {
     id: string;
     type: 'game' | 'competition' | 'community' | 'player';
     description: string;
-    time: Date;
     metadata?: {
         game_id?: string;
         competition_id?: string;
@@ -16,10 +15,12 @@ export interface Activity {
         };
         winners?: string[];
     };
+    created_at?: Date;
+    created_by?: string;
 }
 
 export const activityService = {
-    async createActivity(activity: Omit<Activity, 'id' | 'time'>) {
+    async createActivity(activity: Omit<Activity, 'id' | 'created_at' | 'created_by'>) {
         try {
             console.log('Iniciando criação de atividade:', { type: activity.type, description: activity.description });
             
@@ -51,8 +52,8 @@ export const activityService = {
                 .insert([
                     {
                         ...activity,
-                        time: new Date().toISOString(),
-                        user_id: userData.user.id
+                        created_at: new Date(),
+                        created_by: userData.user.id
                     }
                 ])
                 .select()
@@ -83,14 +84,14 @@ export const activityService = {
             const { data, error } = await supabase
                 .from('activities')
                 .select('*')
-                .order('time', { ascending: false })
+                .order('created_at', { ascending: false })
                 .limit(10);
 
             if (error) throw error;
 
             return data.map(activity => ({
                 ...activity,
-                time: new Date(activity.time)
+                created_at: new Date(activity.created_at)
             }));
         } catch (error) {
             console.error('Erro ao buscar atividades recentes:', error);

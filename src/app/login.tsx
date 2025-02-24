@@ -111,15 +111,14 @@ const Input = styled.TextInput`
     font-size: 16px;
 `;
 
-const LoginButton = styled.TouchableOpacity`
-    background-color: ${colors.accent};
-    padding: 16px;
+const LoginButton = styled.TouchableOpacity<{ disabled?: boolean }>`
+    width: 100%;
+    height: 50px;
+    background-color: ${props => props.disabled ? colors.gray : colors.accent};
     border-radius: 8px;
-    margin-top: 8px;
-    style: {
-        pointerEvents: ${props => props.disabled ? 'none' : 'auto'};
-        opacity: ${props => props.disabled ? 0.7 : 1};
-    }
+    justify-content: center;
+    align-items: center;
+    opacity: ${props => props.disabled ? 0.7 : 1};
 `;
 
 const LoginButtonText = styled.Text`
@@ -129,13 +128,10 @@ const LoginButtonText = styled.Text`
     text-align: center;
 `;
 
-const SignUpButton = styled.TouchableOpacity`
+const SignUpButton = styled.TouchableOpacity<{ disabled?: boolean }>`
     padding: 16px;
     margin-top: 8px;
-    style: {
-        pointerEvents: ${props => props.disabled ? 'none' : 'auto'};
-        opacity: ${props => props.disabled ? 0.7 : 1};
-    }
+    opacity: ${props => props.disabled ? 0.7 : 1};
 `;
 
 const SignUpButtonText = styled.Text`

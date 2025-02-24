@@ -8,7 +8,7 @@ import { Header } from "@/components/Header";
 import { useRouter } from "expo-router";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { LineChart } from "react-native-chart-kit";
+import { LineChart } from "@/components/WebLineChart";
 import { useAuth } from "@/hooks/useAuth";
 import { statisticsService } from "@/services/statisticsService";
 import { rankingService } from "@/services/rankingService";
@@ -367,8 +367,8 @@ const Dashboard: React.FC = () => {
             borderRadius: 16
         },
         propsForDots: {
-            r: "6",
-            strokeWidth: "2",
+            r: 6,
+            strokeWidth: 2,
             stroke: colors.primary
         }
     };
