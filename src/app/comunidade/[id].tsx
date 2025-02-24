@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Alert, Modal, TouchableOpacity, ActivityIndicator, Animated, TextInput, View } from 'react-native';
+import { Alert, Modal, TouchableOpacity, ActivityIndicator, Animated, TextInput, View, Text } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
@@ -153,7 +153,13 @@ export default function CommunityDetails() {
         }
     };
 
-    const handleRemoveMembers = async () => {
+    const navigateToRanking = () => {
+    if (community) {
+        router.push(`/comunidade/${community.id}/ranking`);
+    }
+};
+
+const handleRemoveMembers = async () => {
         if (!community || selectedMembers.length === 0) return;
 
         try {
@@ -282,6 +288,9 @@ export default function CommunityDetails() {
                     <Feather name="arrow-left" size={24} color={colors.gray100} />
                 </BackButton>
                 <HeaderTitle>{community.name}</HeaderTitle>
+                <TouchableOpacity onPress={navigateToRanking} style={{ marginLeft: 'auto' }}>
+                    <Feather name="award" size={24} color={colors.gray100} />
+                </TouchableOpacity>
             </PageHeader>
 
             <MainContent>

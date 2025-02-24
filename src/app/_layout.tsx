@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { AuthProvider } from '../contexts/AuthProvider';
+import { ThemeProvider } from '../contexts/ThemeProvider';
 import { StatusBar, Platform } from "react-native";
 import { SafeAreaView } from 'react-native';
 import styled from 'styled-components/native';
@@ -15,13 +16,14 @@ export default function RootLayout() {
 
     return (
         <AuthProvider>
-            <SafeContainer statusBarHeight={statusBarHeight}>
-                <StatusBar 
-                    barStyle="light-content"
-                    backgroundColor={colors.backgroundDark}
-                    translucent
-                />
-                <Stack screenOptions={{ headerShown: false }}>
+            <ThemeProvider>
+                <SafeContainer statusBarHeight={statusBarHeight}>
+                    <StatusBar 
+                        barStyle="light-content"
+                        backgroundColor={colors.backgroundDark}
+                        translucent
+                    />
+                    <Stack screenOptions={{ headerShown: false }}>
                     {!session ? (
                         // Rotas públicas
                         <>
@@ -55,8 +57,9 @@ export default function RootLayout() {
                             />
                         </>
                     )}
-                </Stack>
-            </SafeContainer>
+                    </Stack>
+                </SafeContainer>
+            </ThemeProvider>
         </AuthProvider>
     );
 }

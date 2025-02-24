@@ -28,7 +28,7 @@ export interface PairRanking {
 }
 
 export const rankingService = {
-    async getTopPlayers(): Promise<PlayerRanking[]> {
+    async getTopPlayers(communityId?: string): Promise<PlayerRanking[]> {
         console.log('RankingService: Iniciando busca de jogadores...');
         const userId = (await supabase.auth.getUser()).data.user?.id;
 
@@ -37,23 +37,28 @@ export const rankingService = {
             return [];
         }
 
-        // Buscar IDs das comunidades onde o usuário é membro
-        const { data: memberCommunities } = await supabase
-            .from('community_members')
-            .select('community_id')
-            .eq('player_id', userId);
+        let communityIds: string[] = [];
+        
+        if (communityId) {
+            // Se um ID de comunidade específico foi fornecido, use apenas ele
+            communityIds = [communityId];
+        } else {
+            // Caso contrário, busque todas as comunidades do usuário
+            const { data: memberCommunities } = await supabase
+                .from('community_members')
+                .select('community_id')
+                .eq('player_id', userId);
 
-        // Buscar IDs das comunidades onde o usuário é organizador
-        const { data: organizerCommunities } = await supabase
-            .from('community_organizers')
-            .select('community_id')
-            .eq('user_id', userId);
+            const { data: organizerCommunities } = await supabase
+                .from('community_organizers')
+                .select('community_id')
+                .eq('user_id', userId);
 
-        // Combinar os IDs das comunidades
-        const communityIds = [
-            ...(memberCommunities?.map(c => c.community_id) || []),
-            ...(organizerCommunities?.map(c => c.community_id) || [])
-        ];
+            communityIds = [
+                ...(memberCommunities?.map(c => c.community_id) || []),
+                ...(organizerCommunities?.map(c => c.community_id) || [])
+            ];
+        }
 
         if (communityIds.length === 0) {
             console.log('RankingService: Usuário não pertence a nenhuma comunidade');
@@ -235,7 +240,7 @@ export const rankingService = {
         });
     },
 
-    async getTopPairs(): Promise<PairRanking[]> {
+    async getTopPairs(communityId?: string): Promise<PairRanking[]> {
         try {
             console.log('RankingService: Iniciando busca de duplas...');
             const userId = (await supabase.auth.getUser()).data.user?.id;
@@ -245,23 +250,28 @@ export const rankingService = {
                 return [];
             }
 
-            // Buscar IDs das comunidades onde o usuário é membro
-            const { data: memberCommunities } = await supabase
-                .from('community_members')
-                .select('community_id')
-                .eq('player_id', userId);
+            let communityIds: string[] = [];
+            
+            if (communityId) {
+                // Se um ID de comunidade específico foi fornecido, use apenas ele
+                communityIds = [communityId];
+            } else {
+                // Caso contrário, busque todas as comunidades do usuário
+                const { data: memberCommunities } = await supabase
+                    .from('community_members')
+                    .select('community_id')
+                    .eq('player_id', userId);
 
-            // Buscar IDs das comunidades onde o usuário é organizador
-            const { data: organizerCommunities } = await supabase
-                .from('community_organizers')
-                .select('community_id')
-                .eq('user_id', userId);
+                const { data: organizerCommunities } = await supabase
+                    .from('community_organizers')
+                    .select('community_id')
+                    .eq('user_id', userId);
 
-            // Combinar os IDs das comunidades
-            const communityIds = [
-                ...(memberCommunities?.map(c => c.community_id) || []),
-                ...(organizerCommunities?.map(c => c.community_id) || [])
-            ];
+                communityIds = [
+                    ...(memberCommunities?.map(c => c.community_id) || []),
+                    ...(organizerCommunities?.map(c => c.community_id) || [])
+                ];
+            }
 
             if (communityIds.length === 0) {
                 console.log('RankingService: Usuário não pertence a nenhuma comunidade');
