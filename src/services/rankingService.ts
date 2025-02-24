@@ -80,47 +80,161 @@ export const rankingService = {
             .map(member => member.players.id))];
 
         // Buscar estatísticas dos jogadores
-        const { data: games } = await supabase
+        console.log('PlayerIds para busca:', playerIds);
+        
+        const { data: games, error: gamesError } = await supabase
             .from('games')
-            .select('*')
-            .in('winner_id', playerIds);
+            .select('*');
+
+        if (gamesError) {
+            console.error('Erro ao buscar jogos:', gamesError);
+            return [];
+        }
+
+        console.log('Jogos encontrados:', games);
+
+        console.log('Todos os jogos:', games?.map(g => ({
+            id: g.id,
+            team1: g.team1,
+            team2: g.team2,
+            winner_team: g.winner_team,
+            winner_team_raw: JSON.stringify(g.winner_team),
+            is_buchuda: g.is_buchuda,
+            is_buchuda_raw: JSON.stringify(g.is_buchuda),
+            is_buchuda_de_re: g.is_buchuda_de_re,
+            is_buchuda_de_re_raw: JSON.stringify(g.is_buchuda_de_re)
+        })));
 
         // Calcular estatísticas para cada jogador
         const playerStats = playerIds.map(playerId => {
-            const playerGames = games?.filter(game =>
-                game.team1_player1_id === playerId ||
-                game.team1_player2_id === playerId ||
-                game.team2_player1_id === playerId ||
-                game.team2_player2_id === playerId
-            ) || [];
+            const playerGames = games?.filter(game => {
+                const team1 = game.team1 || [];
+                const team2 = game.team2 || [];
+                return team1.includes(playerId) || team2.includes(playerId);
+            }) || [];
 
-            const wins = games?.filter(game => game.winner_id === playerId).length || 0;
-            const buchudas = games?.filter(game =>
-                game.winner_id === playerId && game.is_buchuda
-            ).length || 0;
-            const buchudasDeRe = games?.filter(game =>
-                game.winner_id === playerId && game.is_buchuda_de_re
-            ).length || 0;
+            console.log(`Jogos do jogador ${playerId}:`, playerGames.map(g => ({
+                id: g.id,
+                team1: g.team1,
+                team2: g.team2,
+                winner_team: g.winner_team,
+                winner_team_raw: JSON.stringify(g.winner_team),
+                is_buchuda: g.is_buchuda,
+                is_buchuda_raw: JSON.stringify(g.is_buchuda),
+                is_buchuda_de_re: g.is_buchuda_de_re,
+                is_buchuda_de_re_raw: JSON.stringify(g.is_buchuda_de_re)
+            })));
 
-            const player = communityMembers.find(member =>
-                member.players?.id === playerId
+            const wins = playerGames.filter(game => {
+                const team1 = game.team1 || [];
+                const team2 = game.team2 || [];
+                const isTeam1 = team1.includes(playerId);
+                const isTeam2 = team2.includes(playerId);
+                const winnerTeam = game.winner_team;
+                const isWinner = (isTeam1 && winnerTeam == 1) || (isTeam2 && winnerTeam == 2);
+                
+                console.log(`Calculando vitória para jogo ${game.id}:`, {
+                    playerId,
+                    team1,
+                    team2,
+                    isTeam1,
+                    isTeam2,
+                    winner_team: winnerTeam,
+                    winner_team_raw: JSON.stringify(winnerTeam),
+                    isWinner
+                });
+                
+                return isWinner;
+            }).length;
+            
+            const totalGames = playerGames.length;
+
+            const buchudas = playerGames.filter(game => {
+                const team1 = game.team1 || [];
+                const team2 = game.team2 || [];
+                const isTeam1 = team1.includes(playerId);
+                const isTeam2 = team2.includes(playerId);
+                const winnerTeam = game.winner_team;
+                const isWinner = (isTeam1 && winnerTeam == 1) || (isTeam2 && winnerTeam == 2);
+                const isBuchuda = game.is_buchuda == true;
+                const isWinnerBuchuda = isWinner && isBuchuda;
+                
+                console.log(`Calculando buchuda para jogo ${game.id}:`, {
+                    playerId,
+                    team1,
+                    team2,
+                    isTeam1,
+                    isTeam2,
+                    winner_team: winnerTeam,
+                    winner_team_raw: JSON.stringify(winnerTeam),
+                    is_buchuda: game.is_buchuda,
+                    is_buchuda_raw: JSON.stringify(game.is_buchuda),
+                    isWinner,
+                    isBuchuda,
+                    isWinnerBuchuda
+                });
+                
+                return isWinnerBuchuda;
+            }).length;
+            
+            const buchudasDeRe = playerGames.filter(game => {
+                const team1 = game.team1 || [];
+                const team2 = game.team2 || [];
+                const isTeam1 = team1.includes(playerId);
+                const isTeam2 = team2.includes(playerId);
+                const winnerTeam = game.winner_team;
+                const isWinner = (isTeam1 && winnerTeam == 1) || (isTeam2 && winnerTeam == 2);
+                const isBuchudaRe = game.is_buchuda_de_re == true;
+                const isWinnerBuchudaRe = isWinner && isBuchudaRe;
+                
+                console.log(`Calculando buchuda de ré para jogo ${game.id}:`, {
+                    playerId,
+                    team1,
+                    team2,
+                    isTeam1,
+                    isTeam2,
+                    winner_team: winnerTeam,
+                    winner_team_raw: JSON.stringify(winnerTeam),
+                    is_buchuda_de_re: game.is_buchuda_de_re,
+                    is_buchuda_de_re_raw: JSON.stringify(game.is_buchuda_de_re),
+                    isWinner,
+                    isBuchudaRe,
+                    isWinnerBuchudaRe
+                });
+                
+                return isWinnerBuchudaRe;
+            }).length;
+
+            console.log(`Estatísticas finais para jogador ${playerId}:`, {
+                totalGames,
+                wins,
+                buchudas,
+                buchudasDeRe,
+                winRate: totalGames > 0 ? (wins / totalGames) * 100 : 0
+            });
+
+            const player = communityMembers.find(member => 
+                member.players && member.players.id === playerId
             )?.players;
 
             return {
                 id: playerId,
                 name: player?.name || 'Jogador Desconhecido',
                 wins,
-                totalGames: playerGames.length,
+                totalGames,
                 buchudas,
                 buchudasDeRe,
-                winRate: playerGames.length > 0
-                    ? (wins / playerGames.length) * 100
-                    : 0
+                winRate: totalGames > 0 ? (wins / totalGames) * 100 : 0
             };
         });
 
-        // Ordenar por taxa de vitórias
-        return playerStats.sort((a, b) => b.winRate - a.winRate);
+        console.log('Estatísticas finais:', playerStats);
+
+        // Ordenar por vitórias e taxa de vitória
+        return playerStats.sort((a, b) => {
+            if (b.wins !== a.wins) return b.wins - a.wins;
+            return b.winRate - a.winRate;
+        });
     },
 
     async getTopPairs(): Promise<PairRanking[]> {
