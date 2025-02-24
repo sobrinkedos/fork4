@@ -238,33 +238,60 @@ export const rankingService = {
     async getTopPairs(): Promise<PairRanking[]> {
         try {
             console.log('RankingService: Iniciando busca de duplas...');
-            
-            // 1. Buscar todos os jogadores
-            const { data: players, error: playersError } = await supabase
-                .from('players')
-                .select('*');
+            const userId = (await supabase.auth.getUser()).data.user?.id;
 
-            console.log('RankingService: Resposta do Supabase (players):', { data: players, error: playersError });
-
-            if (playersError) {
-                console.error('RankingService: Erro ao buscar jogadores:', playersError.message);
-                throw playersError;
-            }
-
-            if (!players || players.length === 0) {
-                console.log('RankingService: Nenhum jogador encontrado');
+            if (!userId) {
+                console.error('RankingService: Usuário não autenticado');
                 return [];
             }
 
-            console.log('RankingService: Jogadores encontrados:', players.length);
+            // Buscar IDs das comunidades onde o usuário é membro
+            const { data: memberCommunities } = await supabase
+                .from('community_members')
+                .select('community_id')
+                .eq('player_id', userId);
 
-            // 2. Buscar todos os jogos
+            // Buscar IDs das comunidades onde o usuário é organizador
+            const { data: organizerCommunities } = await supabase
+                .from('community_organizers')
+                .select('community_id')
+                .eq('user_id', userId);
+
+            // Combinar os IDs das comunidades
+            const communityIds = [
+                ...(memberCommunities?.map(c => c.community_id) || []),
+                ...(organizerCommunities?.map(c => c.community_id) || [])
+            ];
+
+            if (communityIds.length === 0) {
+                console.log('RankingService: Usuário não pertence a nenhuma comunidade');
+                return [];
+            }
+
+            // Buscar jogadores das comunidades
+            const { data: communityMembers } = await supabase
+                .from('community_members')
+                .select(`
+                    player_id,
+                    players (id, name)
+                `)
+                .in('community_id', communityIds);
+
+            if (!communityMembers || communityMembers.length === 0) {
+                console.log('RankingService: Nenhum jogador encontrado nas comunidades');
+                return [];
+            }
+
+            // Extrair IDs únicos dos jogadores
+            const playerIds = [...new Set(communityMembers
+                .filter(member => member.players)
+                .map(member => member.players.id))];
+
+            // Buscar todos os jogos
             const { data: games, error: gamesError } = await supabase
                 .from('games')
                 .select('*')
                 .neq('status', 'pending');
-
-            console.log('RankingService: Resposta do Supabase (games):', { data: games, error: gamesError });
 
             if (gamesError) {
                 console.error('RankingService: Erro ao buscar jogos:', gamesError.message);
@@ -275,8 +302,6 @@ export const rankingService = {
                 console.log('RankingService: Nenhum jogo encontrado');
                 return [];
             }
-
-            console.log('RankingService: Jogos encontrados:', games.length);
 
             // Processar estatísticas por dupla
             const pairStats = new Map<string, {
@@ -291,74 +316,66 @@ export const rankingService = {
 
             // Processar jogos
             games.forEach(game => {
-                // Extrair IDs dos jogadores dos arrays team1 e team2
                 const team1Players = game.team1 || [];
                 const team2Players = game.team2 || [];
 
-                // Processar time 1
-                if (team1Players.length === 2) {
-                    const [player1Id, player2Id] = team1Players;
-                    const player1 = players.find(p => p.id === player1Id);
-                    const player2 = players.find(p => p.id === player2Id);
+                // Verificar se os jogadores pertencem às comunidades do usuário
+                const processTeam = (teamPlayers: string[]) => {
+                    if (teamPlayers.length === 2 && 
+                        teamPlayers.every(playerId => playerIds.includes(playerId))) {
+                        const [player1Id, player2Id] = teamPlayers;
+                        const player1 = communityMembers.find(m => m.players?.id === player1Id)?.players;
+                        const player2 = communityMembers.find(m => m.players?.id === player2Id)?.players;
 
-                    if (player1 && player2) {
-                        const pairId = [player1Id, player2Id].sort().join('-');
-                        const stats = pairStats.get(pairId) || {
-                            id: pairId,
-                            player1: { id: player1.id, name: player1.name },
-                            player2: { id: player2.id, name: player2.name },
-                            wins: 0,
-                            totalGames: 0,
-                            buchudas: 0,
-                            buchudasDeRe: 0
-                        };
-
-                        stats.totalGames++;
-                        if (game.team1_score > game.team2_score) {
-                            stats.wins++;
-                            if (game.is_buchuda && game.team2_score === 0) {
-                                stats.buchudas++;
-                            }
-                            if (game.is_buchuda_de_re) {
-                                stats.buchudasDeRe++;
-                            }
+                        if (player1 && player2) {
+                            const pairId = [player1Id, player2Id].sort().join('-');
+                            const stats = pairStats.get(pairId) || {
+                                id: pairId,
+                                player1: { id: player1.id, name: player1.name },
+                                player2: { id: player2.id, name: player2.name },
+                                wins: 0,
+                                totalGames: 0,
+                                buchudas: 0,
+                                buchudasDeRe: 0
+                            };
+                            return { pairId, stats };
                         }
-
-                        pairStats.set(pairId, stats);
                     }
+                    return null;
+                };
+
+                // Processar time 1
+                const team1Result = processTeam(team1Players);
+                if (team1Result) {
+                    const { pairId, stats } = team1Result;
+                    stats.totalGames++;
+                    if (game.team1_score > game.team2_score) {
+                        stats.wins++;
+                        if (game.is_buchuda && game.team2_score === 0) {
+                            stats.buchudas++;
+                        }
+                        if (game.is_buchuda_de_re) {
+                            stats.buchudasDeRe++;
+                        }
+                    }
+                    pairStats.set(pairId, stats);
                 }
 
                 // Processar time 2
-                if (team2Players.length === 2) {
-                    const [player1Id, player2Id] = team2Players;
-                    const player1 = players.find(p => p.id === player1Id);
-                    const player2 = players.find(p => p.id === player2Id);
-
-                    if (player1 && player2) {
-                        const pairId = [player1Id, player2Id].sort().join('-');
-                        const stats = pairStats.get(pairId) || {
-                            id: pairId,
-                            player1: { id: player1.id, name: player1.name },
-                            player2: { id: player2.id, name: player2.name },
-                            wins: 0,
-                            totalGames: 0,
-                            buchudas: 0,
-                            buchudasDeRe: 0
-                        };
-
-                        stats.totalGames++;
-                        if (game.team2_score > game.team1_score) {
-                            stats.wins++;
-                            if (game.is_buchuda && game.team1_score === 0) {
-                                stats.buchudas++;
-                            }
-                            if (game.is_buchuda_de_re) {
-                                stats.buchudasDeRe++;
-                            }
+                const team2Result = processTeam(team2Players);
+                if (team2Result) {
+                    const { pairId, stats } = team2Result;
+                    stats.totalGames++;
+                    if (game.team2_score > game.team1_score) {
+                        stats.wins++;
+                        if (game.is_buchuda && game.team1_score === 0) {
+                            stats.buchudas++;
                         }
-
-                        pairStats.set(pairId, stats);
+                        if (game.is_buchuda_de_re) {
+                            stats.buchudasDeRe++;
+                        }
                     }
+                    pairStats.set(pairId, stats);
                 }
             });
 
@@ -369,13 +386,12 @@ export const rankingService = {
                     ...stats,
                     winRate: (stats.wins / stats.totalGames) * 100
                 }))
-                .sort((a, b) => b.winRate - a.winRate);
+                .sort((a, b) => {
+                    if (b.wins !== a.wins) return b.wins - a.wins;
+                    return b.winRate - a.winRate;
+                });
 
             console.log('RankingService: Rankings de duplas calculados:', rankings.length);
-            if (rankings.length > 0) {
-                console.log('RankingService: Exemplo de ranking de dupla:', rankings[0]);
-            }
-
             return rankings;
         } catch (error) {
             console.error('RankingService: Erro ao buscar ranking de duplas:', error);
