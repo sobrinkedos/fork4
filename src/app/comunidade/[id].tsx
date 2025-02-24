@@ -9,6 +9,7 @@ import { communityMembersService } from '@/services/communityMembersService';
 import { communityOrganizersService } from '@/services/communityOrganizersService';
 import { playersService } from '@/services/playersService';
 import { competitionService } from '@/services/competitionService';
+import { useAuth } from '@/hooks/useAuth';
 
 type CommunityOrganizer = {
     id: string;
@@ -70,9 +71,17 @@ const BackButton = styled.TouchableOpacity`
 `;
 
 const HeaderTitle = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
     color: ${colors.gray100};
+    font-size: 20px;
+    font-weight: bold;
+    flex: 1;
+    text-align: center;
+`;
+
+const HeaderSubtitle = styled.Text`
+    color: ${colors.gray300};
+    font-size: 14px;
+    text-align: center;
 `;
 
 const MainContent = styled.View`
@@ -402,6 +411,7 @@ const HeaderRight = styled.View`
 export default function CommunityDetails() {
     const router = useRouter();
     const params = useLocalSearchParams();
+    const { session } = useAuth();
     const [community, setCommunity] = useState<Community | null>(null);
     const [members, setMembers] = useState<Member[]>([]);
     const [organizers, setOrganizers] = useState<CommunityOrganizer[]>([]);
@@ -800,6 +810,7 @@ export default function CommunityDetails() {
                     <Feather name="arrow-left" size={24} color={colors.gray100} />
                 </BackButton>
                 <HeaderTitle>{community?.name || 'Carregando...'}</HeaderTitle>
+                <HeaderSubtitle>{session?.user?.email || ''}</HeaderSubtitle>
             </PageHeader>
 
             <MainContent>
@@ -933,4 +944,3 @@ export default function CommunityDetails() {
         </Container>
     );
 }
-const [competitions, setCompetitions] = useState<Competition[]>([]);
