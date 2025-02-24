@@ -449,7 +449,7 @@ const Dashboard: React.FC = () => {
                             <ChartTitle>Jogos por Mês</ChartTitle>
                             <LineChart
                                 data={chartData}
-                                width={Dimensions.get("window").width - 80}
+                                width={Math.max(Dimensions.get("window").width - 80, 0)}
                                 height={220}
                                 chartConfig={chartConfig}
                                 bezier

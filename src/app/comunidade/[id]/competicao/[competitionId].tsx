@@ -133,11 +133,10 @@ export default function CompetitionDetails() {
         checkCanFinish();
     }, []);
 
-    useFocusEffect(
-        useCallback(() => {
-            loadCompetitionAndMembers();
-        }, [loadCompetitionAndMembers])
-    );
+    useEffect(() => {
+        loadCompetitionAndMembers();
+    }, [loadCompetitionAndMembers]);
+
 
     const checkCanFinish = async () => {
         try {

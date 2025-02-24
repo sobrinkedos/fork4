@@ -52,7 +52,7 @@ type Competition = {
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.background};
+    background-color: ${colors.backgroundDark};
 `;
 
 const PageHeader = styled.View`
@@ -209,14 +209,20 @@ const RemoveOrganizerButton = styled.TouchableOpacity`
 
 const ModalContainer = styled.View`
     flex: 1;
-    background-color: ${colors.background};
+    background-color: rgba(0, 0, 0, 0.5);
     padding: 24px;
+    justify-content: center;
 `;
 
 const ModalContent = styled.View`
-    background-color: ${colors.background};
+    background-color: ${colors.gray800};
     padding: 24px;
     border-radius: 8px;
+    elevation: 5;
+    shadow-color: #000;
+    shadow-offset: 0px 2px;
+    shadow-opacity: 0.25;
+    shadow-radius: 3.84px;
 `;
 
 const ModalHeader = styled.View`
@@ -403,8 +409,8 @@ export default function CommunityDetails() {
     const [competitions, setCompetitions] = useState<Competition[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [showMembers, setShowMembers] = useState(true);
-    const [showOrganizers, setShowOrganizers] = useState(true);
+    const [showMembers, setShowMembers] = useState(false);
+    const [showOrganizers, setShowOrganizers] = useState(false);
     const [showAddMemberModal, setShowAddMemberModal] = useState(false);
     const [showAddOrganizerModal, setShowAddOrganizerModal] = useState(false);
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
@@ -762,7 +768,7 @@ export default function CommunityDetails() {
                         competitions.map(competition => (
                             <CompetitionCard
                                 key={competition.id}
-                                onPress={() => router.push(`/competicao/${competition.id}`)}>
+                                onPress={() => router.push(`/comunidade/${id}/competicao/${competition.id}`)}>
                                 <CompetitionInfo>
                                     <CompetitionName>{competition.name}</CompetitionName>
                                     <CompetitionDescription>{competition.description}</CompetitionDescription>

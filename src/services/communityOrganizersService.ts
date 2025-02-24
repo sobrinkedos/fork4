@@ -44,7 +44,7 @@ export const communityOrganizersService = {
         }));
     },
 
-    async addOrganizer(communityId: string, email: string) {
+    async addOrganizer(communityId: string, email: string, createdBy: string) {
         // Primeiro, busca o usuário pelo email
         const { data: userData, error: userError } = await supabase
             .from('profiles')
@@ -75,7 +75,8 @@ export const communityOrganizersService = {
             .insert([
                 {
                     community_id: communityId,
-                    user_id: userData.id
+                    user_id: userData.id,
+                    created_by: createdBy
                 }
             ]);
 

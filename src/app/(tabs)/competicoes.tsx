@@ -112,8 +112,8 @@ const PrizePool = styled.Text`
   font-weight: bold;
   margin-top: 4px;
 `
-const handleCardPress = (competition: Competition, router: any) => {
-    router.push(`/comunidade/${competition.community_id}/competicao/${competition.id}`);
+const handleCardPress = (competition: Competition, router: any, communityId: string) => {
+    router.push(`/comunidade/${communityId}/competicao/${competition.id}`);
 };
 export default function Competicoes() {
   const [competitions, setCompetitions] = useState<Competition[]>([])
@@ -220,7 +220,10 @@ export default function Competicoes() {
       <ScrollContent>
         <Content>
           {competitions.map(competition => (
-            <CompetitionCard key={competition.id} onPress={() => handleCardPress(competition, router)}>
+            <CompetitionCard 
+              key={competition.id} 
+              onPress={() => handleCardPress(competition, router, competition.community_id)}
+            >
               <CompetitionHeader>
                 <MaterialCommunityIcons 
                   name="trophy" 
