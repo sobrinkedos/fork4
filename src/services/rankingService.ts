@@ -84,7 +84,9 @@ export const rankingService = {
         
         const { data: games, error: gamesError } = await supabase
             .from('games')
-            .select('*');
+            .select('*')
+            .neq('status', 'pending')
+            .order('created_at', { ascending: false });
 
         if (gamesError) {
             console.error('Erro ao buscar jogos:', gamesError);
@@ -130,8 +132,8 @@ export const rankingService = {
                 const team2 = game.team2 || [];
                 const isTeam1 = team1.includes(playerId);
                 const isTeam2 = team2.includes(playerId);
-                const winnerTeam = game.winner_team;
-                const isWinner = (isTeam1 && winnerTeam == 1) || (isTeam2 && winnerTeam == 2);
+                const isWinner = (isTeam1 && game.team1_score > game.team2_score) || 
+                                (isTeam2 && game.team2_score > game.team1_score);
                 
                 console.log(`Calculando vitória para jogo ${game.id}:`, {
                     playerId,
@@ -139,8 +141,8 @@ export const rankingService = {
                     team2,
                     isTeam1,
                     isTeam2,
-                    winner_team: winnerTeam,
-                    winner_team_raw: JSON.stringify(winnerTeam),
+                    team1_score: game.team1_score,
+                    team2_score: game.team2_score,
                     isWinner
                 });
                 
@@ -154,10 +156,11 @@ export const rankingService = {
                 const team2 = game.team2 || [];
                 const isTeam1 = team1.includes(playerId);
                 const isTeam2 = team2.includes(playerId);
-                const winnerTeam = game.winner_team;
-                const isWinner = (isTeam1 && winnerTeam == 1) || (isTeam2 && winnerTeam == 2);
-                const isBuchuda = game.is_buchuda == true;
-                const isWinnerBuchuda = isWinner && isBuchuda;
+                const isWinner = (isTeam1 && game.team1_score > game.team2_score) || 
+                                (isTeam2 && game.team2_score > game.team1_score);
+                const isBuchuda = game.is_buchuda === true && 
+                                ((isTeam1 && game.team2_score === 0) || 
+                                 (isTeam2 && game.team1_score === 0));
                 
                 console.log(`Calculando buchuda para jogo ${game.id}:`, {
                     playerId,
@@ -165,16 +168,14 @@ export const rankingService = {
                     team2,
                     isTeam1,
                     isTeam2,
-                    winner_team: winnerTeam,
-                    winner_team_raw: JSON.stringify(winnerTeam),
+                    team1_score: game.team1_score,
+                    team2_score: game.team2_score,
                     is_buchuda: game.is_buchuda,
-                    is_buchuda_raw: JSON.stringify(game.is_buchuda),
                     isWinner,
-                    isBuchuda,
-                    isWinnerBuchuda
+                    isBuchuda
                 });
                 
-                return isWinnerBuchuda;
+                return isWinner && isBuchuda;
             }).length;
             
             const buchudasDeRe = playerGames.filter(game => {
@@ -182,10 +183,9 @@ export const rankingService = {
                 const team2 = game.team2 || [];
                 const isTeam1 = team1.includes(playerId);
                 const isTeam2 = team2.includes(playerId);
-                const winnerTeam = game.winner_team;
-                const isWinner = (isTeam1 && winnerTeam == 1) || (isTeam2 && winnerTeam == 2);
-                const isBuchudaRe = game.is_buchuda_de_re == true;
-                const isWinnerBuchudaRe = isWinner && isBuchudaRe;
+                const isWinner = (isTeam1 && game.team1_score > game.team2_score) || 
+                                (isTeam2 && game.team2_score > game.team1_score);
+                const isBuchudaRe = game.is_buchuda_de_re === true;
                 
                 console.log(`Calculando buchuda de ré para jogo ${game.id}:`, {
                     playerId,
@@ -193,16 +193,14 @@ export const rankingService = {
                     team2,
                     isTeam1,
                     isTeam2,
-                    winner_team: winnerTeam,
-                    winner_team_raw: JSON.stringify(winnerTeam),
+                    team1_score: game.team1_score,
+                    team2_score: game.team2_score,
                     is_buchuda_de_re: game.is_buchuda_de_re,
-                    is_buchuda_de_re_raw: JSON.stringify(game.is_buchuda_de_re),
                     isWinner,
-                    isBuchudaRe,
-                    isWinnerBuchudaRe
+                    isBuchudaRe
                 });
                 
-                return isWinnerBuchudaRe;
+                return isWinner && isBuchudaRe;
             }).length;
 
             console.log(`Estatísticas finais para jogador ${playerId}:`, {

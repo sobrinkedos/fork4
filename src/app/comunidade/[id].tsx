@@ -776,10 +776,7 @@ const ModalCard = styled.View`
     padding: 20px;
     border-radius: 12px;
     width: 100%;
-    shadow-color: #000;
-    shadow-offset: 0px 2px;
-    shadow-opacity: 0.25;
-    shadow-radius: 3.84px;
+    box-shadow: 0px 2px 3.84px rgba(0, 0, 0, 0.25);
     elevation: 5;
 `;
 
@@ -826,10 +823,7 @@ const FAB = styled.TouchableOpacity`
     align-items: center;
     justify-content: center;
     elevation: 5;
-    shadow-color: ${colors.primary};
-    shadow-offset: 0px 2px;
-    shadow-opacity: 0.25;
-    shadow-radius: 3.84px;
+    box-shadow: 0px 2px 3.84px ${colors.primary};
 `;
 
 const ManageButton = styled.TouchableOpacity`
