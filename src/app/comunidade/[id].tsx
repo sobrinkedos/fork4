@@ -778,7 +778,7 @@ export default function CommunityDetails() {
                         competitions.map(competition => (
                             <CompetitionCard
                                 key={competition.id}
-                                onPress={() => router.push(`/comunidade/${id}/competicao/${competition.id}`)}>
+                                onPress={() => router.push(`/comunidade/${community?.id}/competicao/${competition.id}`)}>
                                 <CompetitionInfo>
                                     <CompetitionName>{competition.name}</CompetitionName>
                                     <CompetitionDescription>{competition.description}</CompetitionDescription>
@@ -807,9 +807,9 @@ export default function CommunityDetails() {
         <Container>
             <PageHeader>
                 <BackButton onPress={() => router.back()}>
-                    <Feather name="arrow-left" size={24} color={colors.gray100} />
+                    <Feather name="chevron-left" size={24} color={colors.gray100} />
                 </BackButton>
-                <HeaderTitle>{community?.name || 'Carregando...'}</HeaderTitle>
+                <HeaderTitle>{community?.name}</HeaderTitle>
                 <HeaderSubtitle>{session?.user?.email || ''}</HeaderSubtitle>
             </PageHeader>
 
