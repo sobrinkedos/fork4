@@ -1,11 +1,10 @@
-import { View } from "react-native"
 import styled from "styled-components/native"
 import { colors } from "@/styles/colors"
 import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { TouchableOpacity, StatusBar, Platform, Image } from 'react-native';
+import { TouchableOpacity, StatusBar, Platform, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
 const logoSvg = `
@@ -13,6 +12,10 @@ const logoSvg = `
     <rect width="30" height="30" rx="8" fill="#1E1E1E"/>
     <path d="M7 7h4v4H7zM7 13h4v4H7zM7 19h4v4H7zM13 7h4v4h-4zM13 13h4v4h-4zM13 19h4v4h-4zM19 7h4v4h-4zM19 13h4v4h-4zM19 19h4v4h-4z" fill="#FFF"/>
 </svg>
+`;
+
+const SafeAreaView = styled.View`
+    background-color: ${colors.primary};
 `;
 
 const Container = styled.View<{ statusBarHeight: number }>`
@@ -42,10 +45,12 @@ const Title = styled.Text`
     color: ${colors.white};
     font-size: 20px;
     font-weight: bold;
+    text-transform: uppercase;
 `;
 
 const AppTitle = styled(Title)`
     margin-left: 8px;
+    text-transform: none;
 `;
 
 const ActionContainer = styled.View`
@@ -69,12 +74,17 @@ export function Header({ title, showBackButton, isDashboard }: HeaderProps) {
     const { signOut } = useAuth();
     const statusBarHeight = StatusBar.currentHeight || 0;
 
+    React.useEffect(() => {
+        if (Platform.OS === 'android') {
+            StatusBar.setTranslucent(true);
+            StatusBar.setBackgroundColor('transparent');
+        }
+        StatusBar.setBarStyle('light-content');
+    }, []);
+
     return (
-        <>
-            <StatusBar 
-                backgroundColor={colors.primary}
-                barStyle="light-content"
-            />
+        <SafeAreaView>
+            <StatusBar backgroundColor={colors.primary} barStyle="light-content" />
             <Container statusBarHeight={statusBarHeight}>
                 <LeftContainer>
                     {isDashboard ? (
@@ -105,6 +115,6 @@ export function Header({ title, showBackButton, isDashboard }: HeaderProps) {
                     </IconButton>
                 </ActionContainer>
             </Container>
-        </>
+        </SafeAreaView>
     );
 }
