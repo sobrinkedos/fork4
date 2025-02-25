@@ -437,21 +437,13 @@ const Dashboard: React.FC = () => {
 
                         <StatisticsContainer>
                             <StatCardWrapper>
-                                <TouchableOpacity 
-                                    onPress={() => {
-                                        console.log('Navegando para jogos...');
-                                        router.push('/(pages)/jogos');
-                                    }}
-                                    activeOpacity={0.7}
-                                >
-                                    <StatCard>
-                                        <StatIcon>
-                                            <MaterialCommunityIcons name="cards-playing-outline" size={24} color={colors.primary} />
-                                        </StatIcon>
-                                        <StatValue>{stats?.totalGames || 0}</StatValue>
-                                        <StatLabel>Jogos</StatLabel>
-                                    </StatCard>
-                                </TouchableOpacity>
+                                <StatCard onPress={() => router.push("/jogos")}>
+                                    <StatIcon>
+                                        <MaterialCommunityIcons name="cards-playing-outline" size={24} color={colors.primary} />
+                                    </StatIcon>
+                                    <StatValue>{stats?.totalGames || 0}</StatValue>
+                                    <StatLabel>Jogos</StatLabel>
+                                </StatCard>
                             </StatCardWrapper>
 
                             <StatCardWrapper>

@@ -28,45 +28,139 @@ export type GameWithDetails = {
 
 export const gamesService = {
     async getUserGames(): Promise<GameWithDetails[]> {
-        const { data: userCommunities, error: communitiesError } = await supabase
-            .from('community_members')
-            .select('community_id')
-            .or('is_creator.eq.true,is_organizer.eq.true,is_member.eq.true');
+        try {
+            // Verificar usuário autenticado
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            if (userError || !user) {
+                console.error('Erro de autenticação:', userError);
+                throw new Error('Usuário não autenticado');
+            }
 
-        if (communitiesError) {
-            throw new Error('Erro ao buscar comunidades do usuário');
-        }
+            console.log('Buscando jogos para o usuário:', user.id);
 
-        const communityIds = userCommunities.map(cm => cm.community_id);
+            // Buscar comunidades onde o usuário é membro
+            const { data: memberCommunities, error: memberError } = await supabase
+                .from('community_members')
+                .select('community_id')
+                .eq('player_id', user.id);
 
-        const { data: games, error: gamesError } = await supabase
-            .from('games')
-            .select(`
-                *,
-                competition:competitions (
-                    id,
-                    name,
-                    community:communities (
+            if (memberError) {
+                console.error('Erro ao buscar comunidades como membro:', memberError);
+                throw new Error('Erro ao buscar comunidades do usuário');
+            }
+
+            // Buscar comunidades onde o usuário é organizador
+            const { data: organizerCommunities, error: organizerError } = await supabase
+                .from('community_organizers')
+                .select('community_id')
+                .eq('user_id', user.id);
+
+            if (organizerError) {
+                console.error('Erro ao buscar comunidades como organizador:', organizerError);
+                throw new Error('Erro ao buscar comunidades do usuário');
+            }
+
+            // Combinar IDs únicos de comunidades
+            const memberIds = memberCommunities?.map(c => c.community_id) || [];
+            const organizerIds = organizerCommunities?.map(c => c.community_id) || [];
+            const communityIds = [...new Set([...memberIds, ...organizerIds])];
+
+            if (communityIds.length === 0) {
+                console.log('Nenhuma comunidade encontrada');
+                return [];
+            }
+
+            console.log('Buscando jogos para as comunidades:', communityIds);
+
+            // Primeiro buscar as competições das comunidades
+            const { data: competitions, error: competitionsError } = await supabase
+                .from('competitions')
+                .select('id, name, community_id')
+                .in('community_id', communityIds);
+
+            if (competitionsError) {
+                console.error('Erro ao buscar competições:', competitionsError);
+                throw new Error('Erro ao buscar competições');
+            }
+
+            if (!competitions || competitions.length === 0) {
+                console.log('Nenhuma competição encontrada');
+                return [];
+            }
+
+            const competitionIds = competitions.map(c => c.id);
+
+            // Buscar os jogos com os detalhes
+            const { data: games, error: gamesError } = await supabase
+                .from('games')
+                .select(`
+                    *,
+                    competition:competitions!inner (
                         id,
-                        name
+                        name,
+                        community_id
                     )
-                ),
-                team1_players:team1 (
-                    id,
-                    name
-                ),
-                team2_players:team2 (
-                    id,
-                    name
-                )
-            `)
-            .in('competition.community_id', communityIds)
-            .order('created_at', { ascending: false });
+                `)
+                .in('competition_id', competitionIds)
+                .order('created_at', { ascending: false });
 
-        if (gamesError) {
-            throw new Error('Erro ao buscar jogos');
+            if (gamesError) {
+                console.error('Erro ao buscar jogos:', gamesError);
+                throw new Error('Erro ao buscar jogos');
+            }
+
+            if (!games || games.length === 0) {
+                console.log('Nenhum jogo encontrado');
+                return [];
+            }
+
+            // Buscar os jogadores dos jogos
+            const { data: gamePlayers, error: playersError } = await supabase
+                .from('game_players')
+                .select('*')
+                .in('game_id', games.map(g => g.id));
+
+            if (playersError) {
+                console.error('Erro ao buscar jogadores:', playersError);
+                throw new Error('Erro ao buscar jogadores');
+            }
+
+            // Mapear os jogos com todos os detalhes
+            const gamesWithDetails = games.map(game => {
+                const competition = competitions.find(c => c.id === game.competition.id);
+                const gamePlayersList = gamePlayers?.filter(gp => gp.game_id === game.id) || [];
+                const team1Players = gamePlayersList
+                    .filter(gp => gp.team === 1)
+                    .map(gp => ({
+                        id: gp.player_id,
+                        name: gp.player_name
+                    }));
+                const team2Players = gamePlayersList
+                    .filter(gp => gp.team === 2)
+                    .map(gp => ({
+                        id: gp.player_id,
+                        name: gp.player_name
+                    }));
+
+                return {
+                    ...game,
+                    competition: {
+                        ...game.competition,
+                        community: {
+                            id: competition?.community_id || '',
+                            name: competition?.name || ''
+                        }
+                    },
+                    team1_players: team1Players,
+                    team2_players: team2Players
+                };
+            });
+
+            console.log('Jogos encontrados:', gamesWithDetails.length);
+            return gamesWithDetails;
+        } catch (error) {
+            console.error('Erro no serviço de jogos:', error);
+            throw error;
         }
-
-        return games || [];
     }
 };
