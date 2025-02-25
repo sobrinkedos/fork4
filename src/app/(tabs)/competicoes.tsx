@@ -1,4 +1,4 @@
-import { View, ScrollView, TouchableOpacity } from "react-native"
+import { View, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native"
 import styled from "styled-components/native"
 import { colors } from "@/styles/colors"
 import { MaterialCommunityIcons } from "@expo/vector-icons"
@@ -7,8 +7,9 @@ import { FloatingButton } from "@/components/FloatingButton"
 import { Header } from "@/components/Header"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
-import { Competition } from "@/services/competitionService"
+import { Competition, competitionService } from "@/services/competitionService"
 import { useRouter } from 'expo-router'
+
 const Container = styled.View`
   flex: 1;
   background-color: ${colors.backgroundDark};
@@ -24,271 +25,190 @@ const Content = styled.View`
   padding-bottom: 80px;
 `
 
-const CompetitionCard = styled.TouchableOpacity`
-  background-color: ${colors.secondary};
+const CompetitionCard = styled.View`
+  background-color: ${colors.backgroundLight};
   border-radius: 8px;
-  margin-bottom: 16px;
   padding: 16px;
-`
-
-const CompetitionHeader = styled.View`
-  flex-direction: row;
-  align-items: flex-start;
   margin-bottom: 16px;
-`
-
-const HeaderContent = styled.View`
-  flex: 1;
-`
-
-const TitleRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-`
-
-const CompetitionInfo = styled.View`
-  flex: 1;
-  margin-left: 12px;
 `
 
 const CompetitionName = styled.Text`
+  color: ${colors.text};
   font-size: 18px;
   font-weight: bold;
-  color: ${colors.gray100};
+  margin-bottom: 8px;
 `
 
-const CompetitionGame = styled.Text`
+const CompetitionDescription = styled.Text`
+  color: ${colors.textSecondary};
   font-size: 14px;
-  color: ${colors.gray300};
-  margin-top: 4px;
+  margin-bottom: 16px;
 `
 
-const StatusBadge = styled.View<{ status: string }>`
-  background-color: ${props => {
-    switch (props.status) {
-      case 'open':
-        return colors.success + '20';
-      case 'in_progress':
-        return colors.warning + '20';
-      case 'finished':
-        return colors.error + '20';
-      default:
-        return colors.gray700;
-    }
-  }};
-  padding: 4px 8px;
-  border-radius: 4px;
+const CompetitionStatus = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 `
 
 const StatusText = styled.Text`
-  color: ${colors.gray100};
-  font-size: 12px;
-  font-weight: 500;
+  color: ${colors.textSecondary};
+  font-size: 14px;
 `
 
-const CompetitionDetails = styled.View`
+const CompetitionStats = styled.View`
   flex-direction: row;
   justify-content: space-between;
-  padding-top: 12px;
-  border-top-width: 1px;
-  border-top-color: ${colors.tertiary}20;
+  align-items: center;
+  margin-top: 8px;
 `
 
-const DetailItem = styled.View`
+const StatContainer = styled.View`
+  flex-direction: row;
   align-items: center;
 `
 
-const DetailText = styled.Text`
-  color: ${colors.gray300};
-  font-size: 12px;
-  margin-top: 4px;
+const StatText = styled.Text`
+  color: ${colors.textSecondary};
+  font-size: 14px;
+  margin-left: 4px;
 `
 
-const PrizePool = styled.Text`
-  color: ${colors.gray100};
-  font-size: 16px;
-  font-weight: bold;
-  margin-top: 4px;
+const ProgressBarContainer = styled.View`
+  height: 4px;
+  background-color: ${colors.backgroundDark};
+  border-radius: 2px;
+  overflow: hidden;
 `
+
+const ProgressBarFill = styled.View<{ width: string }>`
+  height: 100%;
+  width: ${props => props.width};
+  background-color: ${colors.primary};
+  border-radius: 2px;
+`
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return colors.warning;
+    case 'in_progress':
+      return colors.success;
+    case 'finished':
+      return colors.primary;
+    default:
+      return colors.textSecondary;
+  }
+}
+
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return 'Pendente';
+    case 'in_progress':
+      return 'Em Andamento';
+    case 'finished':
+      return 'Finalizado';
+    default:
+      return 'Desconhecido';
+  }
+}
+
 const handleCardPress = (competition: Competition, router: any, communityId: string) => {
-    router.push(`/comunidade/${communityId}/competicao/${competition.id}`);
+  router.push(`/comunidade/${communityId}/competicao/${competition.id}`);
 };
+
 export default function Competicoes() {
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [competitionStats, setCompetitionStats] = useState<{[key: string]: { totalPlayers: number, totalGames: number }}>({});
   const router = useRouter()
+
   useEffect(() => {
     loadCompetitions()
   }, [])
 
   const loadCompetitions = async () => {
     try {
-      const { data: userCompetitions, error } = await supabase
-        .from('competitions')
-        .select(`
-          id,
-          name,
-          description,
-          start_date,
-          status,
-          community_id,
-          (select count(*) from competition_members cm where cm.competition_id = competitions.id) as members_count,
-          (select count(*) from games g where g.competition_id = competitions.id) as games_count
-        `)
-        .eq('created_by', (await supabase.auth.getUser()).data.user?.id)
+      const competitions = await competitionService.listMyCompetitions();
 
-      if (error) throw error
-
-      // Verifica e atualiza o status das competições
-      const updatedCompetitions = await Promise.all(userCompetitions.map(async (comp) => {
-        const { data: games } = await supabase
-          .from('games')
-          .select('status')
+      // Busca estatísticas para cada competição
+      const stats: {[key: string]: { totalPlayers: number, totalGames: number }} = {};
+      
+      for (const comp of competitions) {
+        const { data: members } = await supabase
+          .from('competition_members')
+          .select('id')
           .eq('competition_id', comp.id);
 
-        if (games && games.length > 0) {
-          const hasFinishedGames = games.some(game => game.status === 'finished');
-          const hasUnfinishedGames = games.some(game => 
-            game.status === 'pending' || game.status === 'in_progress'
-          );
+        const { data: games } = await supabase
+          .from('games')
+          .select('id')
+          .eq('competition_id', comp.id);
 
-          if (hasFinishedGames && !hasUnfinishedGames && comp.status !== 'finished') {
-            await supabase
-              .from('competitions')
-              .update({ status: 'finished' })
-              .eq('id', comp.id);
-            return { ...comp, status: 'finished' };
-          }
-        }
-        return comp;
-      }));
-
-      const stats: {[key: string]: { totalPlayers: number, totalGames: number }} = {};
-      updatedCompetitions.forEach((comp) => {
         stats[comp.id] = {
-          totalPlayers: comp.members_count || 0,
-          totalGames: comp.games_count || 0
+          totalPlayers: members?.length || 0,
+          totalGames: games?.length || 0
         };
-      });
+      }
 
       setCompetitionStats(stats);
-      setCompetitions(updatedCompetitions);
+      setCompetitions(competitions);
     } catch (error) {
-      console.error('Error loading competitions:', error)
+      console.error('Erro ao carregar competições:', error);
+      if (error instanceof Error) {
+        console.error('Detalhes do erro:', error.message);
+        console.error('Stack trace:', error.stack);
+      } else {
+        console.error('Erro desconhecido:', error);
+      }
     }
   }
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'Aguardando Início'
-      case 'in_progress':
-        return 'Em Andamento'
-      case 'finished':
-        return 'Finalizado'
-      default:
-        return status
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return colors.warning
-      case 'in_progress':
-        return colors.success
-      case 'finished':
-        return colors.primary
-      default:
-        return colors.gray300
-    }
-  }
-
-  const fabActions = [
-    {
-      icon: "trophy-outline",
-      label: "Nova Competição",
-      onPress: () => console.log("Nova Competição"),
-    },
-  ];
 
   return (
     <Container>
-      <Header title="Competições" onNotificationPress={() => {}} onProfilePress={() => {}} />
-      <ScrollContent>
-        <Content>
-          {competitions.map(competition => (
-            <CompetitionCard 
-              key={competition.id} 
-              onPress={() => handleCardPress(competition, router, competition.community_id)}
-            >
-              <CompetitionHeader>
-                <MaterialCommunityIcons 
-                  name="trophy" 
-                  size={40} 
-                  color={getStatusColor(competition.status)}
-                />
-                <CompetitionInfo>
-                  <HeaderContent>
-                    <TitleRow>
-                      <CompetitionName>{competition.name}</CompetitionName>
-                      <StatusBadge status={competition.status}>
-                        <StatusText>{getStatusText(competition.status)}</StatusText>
-                      </StatusBadge>
-                    </TitleRow>
-                    {competition.description && (
-                      <CompetitionGame>
-                        {competition.description}
-                      </CompetitionGame>
-                    )}
-                  </HeaderContent>
-                </CompetitionInfo>
-              </CompetitionHeader>
+      <Header title="Competições" />
+      <ScrollView style={{ flex: 1, padding: 16 }}>
+        {competitions.map((competition) => (
+          <TouchableOpacity
+            key={competition.id}
+            onPress={() => handleCardPress(competition, router, competition.community_id)}
+          >
+            <CompetitionCard>
+              <CompetitionName>{competition.name}</CompetitionName>
+              <CompetitionDescription>{competition.description}</CompetitionDescription>
+              
+              <CompetitionStatus>
+                <StatusText style={{ color: getStatusColor(competition.status) }}>
+                  {getStatusText(competition.status)}
+                </StatusText>
+              </CompetitionStatus>
 
-              <CompetitionDetails>
-                <DetailItem>
-                  <MaterialCommunityIcons 
-                    name="calendar" 
-                    size={24} 
-                    color={colors.accent}
-                  />
-                  <DetailText>Início: {new Date(competition.start_date).toLocaleDateString('pt-BR')}</DetailText>
-                </DetailItem>
+              <ProgressBarContainer>
+                <ProgressBarFill width={competition.status === 'finished' ? '100%' : competition.status === 'in_progress' ? '50%' : '0%'} />
+              </ProgressBarContainer>
 
-                <DetailItem>
-                  <MaterialCommunityIcons 
-                    name="account-group" 
-                    size={24} 
-                    color={colors.accent}
-                  />
-                  <DetailText>{competitionStats[competition.id]?.totalPlayers || 0} jogadores</DetailText>
-                </DetailItem>
-
-                <DetailItem>
-                  <MaterialCommunityIcons 
-                    name="cards-playing-outline" 
-                    size={24} 
-                    color={colors.accent}
-                  />
-                  <DetailText>{competitionStats[competition.id]?.totalGames || 0} jogos</DetailText>
-                </DetailItem>
-
-                {competition.status === 'in_progress' && (
-                  <ProgressBar>
-                    <ProgressIndicator 
-                      width={`${Math.min((competitionStats[competition.id]?.totalGames || 0) * 10, 100)}%`}
-                      status={competition.status}
-                    />
-                  </ProgressBar>
-                )}
-              </CompetitionDetails>
+              <CompetitionStats>
+                <StatContainer>
+                  <MaterialCommunityIcons name="account-group" size={20} color={colors.textSecondary} />
+                  <StatText>{competitionStats[competition.id]?.totalPlayers || 0} jogadores</StatText>
+                </StatContainer>
+                <StatContainer>
+                  <MaterialCommunityIcons name="gamepad-variant" size={20} color={colors.textSecondary} />
+                  <StatText>{competitionStats[competition.id]?.totalGames || 0} jogos</StatText>
+                </StatContainer>
+              </CompetitionStats>
             </CompetitionCard>
-          ))}
-        </Content>
-      </ScrollContent>
-      <FloatingButton actions={fabActions} />
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      <FloatingButton
+        actions={[{
+          icon: "plus",
+          label: "Nova Competição",
+          onPress: () => router.push('/comunidade')
+        }]}
+      />
     </Container>
   )
 }

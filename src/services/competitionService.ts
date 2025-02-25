@@ -129,6 +129,30 @@ export const competitionService = {
 
     async listByCommunity(communityId: string) {
         try {
+            const { data: user } = await supabase.auth.getUser();
+            if (!user?.user?.id) {
+                throw new Error('Usuário não autenticado');
+            }
+
+            // Verifica se o usuário é criador ou organizador da comunidade
+            const { data: community } = await supabase
+                .from('communities')
+                .select('created_by')
+                .eq('id', communityId)
+                .single();
+
+            const { data: organizer } = await supabase
+                .from('community_organizers')
+                .select('id')
+                .eq('community_id', communityId)
+                .eq('user_id', user.user.id)
+                .single();
+
+            // Se não for criador nem organizador, retorna array vazio
+            if (community?.created_by !== user.user.id && !organizer) {
+                return [];
+            }
+
             const { data, error } = await supabase
                 .from('competitions')
                 .select('*')
@@ -518,5 +542,93 @@ export const competitionService = {
             console.error('Erro ao buscar resultados:', error);
             throw error;
         }
-    }
+    },
+
+    async listMyCompetitions() {
+        try {
+            console.log('Verificando usuário autenticado...');
+            const { data: user } = await supabase.auth.getUser();
+            if (!user?.user?.id) {
+                throw new Error('Usuário não autenticado');
+            }
+
+            console.log('Buscando comunidades criadas pelo usuário...');
+            const { data: createdCommunities, error: createdError } = await supabase
+                .from('communities')
+                .select('id')
+                .eq('created_by', user.user.id);
+
+            if (createdError) {
+                console.error('Erro ao buscar comunidades criadas:', createdError);
+                throw createdError;
+            }
+
+            console.log('Buscando comunidades onde o usuário é organizador...');
+            const { data: organizedCommunities, error: organizedError } = await supabase
+                .from('community_organizers')
+                .select('community_id')
+                .eq('user_id', user.user.id);
+
+            if (organizedError) {
+                console.error('Erro ao buscar comunidades organizadas:', organizedError);
+                throw organizedError;
+            }
+
+            const communityIds = [
+                ...(createdCommunities?.map(c => c.id) || []),
+                ...(organizedCommunities?.map(c => c.community_id) || [])
+            ];
+
+            console.log('IDs das comunidades encontradas:', communityIds);
+
+            if (communityIds.length === 0) {
+                console.log('Nenhuma comunidade encontrada para o usuário');
+                return [];
+            }
+
+            console.log('Buscando competições das comunidades...');
+            // Primeiro buscamos as competições
+            const { data: competitions, error: competitionsError } = await supabase
+                .from('competitions')
+                .select('*')
+                .in('community_id', communityIds)
+                .order('created_at', { ascending: false });
+
+            if (competitionsError) {
+                console.error('Erro ao buscar competições:', competitionsError);
+                throw competitionsError;
+            }
+
+            // Depois buscamos as informações das comunidades
+            if (competitions && competitions.length > 0) {
+                const { data: communities, error: communitiesError } = await supabase
+                    .from('communities')
+                    .select('id, name')
+                    .in('id', competitions.map(c => c.community_id));
+
+                if (communitiesError) {
+                    console.error('Erro ao buscar comunidades:', communitiesError);
+                    throw communitiesError;
+                }
+
+                // Mapeamos as informações das comunidades para as competições
+                const result = competitions.map(competition => ({
+                    ...competition,
+                    community: communities?.find(c => c.id === competition.community_id)
+                }));
+
+                console.log('Competições encontradas:', result);
+                return result;
+            }
+
+            return competitions || [];
+        } catch (error) {
+            console.error('Erro em listMyCompetitions:', error);
+            if (error instanceof Error) {
+                console.error('Detalhes do erro:', error.message);
+                console.error('Stack trace:', error.stack);
+            }
+            throw error;
+        }
+    },
 };
