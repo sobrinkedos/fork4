@@ -62,37 +62,77 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState({
     full_name: '',
-    username: '',
+    nickname: '',
     email: '',
-    phone: '',
+    phone_number: '',
   });
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
+      console.log('useEffect - user?.id:', user?.id);
       loadProfile();
     }
-  }, [user]);
+  }, [user?.id]);
 
   async function loadProfile() {
     try {
       setLoading(true);
+      console.log('Carregando perfil para usuário:', user?.id);
+      
+      if (!user?.id) {
+        console.log('Usuário não encontrado');
+        return;
+      }
+
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id)
+        .from('user_profiles')
+        .select('full_name, nickname, phone_number')
+        .eq('user_id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('Perfil não encontrado, criando novo perfil...');
+          const { error: insertError } = await supabase
+            .from('user_profiles')
+            .insert([
+              { 
+                user_id: user.id,
+                full_name: null,
+                nickname: null,
+                phone_number: null
+              }
+            ]);
+          
+          if (insertError) {
+            console.error('Erro ao criar perfil:', insertError);
+            throw insertError;
+          }
 
+          setProfile({
+            full_name: '',
+            nickname: '',
+            email: user.email || '',
+            phone_number: '',
+          });
+          return;
+        }
+        
+        console.error('Erro ao carregar perfil:', error);
+        throw error;
+      }
+
+      console.log('Dados do perfil:', data);
       if (data) {
         setProfile({
           full_name: data.full_name || '',
-          username: data.username || '',
-          email: user?.email || '',
-          phone: data.phone || '',
+          nickname: data.nickname || '',
+          email: user.email || '',
+          phone_number: data.phone_number || '',
         });
       }
     } catch (error) {
+      console.error('Erro completo:', error);
       Alert.alert('Erro', 'Erro ao carregar perfil');
     } finally {
       setLoading(false);
@@ -102,19 +142,26 @@ export default function ProfileScreen() {
   async function updateProfile() {
     try {
       setLoading(true);
-      const { error } = await supabase
-        .from('profiles')
+
+      // Atualiza o perfil com os novos dados
+      const { error: updateError } = await supabase
+        .from('user_profiles')
         .update({
           full_name: profile.full_name,
-          username: profile.username,
-          phone: profile.phone,
-          updated_at: new Date().toISOString(),
+          nickname: profile.nickname,
+          phone_number: profile.phone_number
         })
-        .eq('id', user?.id);
+        .eq('user_id', user?.id);
 
-      if (error) throw error;
+      if (updateError) {
+        console.error('Erro ao atualizar perfil:', updateError);
+        throw updateError;
+      }
+
       Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
+      router.back();
     } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
       Alert.alert('Erro', 'Erro ao atualizar perfil');
     } finally {
       setLoading(false);
@@ -142,11 +189,11 @@ export default function ProfileScreen() {
             </InputContainer>
 
             <InputContainer>
-              <Label>Nome de Usuário</Label>
+              <Label>Apelido</Label>
               <StyledInput
-                value={profile.username}
-                onChangeText={(text) => setProfile({ ...profile, username: text })}
-                placeholder="@seu.usuario"
+                value={profile.nickname}
+                onChangeText={(text) => setProfile({ ...profile, nickname: text })}
+                placeholder="Seu apelido"
                 placeholderTextColor={colors.gray300}
               />
             </InputContainer>
@@ -164,8 +211,8 @@ export default function ProfileScreen() {
             <InputContainer>
               <Label>Telefone</Label>
               <StyledInput
-                value={profile.phone}
-                onChangeText={(text) => setProfile({ ...profile, phone: text })}
+                value={profile.phone_number}
+                onChangeText={(text) => setProfile({ ...profile, phone_number: text })}
                 placeholder="(00) 00000-0000"
                 placeholderTextColor={colors.gray300}
                 keyboardType="phone-pad"
