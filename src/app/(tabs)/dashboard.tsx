@@ -145,13 +145,13 @@ const ChartTitle = styled.Text`
 `;
 
 const SectionContainer = styled.View`
-    margin: 0 20px 20px;
+    padding: 20px;
 `;
 
 const SectionHeader = styled.View`
     flex-direction: row;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 16px;
 `;
 
@@ -162,14 +162,15 @@ const SectionTitle = styled.Text`
 `;
 
 const SeeAllButton = styled.TouchableOpacity`
-    flex-direction: row;
-    align-items: center;
+    padding: 8px 16px;
+    background-color: ${colors.primary};
+    border-radius: 8px;
 `;
 
 const SeeAllButtonText = styled.Text`
-    color: ${colors.primary};
+    color: ${colors.white};
     font-size: 14px;
-    margin-right: 4px;
+    font-weight: bold;
 `;
 
 const PlayerCard = styled.TouchableOpacity`
@@ -561,7 +562,7 @@ const Dashboard: React.FC = () => {
                     <SectionContainer>
                         <SectionHeader>
                             <SectionTitle>Atividades Recentes</SectionTitle>
-                            <SeeAllButton>
+                            <SeeAllButton onPress={() => router.push('/atividades')}>
                                 <SeeAllButtonText>Ver todas</SeeAllButtonText>
                             </SeeAllButton>
                         </SectionHeader>

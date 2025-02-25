@@ -377,6 +377,27 @@ const HeaderLeft = styled.View`
     gap: 8px;
 `;
 
+const StatsButton = styled.TouchableOpacity<{ pressed?: boolean }>`
+    background-color: ${colors.primary};
+    padding: 8px 16px;
+    border-radius: 8px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    elevation: 2;
+    shadow-color: ${colors.black};
+    shadow-offset: 0px 2px;
+    shadow-opacity: 0.25;
+    shadow-radius: 3.84px;
+    opacity: ${props => props.pressed ? 0.8 : 1};
+`;
+
+const StatsButtonText = styled.Text`
+    color: ${colors.white};
+    font-size: 14px;
+    font-weight: bold;
+`;
+
 export default function CommunityDetails() {
     const router = useRouter();
     const params = useLocalSearchParams();
@@ -397,6 +418,7 @@ export default function CommunityDetails() {
     const [searchTerm, setSearchTerm] = useState('');
     const [organizerEmail, setOrganizerEmail] = useState('');
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+    const [isPressed, setIsPressed] = useState(false);
 
     const rotateAnimMembers = useRef(new Animated.Value(0)).current;
     const rotateAnimOrganizers = useRef(new Animated.Value(0)).current;
@@ -781,9 +803,15 @@ export default function CommunityDetails() {
             <InternalHeader 
                 title={community?.name || 'Comunidade'} 
                 rightContent={
-                    <TouchableOpacity onPress={() => router.push(`/comunidade/${params.id}/estatisticas`)}>
-                        <Feather name="bar-chart-2" size={24} color={colors.white} />
-                    </TouchableOpacity>
+                    <StatsButton 
+                        onPress={() => router.push(`/comunidade/${params.id}/estatisticas`)}
+                        onPressIn={() => setIsPressed(true)}
+                        onPressOut={() => setIsPressed(false)}
+                        pressed={isPressed}
+                    >
+                        <Feather name="bar-chart-2" size={16} color={colors.white} />
+                        <StatsButtonText>Estatísticas</StatsButtonText>
+                    </StatsButton>
                 }
             />
             <MainContent>

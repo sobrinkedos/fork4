@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { activityService } from './activityService';
 
 export const playersService = {
     async list() {
@@ -113,6 +114,17 @@ export const playersService = {
                 .single();
 
             if (error) throw error;
+
+            // Registrar atividade de criação do jogador
+            await activityService.createActivity({
+                type: 'player',
+                description: `Novo jogador "${name}" foi criado`,
+                metadata: {
+                    player_id: data.id,
+                    name: data.name
+                }
+            });
+
             return data;
         } catch (error) {
             console.error('Erro ao criar jogador:', error);

@@ -14,6 +14,10 @@ export interface Activity {
             team2: number;
         };
         winners?: string[];
+        name?: string;
+        gamesCount?: number;
+        isBuchuda?: boolean;
+        isBuchudaDeRe?: boolean;
     };
     created_at?: Date;
     created_by?: string;
@@ -76,6 +80,35 @@ export const activityService = {
         }
     },
 
+    async getAllActivities(page: number = 1, pageSize: number = 20) {
+        try {
+            const from = (page - 1) * pageSize;
+            const to = from + pageSize - 1;
+
+            const { data, error, count } = await supabase
+                .from('activities')
+                .select('*', { count: 'exact' })
+                .order('created_at', { ascending: false })
+                .range(from, to);
+
+            if (error) {
+                console.error('Erro ao buscar atividades:', error);
+                throw error;
+            }
+
+            return {
+                activities: data as Activity[],
+                totalCount: count || 0,
+                currentPage: page,
+                pageSize,
+                totalPages: count ? Math.ceil(count / pageSize) : 0
+            };
+        } catch (error) {
+            console.error('Erro ao buscar atividades:', error);
+            throw error;
+        }
+    },
+
     async getRecentActivities() {
         try {
             const { data: userData } = await supabase.auth.getUser();
@@ -99,18 +132,30 @@ export const activityService = {
         }
     },
 
-    async registerGameCompletion(gameId: string, winners: string[], team1Score: number, team2Score: number, isBuchuda: boolean, isBuchudaDeRe: boolean) {
-        let description = `Jogo finalizado! ${winners.join(' e ')} venceram por ${team1Score} x ${team2Score}`;
-        if (isBuchuda) description += ' com uma buchuda!';
-        if (isBuchudaDeRe) description += ' com uma buchuda de ré!';
+    async registerGameCompletion(
+        gameId: string, 
+        winners: string[], 
+        team1Score: number, 
+        team2Score: number,
+        isBuchuda: boolean = false,
+        isBuchudaDeRe: boolean = false
+    ) {
+        let description = `Jogo finalizado com placar ${team1Score} x ${team2Score}`;
+        if (isBuchuda) description += ' (Buchuda)';
+        if (isBuchudaDeRe) description += ' (Buchuda de Ré)';
 
-        await this.createActivity({
+        return this.createActivity({
             type: 'game',
             description,
             metadata: {
                 game_id: gameId,
-                score: { team1: team1Score, team2: team2Score },
-                winners
+                winners,
+                score: {
+                    team1: team1Score,
+                    team2: team2Score
+                },
+                isBuchuda,
+                isBuchudaDeRe
             }
         });
     },
@@ -151,7 +196,9 @@ export const activityService = {
             type: 'player',
             description: `${name} completou ${gamesCount} jogos!`,
             metadata: {
-                player_id: playerId
+                player_id: playerId,
+                name,
+                gamesCount
             }
         });
     }
