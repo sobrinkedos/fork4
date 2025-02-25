@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
 import { Feather } from '@expo/vector-icons';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, StatusBar, Platform, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 
 type InternalHeaderProps = {
@@ -13,6 +13,15 @@ type InternalHeaderProps = {
 
 export function InternalHeader({ title, onBack, rightContent }: InternalHeaderProps) {
     const router = useRouter();
+    const statusBarHeight = StatusBar.currentHeight || 0;
+
+    useEffect(() => {
+        if (Platform.OS === 'android') {
+            StatusBar.setTranslucent(true);
+            StatusBar.setBackgroundColor('transparent');
+        }
+        StatusBar.setBarStyle('light-content');
+    }, []);
 
     const handleBack = () => {
         if (onBack) {
@@ -23,25 +32,32 @@ export function InternalHeader({ title, onBack, rightContent }: InternalHeaderPr
     };
 
     return (
-        <Container>
-            <HeaderLeft>
-                <BackButton onPress={handleBack}>
-                    <Feather name="arrow-left" size={24} color={colors.gray100} />
-                </BackButton>
-                <HeaderTitle>{title}</HeaderTitle>
-            </HeaderLeft>
-            {rightContent && <HeaderRight>{rightContent}</HeaderRight>}
-        </Container>
+        <SafeAreaContainer>
+            <StatusBar backgroundColor={colors.primary} barStyle="light-content" />
+            <Container statusBarHeight={statusBarHeight}>
+                <HeaderLeft>
+                    <BackButton onPress={handleBack}>
+                        <Feather name="arrow-left" size={24} color={colors.white} />
+                    </BackButton>
+                    <HeaderTitle>{title}</HeaderTitle>
+                </HeaderLeft>
+                {rightContent && <HeaderRight>{rightContent}</HeaderRight>}
+            </Container>
+        </SafeAreaContainer>
     );
 }
 
-const Container = styled.View`
+const SafeAreaContainer = styled.View`
+    background-color: ${colors.primary};
+`;
+
+const Container = styled.View<{ statusBarHeight: number }>`
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     padding: 16px;
-    padding-top: 32px;
     background-color: ${colors.primary};
+    padding-top: ${({ statusBarHeight }) => Platform.OS === 'ios' ? 44 : 16}px;
 `;
 
 const HeaderLeft = styled.View`
@@ -51,12 +67,12 @@ const HeaderLeft = styled.View`
 `;
 
 const BackButton = styled.TouchableOpacity`
-    padding: 8px;
+    padding: 4px;
     margin-right: 16px;
 `;
 
 const HeaderTitle = styled.Text`
-    color: ${colors.gray100};
+    color: ${colors.white};
     font-size: 20px;
     font-weight: bold;
 `;
