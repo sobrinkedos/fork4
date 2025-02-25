@@ -13,98 +13,92 @@ import { useRouter } from 'expo-router'
 const Container = styled.View`
   flex: 1;
   background-color: ${colors.backgroundDark};
-`
+`;
 
-const ScrollContent = styled.ScrollView`
+const ScrollContent = styled.ScrollView.attrs({
+  contentContainerStyle: {
+    flexGrow: 1,
+    padding: 16,
+    paddingBottom: 80,
+  },
+})`
   flex: 1;
-`
+`;
 
-const Content = styled.View`
-  flex: 1;
-  padding: 16px;
-  padding-bottom: 80px;
-`
-
-const CompetitionCard = styled.View`
-  background-color: ${colors.backgroundLight};
+const CompetitionCard = styled.TouchableOpacity`
+  background-color: ${colors.secondary};
   border-radius: 8px;
-  padding: 16px;
   margin-bottom: 16px;
-  border: 1px solid ${colors.border};
-`
+  padding: 16px;
+`;
+
+const CompetitionHeader = styled.View`
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+`;
+
+const CompetitionInfo = styled.View`
+  flex: 1;
+  margin-right: 12px;
+`;
 
 const CompetitionName = styled.Text`
-  color: ${colors.primary};
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
-  margin-bottom: 8px;
-  text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
-`
+  color: ${colors.gray100};
+  margin-bottom: 32px;
+`;
 
 const CompetitionDescription = styled.Text`
-  color: ${colors.textSecondary};
   font-size: 14px;
+  color: ${colors.gray300};
   margin-bottom: 16px;
-  opacity: 0.8;
-`
+`;
 
 const CompetitionStatus = styled.View`
   flex-direction: row;
-  justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
-  background-color: ${colors.backgroundDark};
-  padding: 8px 12px;
-  border-radius: 6px;
-`
+`;
 
 const StatusText = styled.Text`
-  color: ${colors.textSecondary};
   font-size: 14px;
   font-weight: 500;
-`
+`;
 
 const CompetitionStats = styled.View`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top-width: 1px;
-  border-top-color: ${colors.border};
-`
+  margin-top: 8px;
+`;
 
 const StatContainer = styled.View`
   flex-direction: row;
   align-items: center;
-  background-color: ${colors.backgroundDark};
-  padding: 6px 10px;
-  border-radius: 6px;
-`
+`;
 
 const StatText = styled.Text`
-  color: ${colors.textSecondary};
+  color: ${colors.gray300};
   font-size: 14px;
   margin-left: 6px;
-  font-weight: 500;
-`
+`;
 
 const SectionTitle = styled.Text`
-  color: ${colors.primary};
-  font-size: 28px;
+  font-size: 18px;
   font-weight: bold;
-  margin: 24px 0 16px;
-  text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2);
-`
+  color: ${colors.gray100};
+  margin-bottom: 16px;
+`;
 
 const ProgressBarContainer = styled.View`
-  height: 6px;
-  background-color: ${colors.border};
-  border-radius: 3px;
+  height: 4px;
+  background-color: ${colors.gray700};
+  border-radius: 2px;
   overflow: hidden;
   margin: 8px 0;
-  border: 1px solid ${colors.backgroundDark};
-`
+`;
 
 const ProgressBarFill = styled.View<{ width: string; status: string }>`
   height: 100%;
@@ -119,9 +113,32 @@ const ProgressBarFill = styled.View<{ width: string; status: string }>`
         return colors.warning;
     }
   }};
-  border-radius: 3px;
-  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
-`
+`;
+
+const AddButton = styled.TouchableOpacity`
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background-color: ${colors.accent};
+  align-items: center;
+  justify-content: center;
+  elevation: 5;
+`;
+
+const LoadingContainer = styled.View`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+`;
+
+const EmptyText = styled.Text`
+  color: ${colors.gray300};
+  font-size: 16px;
+  text-align: center;
+`;
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -159,6 +176,7 @@ export default function Competicoes() {
     organized: Competition[]
   }>({ created: [], organized: [] })
   const [competitionStats, setCompetitionStats] = useState<{[key: string]: { totalPlayers: number, totalGames: number }}>({});
+  const [loading, setLoading] = useState(true);
   const router = useRouter()
 
   useEffect(() => {
@@ -167,6 +185,7 @@ export default function Competicoes() {
 
   const loadCompetitions = async () => {
     try {
+      setLoading(true);
       const comps = await competitionService.listMyCompetitions();
 
       // Busca estatísticas para cada competição
@@ -200,70 +219,87 @@ export default function Competicoes() {
       } else {
         console.error('Erro desconhecido:', error);
       }
+    } finally {
+      setLoading(false);
     }
   }
 
-  const renderCompetitionList = (competitions: Competition[], title: string) => {
-    if (!competitions.length) {
-      return null;
-    }
+  const renderCompetitionCard = (competition: Competition) => (
+    <CompetitionCard
+      key={competition.id}
+      onPress={() => handleCardPress(competition, router, competition.community_id)}
+    >
+      <CompetitionHeader>
+        <CompetitionInfo>
+          <CompetitionName>{competition.name}</CompetitionName>
+          {competition.description && (
+            <CompetitionDescription>{competition.description}</CompetitionDescription>
+          )}
+          <CompetitionStatus>
+            <StatusText style={{ color: getStatusColor(competition.status) }}>
+              {getStatusText(competition.status)}
+            </StatusText>
+          </CompetitionStatus>
+        </CompetitionInfo>
+        <MaterialCommunityIcons
+          name="chevron-right"
+          size={24}
+          color={colors.text}
+        />
+      </CompetitionHeader>
 
-    return (
-      <View>
-        <SectionTitle>{title}</SectionTitle>
-        {competitions.map((competition) => (
-          <TouchableOpacity
-            key={competition.id}
-            onPress={() => handleCardPress(competition, router, competition.community_id)}
-          >
-            <CompetitionCard>
-              <CompetitionName>{competition.name}</CompetitionName>
-              <CompetitionDescription>{competition.description}</CompetitionDescription>
-              
-              <CompetitionStatus>
-                <StatusText style={{ color: getStatusColor(competition.status) }}>
-                  {getStatusText(competition.status)}
-                </StatusText>
-              </CompetitionStatus>
+      <ProgressBarContainer>
+        <ProgressBarFill 
+          width={competition.status === 'finished' ? '100%' : competition.status === 'in_progress' ? '50%' : '0%'} 
+          status={competition.status}
+        />
+      </ProgressBarContainer>
 
-              <ProgressBarContainer>
-                <ProgressBarFill 
-                  width={competition.status === 'finished' ? '100%' : competition.status === 'in_progress' ? '50%' : '0%'} 
-                  status={competition.status}
-                />
-              </ProgressBarContainer>
-
-              <CompetitionStats>
-                <StatContainer>
-                  <MaterialCommunityIcons name="account-group" size={20} color={colors.textSecondary} />
-                  <StatText>{competitionStats[competition.id]?.totalPlayers || 0} jogadores</StatText>
-                </StatContainer>
-                <StatContainer>
-                  <MaterialCommunityIcons name="gamepad-variant" size={20} color={colors.textSecondary} />
-                  <StatText>{competitionStats[competition.id]?.totalGames || 0} jogos</StatText>
-                </StatContainer>
-              </CompetitionStats>
-            </CompetitionCard>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  }
+      <CompetitionStats>
+        <StatContainer>
+          <MaterialCommunityIcons name="account-group" size={16} color={colors.gray300} />
+          <StatText>{competitionStats[competition.id]?.totalPlayers || 0} jogadores</StatText>
+        </StatContainer>
+        <StatContainer>
+          <MaterialCommunityIcons name="gamepad-variant" size={16} color={colors.gray300} />
+          <StatText>{competitionStats[competition.id]?.totalGames || 0} jogos</StatText>
+        </StatContainer>
+      </CompetitionStats>
+    </CompetitionCard>
+  );
 
   return (
     <Container>
       <Header title="Competições" />
-      <ScrollView style={{ flex: 1, padding: 16 }}>
-        {renderCompetitionList(competitions.created, 'Competições Criadas')}
-        {renderCompetitionList(competitions.organized, 'Competições que Organizo')}
-      </ScrollView>
-      <FloatingButton
-        actions={[{
-          icon: "plus",
-          label: "Nova Competição",
-          onPress: () => router.push('/comunidade/nova-competicao')
-        }]}
-      />
+      {loading ? (
+        <LoadingContainer>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </LoadingContainer>
+      ) : (
+        <ScrollContent>
+          <SectionTitle>Minhas Competições</SectionTitle>
+          {competitions.created.length === 0 ? (
+            <EmptyText>Você ainda não criou nenhuma competição</EmptyText>
+          ) : (
+            competitions.created.map(renderCompetitionCard)
+          )}
+
+          {competitions.organized.length > 0 && (
+            <>
+              <SectionTitle style={{ marginTop: 24 }}>Competições que Organizo</SectionTitle>
+              {competitions.organized.map(renderCompetitionCard)}
+            </>
+          )}
+        </ScrollContent>
+      )}
+
+      <AddButton onPress={() => router.push('/comunidade/nova-competicao')}>
+        <MaterialCommunityIcons
+          name="plus"
+          size={24}
+          color={colors.text}
+        />
+      </AddButton>
     </Container>
-  )
+  );
 }
