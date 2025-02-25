@@ -120,7 +120,10 @@ const handleCardPress = (competition: Competition, router: any, communityId: str
 };
 
 export default function Competicoes() {
-  const [competitions, setCompetitions] = useState<Competition[]>([])
+  const [competitions, setCompetitions] = useState<{
+    created: Competition[],
+    organized: Competition[]
+  }>({ created: [], organized: [] })
   const [competitionStats, setCompetitionStats] = useState<{[key: string]: { totalPlayers: number, totalGames: number }}>({});
   const router = useRouter()
 
@@ -130,12 +133,13 @@ export default function Competicoes() {
 
   const loadCompetitions = async () => {
     try {
-      const competitions = await competitionService.listMyCompetitions();
+      const comps = await competitionService.listMyCompetitions();
 
       // Busca estatísticas para cada competição
       const stats: {[key: string]: { totalPlayers: number, totalGames: number }} = {};
       
-      for (const comp of competitions) {
+      const allCompetitions = [...comps.created, ...comps.organized];
+      for (const comp of allCompetitions) {
         const { data: members } = await supabase
           .from('competition_members')
           .select('id')
@@ -153,7 +157,7 @@ export default function Competicoes() {
       }
 
       setCompetitionStats(stats);
-      setCompetitions(competitions);
+      setCompetitions(comps);
     } catch (error) {
       console.error('Erro ao carregar competições:', error);
       if (error instanceof Error) {
@@ -165,10 +169,14 @@ export default function Competicoes() {
     }
   }
 
-  return (
-    <Container>
-      <Header title="Competições" />
-      <ScrollView style={{ flex: 1, padding: 16 }}>
+  const renderCompetitionList = (competitions: Competition[], title: string) => {
+    if (!competitions.length) {
+      return null;
+    }
+
+    return (
+      <View>
+        <CompetitionName style={{ marginTop: 16 }}>{title}</CompetitionName>
         {competitions.map((competition) => (
           <TouchableOpacity
             key={competition.id}
@@ -201,12 +209,22 @@ export default function Competicoes() {
             </CompetitionCard>
           </TouchableOpacity>
         ))}
+      </View>
+    );
+  }
+
+  return (
+    <Container>
+      <Header title="Competições" />
+      <ScrollView style={{ flex: 1, padding: 16 }}>
+        {renderCompetitionList(competitions.created, 'Competições Criadas')}
+        {renderCompetitionList(competitions.organized, 'Competições que Organizo')}
       </ScrollView>
       <FloatingButton
         actions={[{
           icon: "plus",
           label: "Nova Competição",
-          onPress: () => router.push('/comunidade')
+          onPress: () => router.push('/comunidade/nova-competicao')
         }]}
       />
     </Container>
