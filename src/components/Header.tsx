@@ -21,7 +21,7 @@ const Container = styled.View<{ statusBarHeight: number }>`
     justify-content: space-between;
     padding: 16px;
     background-color: ${colors.primary};
-    padding-top: ${({ statusBarHeight }) => statusBarHeight + 16}px;
+    padding-top: ${({ statusBarHeight }) => Platform.OS === 'ios' ? 44 : 16}px;
 `;
 
 const LeftContainer = styled.View`
@@ -70,35 +70,41 @@ export function Header({ title, showBackButton, isDashboard }: HeaderProps) {
     const statusBarHeight = StatusBar.currentHeight || 0;
 
     return (
-        <Container statusBarHeight={statusBarHeight}>
-            <LeftContainer>
-                {isDashboard ? (
-                    <>
-                        <LogoContainer>
-                            <SvgXml xml={logoSvg} width={32} height={32} />
-                        </LogoContainer>
-                        <AppTitle>DommatchApp</AppTitle>
-                    </>
-                ) : showBackButton ? (
-                    <IconButton onPress={() => router.back()}>
-                        <MaterialCommunityIcons name="arrow-left" size={24} color={colors.white} />
+        <>
+            <StatusBar 
+                backgroundColor={colors.primary}
+                barStyle="light-content"
+            />
+            <Container statusBarHeight={statusBarHeight}>
+                <LeftContainer>
+                    {isDashboard ? (
+                        <>
+                            <LogoContainer>
+                                <SvgXml xml={logoSvg} width={32} height={32} />
+                            </LogoContainer>
+                            <AppTitle>DommatchApp</AppTitle>
+                        </>
+                    ) : showBackButton ? (
+                        <IconButton onPress={() => router.back()}>
+                            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.white} />
+                        </IconButton>
+                    ) : (
+                        <Title>{title}</Title>
+                    )}
+                </LeftContainer>
+                
+                <ActionContainer>
+                    <IconButton onPress={() => router.push('/notifications')}>
+                        <MaterialCommunityIcons name="bell-outline" size={24} color={colors.white} />
                     </IconButton>
-                ) : (
-                    <Title>{title}</Title>
-                )}
-            </LeftContainer>
-            
-            <ActionContainer>
-                <IconButton onPress={() => router.push('/notifications')}>
-                    <MaterialCommunityIcons name="bell-outline" size={24} color={colors.white} />
-                </IconButton>
-                <IconButton onPress={() => router.push('/profile')}>
-                    <MaterialCommunityIcons name="account-circle-outline" size={24} color={colors.white} />
-                </IconButton>
-                <IconButton onPress={() => signOut()}>
-                    <MaterialCommunityIcons name="logout" size={24} color={colors.white} />
-                </IconButton>
-            </ActionContainer>
-        </Container>
+                    <IconButton onPress={() => router.push('/profile')}>
+                        <MaterialCommunityIcons name="account-circle-outline" size={24} color={colors.white} />
+                    </IconButton>
+                    <IconButton onPress={() => signOut()}>
+                        <MaterialCommunityIcons name="logout" size={24} color={colors.white} />
+                    </IconButton>
+                </ActionContainer>
+            </Container>
+        </>
     );
 }
