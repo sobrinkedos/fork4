@@ -82,6 +82,30 @@ const HeaderSubtitle = styled.Text`
     text-align: center;
 `;
 
+const HeaderLeft = styled.View`
+    flex-direction: row;
+    align-items: center;
+`;
+
+const HeaderRight = styled.View`
+    flex-direction: row;
+    align-items: center;
+`;
+
+const StatsButton = styled.TouchableOpacity`
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background-color: ${colors.gray800};
+`;
+
+const StatsButtonText = styled.Text`
+    color: ${colors.gray100};
+    font-size: 14px;
+    margin-left: 8px;
+`;
+
 const MainContent = styled.View`
     flex: 1;
     background-color: ${colors.background};
@@ -394,16 +418,6 @@ const ShowMoreText = styled.Text`
     color: ${colors.primary};
     font-size: 14px;
     margin-left: 4px;
-`;
-
-const HeaderLeft = styled.View`
-    flex-direction: row;
-    align-items: center;
-`;
-
-const HeaderRight = styled.View`
-    flex-direction: row;
-    align-items: center;
 `;
 
 export default function CommunityDetails() {
@@ -809,10 +823,15 @@ export default function CommunityDetails() {
         <Container>
             <PageHeader>
                 <BackButton onPress={() => router.back()}>
-                    <Feather name="chevron-left" size={24} color={colors.gray100} />
+                    <Feather name="arrow-left" size={24} color={colors.gray100} />
                 </BackButton>
                 <HeaderTitle>{community?.name}</HeaderTitle>
-                <HeaderSubtitle>{session?.user?.email || ''}</HeaderSubtitle>
+                <HeaderRight>
+                    <StatsButton onPress={() => router.push(`/comunidade/${params.id}/estatisticas`)}>
+                        <Feather name="bar-chart-2" size={20} color={colors.gray100} />
+                        <StatsButtonText>Estatísticas</StatsButtonText>
+                    </StatsButton>
+                </HeaderRight>
             </PageHeader>
 
             <MainContent>
