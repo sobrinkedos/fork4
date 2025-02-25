@@ -178,9 +178,82 @@ const CreateButton = styled.TouchableOpacity`
     elevation: 5;
 `;
 
+const SectionTitle = styled.Text`
+    font-size: 18px;
+    font-weight: bold;
+    color: ${colors.gray100};
+    margin-bottom: 16px;
+`;
+
+const CommunityFooter = styled.View`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+`;
+
+const FooterText = styled.Text`
+    font-size: 14px;
+    color: ${colors.gray300};
+`;
+
+const ModalContainer = styled.View`
+    flex: 1;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+`;
+
+const ModalHeader = styled.View`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+`;
+
+const CloseButton = styled.TouchableOpacity`
+    padding: 8px;
+`;
+
+const AddButton = styled.TouchableOpacity`
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background-color: ${colors.accent};
+    align-items: center;
+    justify-content: center;
+    elevation: 5;
+`;
+
+const AddButtonText = styled.Text`
+    font-size: 16px;
+    font-weight: bold;
+    color: ${colors.gray100};
+    text-align: center;
+`;
+
+const SaveButton = styled.TouchableOpacity`
+    background-color: ${colors.accent};
+    padding: 16px;
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+`;
+
+const SaveButtonText = styled.Text`
+    font-size: 16px;
+    font-weight: bold;
+    color: ${colors.gray100};
+    text-align: center;
+`;
+
 export default function Comunidades() {
     const router = useRouter();
-    const [communities, setCommunities] = useState<Community[]>([]);
+    const [createdCommunities, setCreatedCommunities] = useState<Community[]>([]);
+    const [organizedCommunities, setOrganizedCommunities] = useState<Community[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
@@ -202,8 +275,9 @@ export default function Comunidades() {
     const loadCommunities = async () => {
         try {
             setLoading(true);
-            const data = await communityService.list();
-            setCommunities(data || []);
+            const { created, organized } = await communityService.list();
+            setCreatedCommunities(created || []);
+            setOrganizedCommunities(organized || []);
         } catch (error) {
             console.error('Erro ao carregar comunidades:', error);
             Alert.alert('Erro', 'Não foi possível carregar as comunidades');
@@ -219,239 +293,124 @@ export default function Comunidades() {
         }
 
         try {
-            if (selectedCommunity) {
-                const { error } = await communityService.update(selectedCommunity.id, {
-                    name: formData.name.trim(),
-                    description: formData.description.trim()
-                });
-                if (error) throw error;
-                Alert.alert('Sucesso', 'Comunidade atualizada com sucesso');
-            } else {
-                const { error } = await communityService.create({
-                    name: formData.name.trim(),
-                    description: formData.description.trim()
-                });
-                if (error) throw error;
-                Alert.alert('Sucesso', 'Comunidade criada com sucesso');
-            }
-
-            setFormData({ name: '', description: '' });
-            setSelectedCommunity(null);
+            setLoading(true);
+            await communityService.create({
+                name: formData.name.trim(),
+                description: formData.description.trim()
+            });
             setShowModal(false);
-            loadCommunities();
+            setFormData({ name: '', description: '' });
+            await loadCommunities();
         } catch (error) {
-            console.error('Erro ao salvar comunidade:', error);
-            Alert.alert('Erro', 'Não foi possível salvar a comunidade');
+            console.error('Erro ao criar comunidade:', error);
+            Alert.alert('Erro', 'Não foi possível criar a comunidade');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleEdit = (community: Community) => {
-        setSelectedCommunity(community);
-        setFormData({
-            name: community.name,
-            description: community.description
-        });
-        setShowModal(true);
-    };
-
-    const handleDelete = (community: Community) => {
-        Alert.alert(
-            'Confirmar exclusão',
-            `Deseja realmente excluir a comunidade ${community.name}?`,
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                {
-                    text: 'Excluir',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            const { error } = await communityService.delete(community.id);
-                            if (error) throw error;
-                            Alert.alert('Sucesso', 'Comunidade excluída com sucesso');
-                            loadCommunities();
-                        } catch (error) {
-                            console.error('Erro ao excluir comunidade:', error);
-                            Alert.alert('Erro', 'Não foi possível excluir a comunidade');
-                        }
-                    }
-                }
-            ]
-        );
-    };
-
-    const handleAddNew = () => {
-        setSelectedCommunity(null);
-        setFormData({ name: '', description: '' });
-        setShowModal(true);
-    };
-
-    const handleCardPress = (communityId: string) => {
-        router.push(`/comunidade/${communityId}`);
-    };
-
-    const renderCommunity = (community: Community) => (
+    const renderCommunityCard = (community: Community) => (
         <CommunityCard
-            key={`community-${community.id}`}
+            key={community.id}
             onPress={() => router.push(`/comunidade/${community.id}`)}
         >
             <CommunityHeader>
                 <CommunityInfo>
                     <CommunityName>{community.name}</CommunityName>
-                    <CommunityDescription>{community.description}</CommunityDescription>
+                    {community.description && (
+                        <CommunityDescription>{community.description}</CommunityDescription>
+                    )}
                 </CommunityInfo>
-                {community.is_organizer && (
-                    <OrganizerBadge>
-                        <OrganizerText>Organizador</OrganizerText>
-                    </OrganizerBadge>
-                )}
+                <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={24}
+                    color={colors.text}
+                />
             </CommunityHeader>
-
-            <CommunityStats>
-                <StatItem>
-                    <MaterialCommunityIcons
-                        name="account-multiple"
-                        size={16}
-                        color={colors.gray300}
-                    />
-                    <StatText>{community.members_count} membros</StatText>
-                </StatItem>
-                <StatItem>
-                    <MaterialCommunityIcons
-                        name="cards-playing-outline"
-                        size={16}
-                        color={colors.gray300}
-                    />
-                    <StatText>{community.games_count} jogos</StatText>
-                </StatItem>
-            </CommunityStats>
+            <CommunityFooter>
+                <FooterText>{community.members_count || 0} membros</FooterText>
+            </CommunityFooter>
         </CommunityCard>
     );
 
-    if (loading) {
-        return (
-            <Container>
-                <Header title="Comunidades" onNotificationPress={() => {}} onProfilePress={() => {}} />
-                <LoadingContainer>
-                    <ActivityIndicator size="large" color={colors.accent} />
-                </LoadingContainer>
-            </Container>
-        );
-    }
-
     return (
         <Container>
-            <Header title="Comunidades" onNotificationPress={() => {}} onProfilePress={() => {}} />
-            <ScrollContent>
-                {loading ? (
-                    <LoadingContainer>
-                        <ActivityIndicator size="large" color={colors.primary} />
-                    </LoadingContainer>
-                ) : communities.length === 0 ? (
-                    <EmptyContainer>
-                        <EmptyText>Nenhuma comunidade encontrada</EmptyText>
-                    </EmptyContainer>
-                ) : (
-                    communities.map((community) => (
-                        <CommunityCard
-                            key={`community-${community.id}`}
-                            onPress={() => router.push(`/comunidade/${community.id}`)}
-                        >
-                            <CommunityHeader>
-                                <CommunityInfo>
-                                    <CommunityName>{community.name}</CommunityName>
-                                    <CommunityDescription>{community.description}</CommunityDescription>
-                                </CommunityInfo>
-                                {community.is_organizer && (
-                                    <OrganizerBadge>
-                                        <OrganizerText>Organizador</OrganizerText>
-                                    </OrganizerBadge>
-                                )}
-                            </CommunityHeader>
+            <Header title="Comunidades" />
+            {loading ? (
+                <LoadingContainer>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </LoadingContainer>
+            ) : (
+                <ScrollContent>
+                    <SectionTitle>Minhas Comunidades</SectionTitle>
+                    {createdCommunities.length === 0 ? (
+                        <EmptyText>Você ainda não criou nenhuma comunidade</EmptyText>
+                    ) : (
+                        createdCommunities.map(renderCommunityCard)
+                    )}
 
-                            <CommunityStats>
-                                <StatItem>
-                                    <MaterialCommunityIcons
-                                        name="account-multiple"
-                                        size={16}
-                                        color={colors.gray300}
-                                    />
-                                    <StatText>{community.members_count} membros</StatText>
-                                </StatItem>
-                                <StatItem>
-                                    <MaterialCommunityIcons
-                                        name="cards-playing-outline"
-                                        size={16}
-                                        color={colors.gray300}
-                                    />
-                                    <StatText>{community.games_count} jogos</StatText>
-                                </StatItem>
-                            </CommunityStats>
-                        </CommunityCard>
-                    ))
-                )}
-            </ScrollContent>
+                    {organizedCommunities.length > 0 && (
+                        <>
+                            <SectionTitle style={{ marginTop: 24 }}>Comunidades que Organizo</SectionTitle>
+                            {organizedCommunities.map(renderCommunityCard)}
+                        </>
+                    )}
 
-            <CreateButton 
-                onPress={() => router.push('/comunidade/nova')}
-            >
-                <MaterialCommunityIcons 
-                    name="plus" 
-                    size={24} 
-                    color={colors.gray100}
-                />
-            </CreateButton>
+                    <AddButton onPress={() => setShowModal(true)}>
+                        <MaterialCommunityIcons
+                            name="plus"
+                            size={24}
+                            color={colors.text}
+                        />
+                    </AddButton>
+                </ScrollContent>
+            )}
 
             <RNModal
                 visible={showModal}
-                transparent
-                animationType="fade"
-                onRequestClose={() => {
-                    setShowModal(false);
-                    setSelectedCommunity(null);
-                    setFormData({ name: '', description: '' });
-                }}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowModal(false)}
             >
-                <Modal>
+                <ModalContainer>
                     <ModalContent>
-                        <ModalTitle>
-                            {selectedCommunity ? 'Editar Comunidade' : 'Nova Comunidade'}
-                        </ModalTitle>
-                        
+                        <ModalHeader>
+                            <ModalTitle>Nova Comunidade</ModalTitle>
+                            <CloseButton onPress={() => setShowModal(false)}>
+                                <MaterialCommunityIcons
+                                    name="close"
+                                    size={24}
+                                    color={colors.text}
+                                />
+                            </CloseButton>
+                        </ModalHeader>
+
                         <Input
-                            placeholder="Nome da comunidade *"
+                            placeholder="Nome da Comunidade"
+                            placeholderTextColor={colors.gray300}
                             value={formData.name}
                             onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
-                            placeholderTextColor={colors.gray400}
-                        />
-                        
-                        <Input
-                            placeholder="Descrição"
-                            value={formData.description}
-                            onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
-                            placeholderTextColor={colors.gray400}
-                            multiline
-                            numberOfLines={3}
-                            textAlignVertical="top"
                         />
 
-                        <ButtonsContainer>
-                            <Button 
-                                variant="secondary"
-                                onPress={() => {
-                                    setShowModal(false);
-                                    setSelectedCommunity(null);
-                                    setFormData({ name: '', description: '' });
-                                }}
-                            >
-                                <ButtonText>Cancelar</ButtonText>
-                            </Button>
-                            
-                            <Button variant="primary" onPress={handleSave}>
-                                <ButtonText>Salvar</ButtonText>
-                            </Button>
-                        </ButtonsContainer>
+                        <Input
+                            placeholder="Descrição (opcional)"
+                            placeholderTextColor={colors.gray300}
+                            value={formData.description}
+                            onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
+                            multiline
+                            numberOfLines={4}
+                            style={{ height: 100, textAlignVertical: 'top' }}
+                        />
+
+                        <SaveButton onPress={handleSave} disabled={loading}>
+                            {loading ? (
+                                <ActivityIndicator color={colors.text} />
+                            ) : (
+                                <SaveButtonText>Salvar</SaveButtonText>
+                            )}
+                        </SaveButton>
                     </ModalContent>
-                </Modal>
+                </ModalContainer>
             </RNModal>
         </Container>
     );

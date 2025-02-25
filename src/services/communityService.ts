@@ -65,11 +65,15 @@ class CommunityService {
                 throw new Error('Erro ao listar comunidades');
             }
 
+            // IDs das comunidades que o usuário criou
+            const createdIds = createdCommunities.map(c => c.id);
+
             // Primeiro busca os IDs das comunidades onde o usuário é organizador
             const { data: organizedIds = [], error: organizedIdsError } = await supabase
                 .from('community_organizers')
                 .select('community_id')
-                .eq('user_id', userId);
+                .eq('user_id', userId)
+                .not('community_id', 'in', `(${createdIds.join(',')})`); // Excluir comunidades que já é criador
 
             if (organizedIdsError) {
                 console.error('Erro ao buscar IDs de comunidades organizadas:', organizedIdsError);
@@ -90,24 +94,25 @@ class CommunityService {
                 .in('id', organizedIds.map(org => org.community_id));
 
             if (organizedError) {
-                console.error('Erro ao listar comunidades organizadas:', organizedError);
+                console.error('Erro ao buscar detalhes das comunidades organizadas:', organizedError);
                 throw new Error('Erro ao listar comunidades');
             }
 
-            // Combina as comunidades e remove duplicatas
-            const allCommunities = [
-                ...createdCommunities.map(c => ({ ...c, is_organizer: false })),
-                ...organizedCommunities.map(c => ({ ...c, is_organizer: true }))
-            ];
+            console.log('Comunidades encontradas:', {
+                criadas: createdCommunities.length,
+                organizadas: organizedCommunities.length
+            });
 
-            console.log('Todas as comunidades:', allCommunities);
-
-            return allCommunities.map(community => ({
-                ...community,
-                members_count: community.members?.[0]?.count || 0,
-                games_count: 0
-            }));
-
+            return {
+                created: createdCommunities.map(c => ({
+                    ...c,
+                    members_count: c.members?.[0]?.count || 0
+                })),
+                organized: organizedCommunities.map(c => ({
+                    ...c,
+                    members_count: c.members?.[0]?.count || 0
+                }))
+            };
         } catch (error) {
             console.error('Erro ao listar comunidades:', error);
             throw error;
