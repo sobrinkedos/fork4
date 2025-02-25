@@ -30,63 +30,97 @@ const CompetitionCard = styled.View`
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
+  border: 1px solid ${colors.border};
 `
 
 const CompetitionName = styled.Text`
-  color: ${colors.text};
-  font-size: 18px;
+  color: ${colors.primary};
+  font-size: 20px;
   font-weight: bold;
   margin-bottom: 8px;
+  text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
 `
 
 const CompetitionDescription = styled.Text`
   color: ${colors.textSecondary};
   font-size: 14px;
   margin-bottom: 16px;
+  opacity: 0.8;
 `
 
 const CompetitionStatus = styled.View`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  background-color: ${colors.backgroundDark};
+  padding: 8px 12px;
+  border-radius: 6px;
 `
 
 const StatusText = styled.Text`
   color: ${colors.textSecondary};
   font-size: 14px;
+  font-weight: 500;
 `
 
 const CompetitionStats = styled.View`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top-width: 1px;
+  border-top-color: ${colors.border};
 `
 
 const StatContainer = styled.View`
   flex-direction: row;
   align-items: center;
+  background-color: ${colors.backgroundDark};
+  padding: 6px 10px;
+  border-radius: 6px;
 `
 
 const StatText = styled.Text`
   color: ${colors.textSecondary};
   font-size: 14px;
-  margin-left: 4px;
+  margin-left: 6px;
+  font-weight: 500;
+`
+
+const SectionTitle = styled.Text`
+  color: ${colors.primary};
+  font-size: 28px;
+  font-weight: bold;
+  margin: 24px 0 16px;
+  text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2);
 `
 
 const ProgressBarContainer = styled.View`
-  height: 4px;
-  background-color: ${colors.backgroundDark};
-  border-radius: 2px;
+  height: 6px;
+  background-color: ${colors.border};
+  border-radius: 3px;
   overflow: hidden;
+  margin: 8px 0;
+  border: 1px solid ${colors.backgroundDark};
 `
 
-const ProgressBarFill = styled.View<{ width: string }>`
+const ProgressBarFill = styled.View<{ width: string; status: string }>`
   height: 100%;
   width: ${props => props.width};
-  background-color: ${colors.primary};
-  border-radius: 2px;
+  background-color: ${props => {
+    switch (props.status) {
+      case 'finished':
+        return colors.success;
+      case 'in_progress':
+        return colors.primary;
+      default:
+        return colors.warning;
+    }
+  }};
+  border-radius: 3px;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
 `
 
 const getStatusColor = (status: string) => {
@@ -176,7 +210,7 @@ export default function Competicoes() {
 
     return (
       <View>
-        <CompetitionName style={{ marginTop: 16 }}>{title}</CompetitionName>
+        <SectionTitle>{title}</SectionTitle>
         {competitions.map((competition) => (
           <TouchableOpacity
             key={competition.id}
@@ -193,7 +227,10 @@ export default function Competicoes() {
               </CompetitionStatus>
 
               <ProgressBarContainer>
-                <ProgressBarFill width={competition.status === 'finished' ? '100%' : competition.status === 'in_progress' ? '50%' : '0%'} />
+                <ProgressBarFill 
+                  width={competition.status === 'finished' ? '100%' : competition.status === 'in_progress' ? '50%' : '0%'} 
+                  status={competition.status}
+                />
               </ProgressBarContainer>
 
               <CompetitionStats>
