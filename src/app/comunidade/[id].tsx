@@ -60,9 +60,7 @@ const PageHeader = styled.View`
     flex-direction: row;
     align-items: center;
     padding: 24px;
-    background-color: ${colors.background};
-    border-bottom-width: 1px;
-    border-bottom-color: ${colors.gray200};
+    background-color: ${colors.backgroundDark};
 `;
 
 const BackButton = styled.TouchableOpacity`

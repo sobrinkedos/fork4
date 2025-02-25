@@ -546,7 +546,7 @@ const LoadingContainer = styled.View`
 
 const PageHeader = styled.View`
     padding: 20px;
-    background-color: ${colors.secondary};
+    background-color: ${colors.backgroundDark};
     padding-top: 60px;
     flex-direction: row;
     align-items: center;
