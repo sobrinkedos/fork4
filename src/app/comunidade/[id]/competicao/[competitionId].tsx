@@ -383,20 +383,92 @@ export default function CompetitionDetails() {
                                                     </GameStatus>
 
                                                     {expandedGames && item.status === 'finished' && (
-                                                        <GameDetails>
+                                                        <View style={{ marginTop: 8 }}>
                                                             {(item.team1_score === 6 && item.team2_score === 0) && (
-                                                                <BuchudaTag>Buchuda para o Time 1! 🎉</BuchudaTag>
+                                                                <View style={{
+                                                                    flexDirection: 'row',
+                                                                    alignItems: 'center',
+                                                                    backgroundColor: colors.primary,
+                                                                    padding: 8,
+                                                                    borderRadius: 8,
+                                                                    marginTop: 4,
+                                                                }}>
+                                                                    <Text style={{
+                                                                        fontSize: 16,
+                                                                        marginRight: 4,
+                                                                        color: colors.white,
+                                                                    }}>👻</Text>
+                                                                    <Text style={{
+                                                                        color: colors.white,
+                                                                        fontSize: 14,
+                                                                        fontWeight: 'bold',
+                                                                    }}>Buchuda para o Time 1! 🎉</Text>
+                                                                </View>
                                                             )}
                                                             {(item.team2_score === 6 && item.team1_score === 0) && (
-                                                                <BuchudaTag>Buchuda para o Time 2! 🎉</BuchudaTag>
+                                                                <View style={{
+                                                                    flexDirection: 'row',
+                                                                    alignItems: 'center',
+                                                                    backgroundColor: colors.primary,
+                                                                    padding: 8,
+                                                                    borderRadius: 8,
+                                                                    marginTop: 4,
+                                                                }}>
+                                                                    <Text style={{
+                                                                        fontSize: 16,
+                                                                        marginRight: 4,
+                                                                        color: colors.white,
+                                                                    }}>👻</Text>
+                                                                    <Text style={{
+                                                                        color: colors.white,
+                                                                        fontSize: 14,
+                                                                        fontWeight: 'bold',
+                                                                    }}>Buchuda para o Time 2! 🎉</Text>
+                                                                </View>
                                                             )}
                                                             {item.team1_was_losing_5_0 && (
-                                                                <BuchudaTag>Buchuda de Ré para o Time 1! 🔄</BuchudaTag>
+                                                                <View style={{
+                                                                    flexDirection: 'row',
+                                                                    alignItems: 'center',
+                                                                    backgroundColor: colors.primary,
+                                                                    padding: 8,
+                                                                    borderRadius: 8,
+                                                                    marginTop: 4,
+                                                                }}>
+                                                                    <Text style={{
+                                                                        fontSize: 16,
+                                                                        marginRight: 4,
+                                                                        color: colors.white,
+                                                                    }}>🔄</Text>
+                                                                    <Text style={{
+                                                                        color: colors.white,
+                                                                        fontSize: 14,
+                                                                        fontWeight: 'bold',
+                                                                    }}>Buchuda de Ré para o Time 1! 🔄</Text>
+                                                                </View>
                                                             )}
                                                             {item.team2_was_losing_5_0 && (
-                                                                <BuchudaTag>Buchuda de Ré para o Time 2! 🔄</BuchudaTag>
+                                                                <View style={{
+                                                                    flexDirection: 'row',
+                                                                    alignItems: 'center',
+                                                                    backgroundColor: colors.primary,
+                                                                    padding: 8,
+                                                                    borderRadius: 8,
+                                                                    marginTop: 4,
+                                                                }}>
+                                                                    <Text style={{
+                                                                        fontSize: 16,
+                                                                        marginRight: 4,
+                                                                        color: colors.white,
+                                                                    }}>🔄</Text>
+                                                                    <Text style={{
+                                                                        color: colors.white,
+                                                                        fontSize: 14,
+                                                                        fontWeight: 'bold',
+                                                                    }}>Buchuda de Ré para o Time 2! 🔄</Text>
+                                                                </View>
                                                             )}
-                                                        </GameDetails>
+                                                        </View>
                                                     )}
                                                 </GameCard>
                                             )}
@@ -466,20 +538,92 @@ export default function CompetitionDetails() {
                                     </GameStatus>
 
                                     {item.status === 'finished' && (
-                                        <GameDetails>
+                                        <View style={{ marginTop: 8 }}>
                                             {(item.team1_score === 6 && item.team2_score === 0) && (
-                                                <BuchudaTag>Buchuda para {item.team1_players?.map(player => player.name).join(' e ')}! 🎉</BuchudaTag>
+                                                <View style={{
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    backgroundColor: colors.primary,
+                                                    padding: 8,
+                                                    borderRadius: 8,
+                                                    marginTop: 4,
+                                                }}>
+                                                    <Text style={{
+                                                        fontSize: 16,
+                                                        marginRight: 4,
+                                                        color: colors.white,
+                                                    }}>👻</Text>
+                                                    <Text style={{
+                                                        color: colors.white,
+                                                        fontSize: 14,
+                                                        fontWeight: 'bold',
+                                                    }}>Buchuda para {item.team1_players?.map(player => player.name).join(' e ')}! 🎉</Text>
+                                                </View>
                                             )}
                                             {(item.team2_score === 6 && item.team1_score === 0) && (
-                                                <BuchudaTag>Buchuda para {item.team2_players?.map(player => player.name).join(' e ')}! 🎉</BuchudaTag>
+                                                <View style={{
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    backgroundColor: colors.primary,
+                                                    padding: 8,
+                                                    borderRadius: 8,
+                                                    marginTop: 4,
+                                                }}>
+                                                    <Text style={{
+                                                        fontSize: 16,
+                                                        marginRight: 4,
+                                                        color: colors.white,
+                                                    }}>👻</Text>
+                                                    <Text style={{
+                                                        color: colors.white,
+                                                        fontSize: 14,
+                                                        fontWeight: 'bold',
+                                                    }}>Buchuda para {item.team2_players?.map(player => player.name).join(' e ')}! 🎉</Text>
+                                                </View>
                                             )}
                                             {item.team1_was_losing_5_0 && (
-                                                <BuchudaTag>Buchuda de Ré para {item.team1_players?.map(player => player.name).join(' e ')}! 🔄</BuchudaTag>
+                                                <View style={{
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    backgroundColor: colors.primary,
+                                                    padding: 8,
+                                                    borderRadius: 8,
+                                                    marginTop: 4,
+                                                }}>
+                                                    <Text style={{
+                                                        fontSize: 16,
+                                                        marginRight: 4,
+                                                        color: colors.white,
+                                                    }}>🔄</Text>
+                                                    <Text style={{
+                                                        color: colors.white,
+                                                        fontSize: 14,
+                                                        fontWeight: 'bold',
+                                                    }}>Buchuda de Ré para {item.team1_players?.map(player => player.name).join(' e ')}! 🔄</Text>
+                                                </View>
                                             )}
                                             {item.team2_was_losing_5_0 && (
-                                                <BuchudaTag>Buchuda de Ré para {item.team2_players?.map(player => player.name).join(' e ')}! 🔄</BuchudaTag>
+                                                <View style={{
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    backgroundColor: colors.primary,
+                                                    padding: 8,
+                                                    borderRadius: 8,
+                                                    marginTop: 4,
+                                                }}>
+                                                    <Text style={{
+                                                        fontSize: 16,
+                                                        marginRight: 4,
+                                                        color: colors.white,
+                                                    }}>🔄</Text>
+                                                    <Text style={{
+                                                        color: colors.white,
+                                                        fontSize: 14,
+                                                        fontWeight: 'bold',
+                                                    }}>Buchuda de Ré para {item.team2_players?.map(player => player.name).join(' e ')}! 🔄</Text>
+                                                </View>
                                             )}
-                                        </GameDetails>
+                                        </View>
                                     )}
                                 </ModalGameCard>
                             )}
@@ -851,18 +995,4 @@ const NewGameButton = styled.TouchableOpacity`
     justify-content: center;
     elevation: 8;
     z-index: 999;
-`;
-
-const GameDetails = styled.View`
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top-width: 1px;
-    border-top-color: ${colors.gray700};
-`;
-
-const BuchudaTag = styled.Text`
-    color: ${colors.primary};
-    font-size: 14px;
-    margin-top: 4px;
-    text-align: center;
 `;

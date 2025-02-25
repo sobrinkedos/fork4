@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Alert } from 'react-native';
+import { View, Alert, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
@@ -91,10 +91,50 @@ export default function PlayerGames() {
                                 </TeamScore>
                             </GameScore>
                             {(item.is_buchuda || item.is_buchuda_de_re) && (
-                                <SpecialCondition>
-                                    {item.is_buchuda && '👻 Buchuda'}
-                                    {item.is_buchuda_de_re && '🔄 Buchuda de Ré'}
-                                </SpecialCondition>
+                                <View style={{ marginTop: 8 }}>
+                                    {item.is_buchuda && (
+                                        <View style={{
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            backgroundColor: colors.primary,
+                                            padding: 8,
+                                            borderRadius: 8,
+                                            marginTop: 4,
+                                        }}>
+                                            <Text style={{
+                                                fontSize: 16,
+                                                marginRight: 4,
+                                                color: colors.white,
+                                            }}>👻</Text>
+                                            <Text style={{
+                                                color: colors.white,
+                                                fontSize: 14,
+                                                fontWeight: 'bold',
+                                            }}>Buchuda!</Text>
+                                        </View>
+                                    )}
+                                    {item.is_buchuda_de_re && (
+                                        <View style={{
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            backgroundColor: colors.primary,
+                                            padding: 8,
+                                            borderRadius: 8,
+                                            marginTop: 4,
+                                        }}>
+                                            <Text style={{
+                                                fontSize: 16,
+                                                marginRight: 4,
+                                                color: colors.white,
+                                            }}>🔄</Text>
+                                            <Text style={{
+                                                color: colors.white,
+                                                fontSize: 14,
+                                                fontWeight: 'bold',
+                                            }}>Buchuda de Ré!</Text>
+                                        </View>
+                                    )}
+                                </View>
                             )}
                         </GameCard>
                     )}
@@ -173,12 +213,6 @@ const Separator = styled.Text`
     font-size: 18px;
     color: ${colors.text};
     margin: 0 12px;
-`;
-
-const SpecialCondition = styled.Text`
-    font-size: 14px;
-    color: ${colors.primary};
-    text-align: center;
 `;
 
 const LoadingText = styled.Text`
