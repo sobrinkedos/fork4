@@ -158,19 +158,24 @@ export default function ProfileScreen() {
 
         if (existingPlayer) {
           // Verifica se o usuário já está vinculado a este jogador
-          const { data: existingRelation } = await supabase
+          const { data: existingRelation, error: relationCheckError } = await supabase
             .from('user_player_relations')
             .select('*')
             .eq('user_id', user?.id)
             .eq('player_id', existingPlayer.id)
             .single();
 
+          if (relationCheckError && relationCheckError.code !== 'PGRST116') {
+            console.error('Erro ao verificar vínculo:', relationCheckError);
+            throw relationCheckError;
+          }
+
           if (!existingRelation) {
             // Perguntar se deseja vincular ao jogador existente
             const userWantsToLink = await new Promise((resolve) => {
               Alert.alert(
                 'Jogador Encontrado',
-                `Encontramos um jogador "${existingPlayer.name}" com este número de telefone. Deseja vincular seu perfil a este jogador e aproveitar seus pontos?`,
+                `Encontramos um jogador "${existingPlayer.name}" com este número de telefone. Deseja vincular seu perfil a este jogador e aproveitar seu histórico e pontuação?`,
                 [
                   {
                     text: 'Não',
@@ -190,10 +195,11 @@ export default function ProfileScreen() {
               // Vincular usuário ao jogador existente
               const { error: relationError } = await supabase
                 .from('user_player_relations')
-                .upsert({
+                .insert({
                   user_id: user?.id,
                   player_id: existingPlayer.id,
                   created_at: new Date().toISOString(),
+                  is_primary_user: true // Indica que este usuário é o dono principal do perfil do jogador
                 });
 
               if (relationError) {
@@ -203,48 +209,43 @@ export default function ProfileScreen() {
 
               Alert.alert(
                 'Sucesso',
-                'Seu perfil foi vinculado ao jogador existente. Agora você tem acesso aos pontos deste jogador!'
+                'Seu perfil foi vinculado ao jogador existente. Agora você tem acesso ao histórico e pontuação deste jogador!'
               );
             } else {
               Alert.alert(
                 'Telefone em Uso',
                 'Este número de telefone já está registrado para outro jogador. Por favor, use um número diferente.'
               );
+              setLoading(false);
               return;
             }
           }
         } else {
-          // Criar novo jogador
+          // Se não existir jogador com este número, cria um novo
           const { data: newPlayer, error: createPlayerError } = await supabase
             .from('players')
             .insert({
-              name: profile.full_name || '',
+              name: profile.full_name,
               phone: profile.phone_number,
-              created_at: new Date().toISOString(),
-              created_by: user?.id
+              created_by: user?.id,
+              nickname: profile.nickname
             })
             .select()
             .single();
 
           if (createPlayerError) {
             console.error('Erro ao criar jogador:', createPlayerError);
-            if (createPlayerError.code === '23505') { // Erro de unicidade
-              Alert.alert(
-                'Telefone em Uso',
-                'Este número de telefone já está registrado para outro jogador. Por favor, use um número diferente.'
-              );
-              return;
-            }
             throw createPlayerError;
           }
 
-          // Vincular usuário ao novo jogador
+          // Vincular usuário ao novo jogador como proprietário principal
           const { error: relationError } = await supabase
             .from('user_player_relations')
             .insert({
               user_id: user?.id,
               player_id: newPlayer.id,
               created_at: new Date().toISOString(),
+              is_primary_user: true // Indica que este usuário é o dono principal do perfil do jogador
             });
 
           if (relationError) {
@@ -259,25 +260,28 @@ export default function ProfileScreen() {
         }
       }
 
-      // Atualiza o perfil com os novos dados
-      const { error: updateError } = await supabase
+      // Atualiza o perfil do usuário
+      const { data: updatedProfile, error: updateError } = await supabase
         .from('user_profiles')
         .update({
           full_name: profile.full_name,
           nickname: profile.nickname,
           phone_number: profile.phone_number
         })
-        .eq('user_id', user?.id);
+        .eq('user_id', user?.id)
+        .select()
+        .single();
 
       if (updateError) {
         console.error('Erro ao atualizar perfil:', updateError);
         throw updateError;
       }
 
-      router.back();
+      setProfile(updatedProfile);
+      Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
-      Alert.alert('Erro', 'Erro ao atualizar perfil. Por favor, tente novamente.');
+      Alert.alert('Erro', 'Ocorreu um erro ao atualizar o perfil. Tente novamente.');
     } finally {
       setLoading(false);
     }

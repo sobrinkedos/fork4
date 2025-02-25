@@ -75,7 +75,19 @@ export default function Jogadores() {
     const renderPlayerItem = ({ item, isMyPlayer }: { item: Player; isMyPlayer: boolean }) => (
         <PlayerCard>
             <PlayerInfo>
-                <PlayerName>{item.name}</PlayerName>
+                <PlayerNameContainer>
+                    <PlayerName>{item.name}</PlayerName>
+                    {item.isLinkedUser && (
+                        <LinkedUserBadge>
+                            <MaterialCommunityIcons
+                                name="account-check"
+                                size={16}
+                                color={colors.success}
+                            />
+                            <LinkedUserText>Vinculado</LinkedUserText>
+                        </LinkedUserBadge>
+                    )}
+                </PlayerNameContainer>
                 {item.nickname && (
                     <PlayerNickname>@{item.nickname}</PlayerNickname>
                 )}
@@ -203,9 +215,30 @@ const PlayerInfo = styled.View`
     flex: 1;
 `;
 
+const PlayerNameContainer = styled.View`
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+`;
+
 const PlayerName = styled.Text`
     font-size: 16px;
     color: ${colors.gray100};
+    font-weight: bold;
+`;
+
+const LinkedUserBadge = styled.View`
+    flex-direction: row;
+    align-items: center;
+    background-color: ${colors.success}20;
+    padding: 4px 8px;
+    border-radius: 12px;
+    gap: 4px;
+`;
+
+const LinkedUserText = styled.Text`
+    color: ${colors.success};
+    font-size: 12px;
     font-weight: bold;
 `;
 

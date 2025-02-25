@@ -5,6 +5,14 @@ export interface Player {
     name: string;
     phone: string;
     created_at: string;
+    nickname?: string;
+    created_by: string;
+    isLinkedUser?: boolean;
+    isMine?: boolean;
+    user_player_relations?: Array<{
+        is_primary_user: boolean;
+        user_id: string;
+    }>;
 }
 
 interface CreatePlayerDTO {
@@ -75,17 +83,70 @@ class PlayerService {
 
     async list() {
         try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Usuário não autenticado');
+
             // Buscar jogadores criados pelo usuário
-            const { data: myPlayers, error: myPlayersError } = await supabase
+            const { data: createdPlayers, error: createdPlayersError } = await supabase
                 .from('players')
                 .select('*')
-                .eq('created_by', (await supabase.auth.getUser()).data.user?.id)
+                .eq('created_by', user.id)
                 .order('name');
 
-            if (myPlayersError) {
-                console.error('Erro ao buscar meus jogadores:', myPlayersError);
-                throw myPlayersError;
+            if (createdPlayersError) {
+                console.error('Erro ao buscar jogadores criados:', createdPlayersError);
+                throw createdPlayersError;
             }
+
+            // Buscar jogadores vinculados ao usuário
+            const { data: linkedPlayers, error: linkedPlayersError } = await supabase
+                .from('players')
+                .select(`
+                    *,
+                    user_player_relations!inner (
+                        is_primary_user
+                    )
+                `)
+                .eq('user_player_relations.user_id', user.id)
+                .order('name');
+
+            if (linkedPlayersError) {
+                console.error('Erro ao buscar jogadores vinculados:', linkedPlayersError);
+                throw linkedPlayersError;
+            }
+
+            // Combinar e remover duplicatas
+            const myPlayersMap = new Map();
+            
+            // Adicionar jogadores criados
+            createdPlayers?.forEach(player => {
+                myPlayersMap.set(player.id, {
+                    ...player,
+                    isMine: true,
+                    isLinkedUser: false
+                });
+            });
+
+            // Adicionar jogadores vinculados
+            linkedPlayers?.forEach(player => {
+                if (!myPlayersMap.has(player.id)) {
+                    myPlayersMap.set(player.id, {
+                        ...player,
+                        isMine: false,
+                        isLinkedUser: true
+                    });
+                } else {
+                    // Se já existe (foi criado pelo usuário), apenas marca como vinculado
+                    const existingPlayer = myPlayersMap.get(player.id);
+                    myPlayersMap.set(player.id, {
+                        ...existingPlayer,
+                        isLinkedUser: true
+                    });
+                }
+            });
+
+            const myPlayers = Array.from(myPlayersMap.values());
+            const myPlayerIds = myPlayers.map(p => p.id);
 
             // Buscar jogadores das comunidades onde sou organizador
             const { data: communityPlayers, error: communityPlayersError } = await supabase
@@ -102,30 +163,18 @@ class PlayerService {
                         )
                     )
                 `)
-                .neq('created_by', (await supabase.auth.getUser()).data.user?.id)
-                .eq('community_members.communities.community_organizers.user_id', (await supabase.auth.getUser()).data.user?.id)
+                .eq('community_members.communities.community_organizers.user_id', user.id)
+                .filter('id', 'not.in', `(${myPlayerIds.join(',')})`)
                 .order('name');
 
             if (communityPlayersError) {
-                console.error('Erro ao buscar jogadores das comunidades:', communityPlayersError);
+                console.error('Erro ao buscar jogadores da comunidade:', communityPlayersError);
                 throw communityPlayersError;
             }
 
-            // Remover duplicatas dos jogadores das comunidades
-            const uniqueCommunityPlayers = communityPlayers ? Array.from(new Set(communityPlayers.map(p => p.id)))
-                .map(id => communityPlayers.find(p => p.id === id))
-                .filter(p => p !== undefined)
-                .map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    phone: p.phone,
-                    created_at: p.created_at
-                })) : [];
-
-            this.players = [...myPlayers, ...uniqueCommunityPlayers];
             return {
-                myPlayers: myPlayers || [],
-                communityPlayers: uniqueCommunityPlayers
+                myPlayers: myPlayers,
+                communityPlayers: communityPlayers || []
             };
         } catch (error) {
             console.error('Erro ao listar jogadores:', error);
