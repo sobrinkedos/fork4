@@ -5,7 +5,7 @@ import { colors } from "@/styles/colors";
 import { MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { PageTransition } from "@/components/Transitions";
 import { Header } from "@/components/Header";
-import { useRouter } from "expo-router";
+import { useRouter, Link } from "expo-router";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { LineChart } from "@/components/WebLineChart";
@@ -272,7 +272,13 @@ const calculatePosition = (index: number, items: Array<any>): number => {
 const Dashboard: React.FC = () => {
     const router = useRouter();
     const { session } = useAuth();
-    const [stats, setStats] = useState<Stats>({
+    const [stats, setStats] = useState<{
+        totalGames: number;
+        totalCompetitions: number;
+        totalPlayers: number;
+        averageScore: number;
+        totalCommunities: number;
+    }>({
         totalGames: 0,
         totalCompetitions: 0,
         totalPlayers: 0,
@@ -374,6 +380,29 @@ const Dashboard: React.FC = () => {
     };
 
     useEffect(() => {
+        async function loadStats() {
+            try {
+                const userStats = await statisticsService.getUserStats();
+                console.log('Estatísticas carregadas:', userStats);
+                setStats(userStats);
+            } catch (error) {
+                console.error('Dashboard: Erro ao carregar estatísticas:', error);
+                // Manter os valores anteriores em caso de erro
+                setStats(prev => ({
+                    ...prev,
+                    totalGames: prev?.totalGames || 0,
+                    totalCompetitions: prev?.totalCompetitions || 0,
+                    totalPlayers: prev?.totalPlayers || 0,
+                    averageScore: prev?.averageScore || 0,
+                    totalCommunities: prev?.totalCommunities || 0
+                }));
+            }
+        }
+
+        loadStats();
+    }, []);
+
+    useEffect(() => {
         async function loadStatistics() {
             if (session?.user?.id) {
                 const userStats = await statisticsService.getUserStatistics(session.user.id);
@@ -408,13 +437,21 @@ const Dashboard: React.FC = () => {
 
                         <StatisticsContainer>
                             <StatCardWrapper>
-                                <StatCard onPress={() => router.push("/jogos")}>
-                                    <StatIcon>
-                                        <MaterialCommunityIcons name="cards-playing-outline" size={24} color={colors.primary} />
-                                    </StatIcon>
-                                    <StatValue>{stats.totalGames}</StatValue>
-                                    <StatLabel>Jogos</StatLabel>
-                                </StatCard>
+                                <TouchableOpacity 
+                                    onPress={() => {
+                                        console.log('Navegando para jogos...');
+                                        router.push('/(pages)/jogos');
+                                    }}
+                                    activeOpacity={0.7}
+                                >
+                                    <StatCard>
+                                        <StatIcon>
+                                            <MaterialCommunityIcons name="cards-playing-outline" size={24} color={colors.primary} />
+                                        </StatIcon>
+                                        <StatValue>{stats?.totalGames || 0}</StatValue>
+                                        <StatLabel>Jogos</StatLabel>
+                                    </StatCard>
+                                </TouchableOpacity>
                             </StatCardWrapper>
 
                             <StatCardWrapper>
@@ -422,7 +459,7 @@ const Dashboard: React.FC = () => {
                                     <StatIcon>
                                         <MaterialCommunityIcons name="trophy-outline" size={24} color={colors.primary} />
                                     </StatIcon>
-                                    <StatValue>{stats.totalCompetitions}</StatValue>
+                                    <StatValue>{stats?.totalCompetitions || 0}</StatValue>
                                     <StatLabel>Competições</StatLabel>
                                 </StatCard>
                             </StatCardWrapper>
@@ -432,7 +469,7 @@ const Dashboard: React.FC = () => {
                                     <StatIcon>
                                         <MaterialCommunityIcons name="account-group-outline" size={24} color={colors.primary} />
                                     </StatIcon>
-                                    <StatValue>{stats.totalPlayers}</StatValue>
+                                    <StatValue>{stats?.totalPlayers || 0}</StatValue>
                                     <StatLabel>Jogadores</StatLabel>
                                 </StatCard>
                             </StatCardWrapper>
@@ -442,7 +479,7 @@ const Dashboard: React.FC = () => {
                                     <StatIcon>
                                         <MaterialCommunityIcons name="account-multiple" size={24} color={colors.primary} />
                                     </StatIcon>
-                                    <StatValue>{stats.totalCommunities}</StatValue>
+                                    <StatValue>{stats?.totalCommunities || 0}</StatValue>
                                     <StatLabel>Comunidades</StatLabel>
                                 </StatCard>
                             </StatCardWrapper>

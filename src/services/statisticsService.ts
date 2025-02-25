@@ -1,6 +1,6 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from '@/lib/supabase';
 
-interface UserStatistics {
+interface UserStats {
     totalGames: number;
     totalCompetitions: number;
     totalPlayers: number;
@@ -9,9 +9,49 @@ interface UserStatistics {
 }
 
 export const statisticsService = {
-    async getUserStatistics(userId: string): Promise<UserStatistics> {
+    async getUserStats(): Promise<UserStats> {
         try {
-            if (!userId) {
+            // Verificar usuário autenticado
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            if (userError || !user) {
+                console.error('Erro de autenticação:', userError);
+                throw new Error('Usuário não autenticado');
+            }
+
+            console.log('Usuário autenticado:', user.id);
+
+            // Buscar comunidades onde o usuário é membro
+            const { data: memberCommunities, error: memberError } = await supabase
+                .from('community_members')
+                .select('community_id')
+                .eq('player_id', user.id);
+
+            if (memberError) {
+                console.error('Erro ao buscar comunidades como membro:', memberError);
+                throw new Error('Erro ao buscar comunidades do usuário');
+            }
+
+            // Buscar comunidades onde o usuário é organizador
+            const { data: organizerCommunities, error: organizerError } = await supabase
+                .from('community_organizers')
+                .select('community_id')
+                .eq('user_id', user.id);
+
+            if (organizerError) {
+                console.error('Erro ao buscar comunidades como organizador:', organizerError);
+                throw new Error('Erro ao buscar comunidades do usuário');
+            }
+
+            console.log('Comunidades como membro:', memberCommunities);
+            console.log('Comunidades como organizador:', organizerCommunities);
+
+            // Combinar IDs únicos de comunidades
+            const memberIds = memberCommunities?.map(c => c.community_id) || [];
+            const organizerIds = organizerCommunities?.map(c => c.community_id) || [];
+            const communityIds = [...new Set([...memberIds, ...organizerIds])];
+
+            if (communityIds.length === 0) {
+                console.log('Nenhuma comunidade encontrada para o usuário');
                 return {
                     totalGames: 0,
                     totalCompetitions: 0,
@@ -21,138 +61,87 @@ export const statisticsService = {
                 };
             }
 
-            console.log('Buscando estatísticas para o usuário:', userId);
+            // Buscar total de jogos
+            const { data: games, error: gamesError } = await supabase
+                .from('games')
+                .select(`
+                    *,
+                    competition:competitions (
+                        id,
+                        community_id
+                    )
+                `)
+                .in('competition.community_id', communityIds);
 
-            // Primeiro buscar as comunidades criadas pelo usuário
-            const { data: ownedCommunities, error: ownedError } = await supabase
-                .from('communities')
-                .select('id')
-                .eq('created_by', userId);
-
-            if (ownedError) {
-                console.error('Erro ao buscar comunidades criadas:', ownedError);
-                throw ownedError;
+            if (gamesError) {
+                console.error('Erro ao buscar jogos:', gamesError);
+                throw new Error('Erro ao buscar total de jogos');
             }
 
-            // Buscar comunidades onde o usuário é membro
-            const { data: memberCommunities, error: memberError } = await supabase
+            console.log('Jogos encontrados:', games?.length || 0);
+
+            // Buscar total de competições
+            const { data: competitions, error: competitionsError } = await supabase
+                .from('competitions')
+                .select('*')
+                .in('community_id', communityIds);
+
+            if (competitionsError) {
+                console.error('Erro ao buscar competições:', competitionsError);
+                throw new Error('Erro ao buscar total de competições');
+            }
+
+            console.log('Competições encontradas:', competitions?.length || 0);
+
+            // Buscar total de jogadores
+            const { data: players, error: playersError } = await supabase
                 .from('community_members')
-                .select('community_id')
-                .eq('player_id', userId);
+                .select('player_id')
+                .in('community_id', communityIds);
 
-            if (memberError) {
-                console.error('Erro ao buscar comunidades como membro:', memberError);
-                throw memberError;
+            if (playersError) {
+                console.error('Erro ao buscar jogadores:', playersError);
+                throw new Error('Erro ao buscar total de jogadores');
             }
 
-            // Combinar IDs únicos das comunidades
-            const communityIds = new Set([
-                ...(ownedCommunities || []).map(c => c.id),
-                ...(memberCommunities || []).map(c => c.community_id)
-            ]);
+            console.log('Jogadores encontrados:', players?.length || 0);
 
-            console.log('Total de comunidades do usuário:', communityIds.size);
+            // Buscar média de pontos
+            const { data: scores, error: scoresError } = await supabase
+                .from('games')
+                .select(`
+                    team1_score,
+                    team2_score,
+                    competition:competitions (
+                        community_id
+                    )
+                `)
+                .in('competition.community_id', communityIds);
 
-            // Buscar competições das comunidades do usuário
-            let allCompetitions = [];
-            if (communityIds.size > 0) {
-                const { data: competitions, error: competitionsError } = await supabase
-                    .from('competitions')
-                    .select('id')
-                    .in('community_id', Array.from(communityIds));
-
-                if (competitionsError) {
-                    console.error('Erro ao buscar competições:', competitionsError);
-                    throw competitionsError;
-                }
-
-                allCompetitions = competitions || [];
-                console.log('Competições encontradas:', allCompetitions);
+            if (scoresError) {
+                console.error('Erro ao buscar pontuações:', scoresError);
+                throw new Error('Erro ao buscar pontuações');
             }
 
-            // Buscar jogos das competições
-            let totalGames = 0;
-            let totalScore = 0;
-            let gamesWithScore = 0;
+            // Filtrar jogos válidos (que têm competição)
+            const validScores = scores?.filter(game => game.competition) || [];
+            
+            const totalScores = validScores.reduce((acc, game) => acc + (game.team1_score || 0) + (game.team2_score || 0), 0);
+            const totalGamesForAverage = validScores.length || 1;
+            const averageScore = totalScores / (totalGamesForAverage * 2); // Dividir por 2 pois cada jogo tem 2 times
 
-            if (allCompetitions.length > 0) {
-                const competitionIds = allCompetitions.map(c => c.id);
-                
-                // Buscar jogos das competições
-                const { data: games, error: gamesError } = await supabase
-                    .from('games')
-                    .select('*')
-                    .in('competition_id', competitionIds);
-
-                if (gamesError) {
-                    console.error('Erro ao buscar jogos:', gamesError);
-                    throw gamesError;
-                }
-
-                console.log('Jogos encontrados:', games);
-
-                // Filtrar apenas os jogos que o usuário participou
-                const userGames = games?.filter(game => 
-                    (Array.isArray(game.team1) && game.team1.includes(userId)) || 
-                    (Array.isArray(game.team2) && game.team2.includes(userId))
-                ) || [];
-
-                totalGames = games?.length || 0; // Total de jogos nas competições
-                console.log('Total de jogos nas competições:', totalGames);
-
-                // Calcular média de pontos dos jogos que o usuário participou
-                userGames.forEach(game => {
-                    if (game.status === 'finished') {
-                        let playerScore = null;
-                        
-                        if (game.team1 && game.team1.includes(userId)) {
-                            playerScore = game.team1_score;
-                        } else if (game.team2 && game.team2.includes(userId)) {
-                            playerScore = game.team2_score;
-                        }
-
-                        if (playerScore !== null && playerScore !== undefined) {
-                            totalScore += playerScore;
-                            gamesWithScore++;
-                        }
-                    }
-                });
-            }
-
-            const totalCompetitions = allCompetitions.length;
-            console.log('Total de competições:', totalCompetitions);
-
-            // Buscar total de jogadores nas competições
-            let totalPlayers = 0;
-            if (allCompetitions.length > 0) {
-                const competitionIds = allCompetitions.map(c => c.id);
-                const { data: members, error: membersError } = await supabase
-                    .from('competition_members')
-                    .select('player_id')
-                    .in('competition_id', competitionIds);
-
-                if (membersError) {
-                    console.error('Erro ao buscar membros:', membersError);
-                    throw membersError;
-                }
-
-                // Remover duplicatas (jogadores que estão em múltiplas competições)
-                const uniquePlayers = new Set(members?.map(m => m.player_id));
-                totalPlayers = uniquePlayers.size;
-                console.log('Total de jogadores únicos:', totalPlayers);
-            }
-
-            const averageScore = gamesWithScore > 0 ? totalScore / gamesWithScore : 0;
+            // Remover duplicatas de jogadores
+            const uniquePlayers = new Set(players?.map(p => p.player_id));
 
             const stats = {
-                totalGames,
-                totalCompetitions,
-                totalPlayers,
-                averageScore,
-                totalCommunities: communityIds.size
+                totalGames: validScores.length,
+                totalCompetitions: competitions?.length || 0,
+                totalPlayers: uniquePlayers.size,
+                averageScore: Math.round(averageScore * 10) / 10,
+                totalCommunities: communityIds.length
             };
 
-            console.log('Estatísticas finais:', stats);
+            console.log('Estatísticas calculadas:', stats);
             return stats;
 
         } catch (error) {
