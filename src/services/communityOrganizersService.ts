@@ -46,16 +46,21 @@ export const communityOrganizersService = {
 
     async addOrganizer(communityId: string, email: string, createdBy: string) {
         // Primeiro, busca o usuário pelo email
-        const { data: userData, error: userError } = await supabase
+        const { data: users, error: userError } = await supabase
             .from('profiles')
             .select('id')
-            .eq('email', email)
-            .single();
+            .eq('email', email);
 
         if (userError) {
             console.error('Erro ao buscar usuário:', userError);
-            throw new Error('Usuário não encontrado');
+            throw new Error('Erro ao buscar usuário no sistema');
         }
+
+        if (!users || users.length === 0) {
+            throw new Error(`Nenhum usuário encontrado com o email ${email}`);
+        }
+
+        const userData = users[0];
 
         // Verifica se o usuário já é organizador
         const { data: existingOrganizer } = await supabase
