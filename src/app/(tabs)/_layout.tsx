@@ -2,23 +2,20 @@ import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '@/styles/colors';
 import { Platform } from 'react-native';
-import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
+import * as NavigationBar from 'expo-navigation-bar';
 
 export default function TabRoutesLayout() {
     useEffect(() => {
-        async function configureNavBar() {
-            try {
-                if (Platform.OS === 'android') {
-                    await SystemUI.NavigationBar.setBackgroundColorAsync(colors.backgroundDark);
-                    await SystemUI.NavigationBar.setButtonStyleAsync('light');
-                }
-            } catch (error) {
-                console.warn('Erro ao configurar NavigationBar:', error);
+        async function configureNavigationBar() {
+            if (Platform.OS === 'android') {
+                await NavigationBar.setBackgroundColorAsync(colors.backgroundDark);
+                await NavigationBar.setButtonStyleAsync('light');
+                await NavigationBar.setBorderColorAsync(colors.backgroundDark);
             }
         }
-        
-        configureNavBar();
+
+        configureNavigationBar();
     }, []);
 
     return (

@@ -371,6 +371,12 @@ const ShowMoreText = styled.Text`
     margin-left: 4px;
 `;
 
+const HeaderLeft = styled.View`
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+`;
+
 export default function CommunityDetails() {
     const router = useRouter();
     const params = useLocalSearchParams();
