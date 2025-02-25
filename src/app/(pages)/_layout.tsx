@@ -1,91 +1,77 @@
-import { Tabs } from 'expo-router';
+import { Stack } from 'expo-router';
 import { colors } from '@/styles/colors';
 import { Feather } from '@expo/vector-icons';
 
 export default function PagesLayout() {
     return (
-        <Tabs
+        <Stack
             screenOptions={{
                 headerShown: false,
-                tabBarStyle: {
+                contentStyle: {
                     backgroundColor: colors.backgroundDark,
-                    borderTopWidth: 0,
-                    elevation: 0,
-                    paddingBottom: 16,
-                    height: 70,
-                },
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.gray100,
-                tabBarLabelStyle: {
-                    fontSize: 12,
-                    fontWeight: '500',
-                    marginTop: 4,
-                },
-                tabBarIconStyle: {
-                    marginTop: 4,
-                },
+                }
             }}
         >
-            <Tabs.Screen
-                name="dashboard"
+            <Stack.Screen 
+                name="dashboard" 
                 options={{
                     title: 'Dashboard',
                     tabBarIcon: ({ size, color }) => (
                         <Feather name="grid" size={24} color={color} />
                     ),
-                }}
+                }} 
             />
-            <Tabs.Screen
-                name="comunidades"
+            <Stack.Screen 
+                name="comunidades" 
                 options={{
                     title: 'Comunidades',
                     tabBarIcon: ({ size, color }) => (
                         <Feather name="users" size={24} color={color} />
                     ),
-                }}
+                }} 
             />
-            <Tabs.Screen
-                name="competicoes"
+            <Stack.Screen 
+                name="competicoes" 
                 options={{
                     title: 'Competições',
                     tabBarIcon: ({ size, color }) => (
                         <Feather name="award" size={24} color={color} />
                     ),
-                }}
+                }} 
             />
-            <Tabs.Screen
-                name="jogadores"
+            <Stack.Screen 
+                name="jogadores" 
                 options={{
                     title: 'Jogadores',
                     tabBarIcon: ({ size, color }) => (
                         <Feather name="user" size={24} color={color} />
                     ),
-                }}
+                }} 
             />
-            <Tabs.Screen
-                name="comunidade/[id]"
+            <Stack.Screen 
+                name="comunidade/[id]" 
                 options={{
                     href: null,
-                }}
+                }} 
             />
-            <Tabs.Screen
-                name="comunidade/[id]/competicao/[competitionId]"
+            <Stack.Screen 
+                name="comunidade/[id]/competicao/[competitionId]" 
                 options={{
                     href: null,
-                }}
+                }} 
             />
-            <Tabs.Screen
-                name="comunidade/[id]/competicao/[competitionId]/jogo/[gameId]"
+            <Stack.Screen 
+                name="comunidade/[id]/competicao/[competitionId]/jogo/[gameId]" 
                 options={{
                     href: null,
-                }}
+                }} 
             />
-            <Tabs.Screen
-                name="comunidade/[id]/competicao/[competitionId]/jogo/[gameId]/registrar"
+            <Stack.Screen 
+                name="comunidade/[id]/competicao/[competitionId]/jogo/[gameId]/registrar" 
                 options={{
                     href: null,
-                }}
+                }} 
             />
-        </Tabs>
+        </Stack>
     );
 }

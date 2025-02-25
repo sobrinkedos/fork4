@@ -26,11 +26,13 @@ export default function RootLayout() {
                     <Stack screenOptions={{ headerShown: false }}>
                         <Stack.Screen name="login" options={{ headerShown: false }} />
                         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                        <Stack.Screen name="(pages)" options={{ headerShown: false }} />
                         <Stack.Screen name="comunidade/[id]" options={{ headerShown: false }} />
                         <Stack.Screen name="competicao/[id]" options={{ headerShown: false }} />
                         <Stack.Screen name="jogo/[id]" options={{ headerShown: false }} />
                         <Stack.Screen name="jogador/[id]" options={{ headerShown: false }} />
                         <Stack.Screen name="top-jogadores" options={{ headerShown: false }} />
+                        <Stack.Screen name="profile" options={{ headerShown: false }} />
                     </Stack>
                 </SafeContainer>
             </ThemeProvider>

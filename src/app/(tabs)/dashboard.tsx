@@ -395,7 +395,10 @@ const Dashboard: React.FC = () => {
     return (
         <PageTransition>
             <Container>
-                <Header />
+                <Header 
+                    onNotificationPress={() => {}}
+                    onProfilePress={() => router.push('/(pages)/profile')}
+                />
                 <ScrollContent showsVerticalScrollIndicator={false}>
                     <Content>
                         <WelcomeContainer>
