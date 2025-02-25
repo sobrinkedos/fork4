@@ -4,20 +4,45 @@ export const playersService = {
     async list() {
         try {
             console.log('Buscando jogadores...');
+            const userId = (await supabase.auth.getUser()).data.user?.id;
+            if (!userId) throw new Error('Usuário não autenticado');
             
             // Buscar jogadores criados pelo usuário
-            const { data: myPlayers, error: myPlayersError } = await supabase
+            console.log('Buscando jogadores criados pelo usuário...');
+            const { data: createdPlayers, error: createdError } = await supabase
                 .from('players')
                 .select('*')
-                .eq('created_by', (await supabase.auth.getUser()).data.user?.id)
+                .eq('created_by', userId)
                 .order('name');
 
-            if (myPlayersError) {
-                console.error('Erro ao buscar meus jogadores:', myPlayersError);
-                throw myPlayersError;
+            if (createdError) {
+                console.error('Erro ao buscar jogadores criados:', createdError);
+                throw createdError;
             }
 
+            // Buscar jogadores vinculados ao usuário
+            console.log('Buscando jogadores vinculados ao usuário...');
+            const { data: linkedPlayers, error: linkedError } = await supabase
+                .from('user_player_relations')
+                .select('player:player_id(*)')
+                .eq('user_id', userId);
+
+            if (linkedError) {
+                console.error('Erro ao buscar jogadores vinculados:', linkedError);
+                throw linkedError;
+            }
+
+            // Combinar jogadores criados e vinculados
+            const userPlayers = [
+                ...(createdPlayers || []),
+                ...(linkedPlayers?.map(lp => lp.player) || [])
+            ];
+
+            // Lista de IDs de jogadores do usuário
+            const userPlayerIds = userPlayers.map(p => p.id);
+
             // Buscar jogadores das comunidades onde sou organizador
+            console.log('Buscando jogadores das comunidades...');
             const { data: communityPlayers, error: communityPlayersError } = await supabase
                 .from('players')
                 .select(`
@@ -32,8 +57,7 @@ export const playersService = {
                         )
                     )
                 `)
-                .neq('created_by', (await supabase.auth.getUser()).data.user?.id)
-                .eq('community_members.communities.community_organizers.user_id', (await supabase.auth.getUser()).data.user?.id)
+                .eq('community_members.communities.community_organizers.user_id', userId)
                 .order('name');
 
             if (communityPlayersError) {
@@ -41,13 +65,21 @@ export const playersService = {
                 throw communityPlayersError;
             }
 
-            // Remover duplicatas dos jogadores das comunidades
-            const uniqueCommunityPlayers = communityPlayers ? Array.from(new Set(communityPlayers.map(p => p.id)))
-                .map(id => communityPlayers.find(p => p.id === id))
-                .filter(p => p !== undefined) : [];
+            // Remover duplicatas dos jogadores das comunidades e filtrar os que já são do usuário
+            const uniqueCommunityPlayers = communityPlayers 
+                ? Array.from(new Set(communityPlayers.map(p => p.id)))
+                    .map(id => communityPlayers.find(p => p.id === id))
+                    .filter(p => p !== undefined && !userPlayerIds.includes(p.id))
+                : [];
+
+            // Remover duplicatas e ordenar por nome
+            const uniqueUserPlayers = Array.from(new Set(userPlayers.map(p => p.id)))
+                .map(id => userPlayers.find(p => p.id === id))
+                .filter(p => p !== undefined)
+                .sort((a, b) => a.name.localeCompare(b.name));
 
             return {
-                myPlayers: myPlayers || [],
+                myPlayers: uniqueUserPlayers,
                 communityPlayers: uniqueCommunityPlayers
             };
         } catch (error) {

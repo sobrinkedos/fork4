@@ -164,27 +164,42 @@ class CommunityService {
 
     async create(data: CreateCommunityDTO) {
         try {
-            const { data: userData, error: userError } = await supabase.auth.getUser();
-            if (userError) throw userError;
+            const userId = (await supabase.auth.getUser()).data.user?.id;
+            if (!userId) throw new Error('Usuário não autenticado');
 
-            const { data: newCommunity, error } = await supabase
+            const { data: community, error } = await supabase
                 .from('communities')
-                .insert([{
-                    ...data,
-                    created_by: userData.user.id
-                }])
+                .insert([
+                    {
+                        ...data,
+                        created_by: userId
+                    }
+                ])
                 .select()
                 .single();
 
             if (error) {
                 console.error('Erro ao criar comunidade:', error);
-                throw new Error('Erro ao criar comunidade');
+                throw error;
             }
 
-            // Atualiza a lista de comunidades em memória
-            await this.list();
+            // Adicionar o criador como organizador
+            const { error: organizerError } = await supabase
+                .from('community_organizers')
+                .insert([
+                    {
+                        community_id: community.id,
+                        user_id: userId,
+                        created_by: userId
+                    }
+                ]);
 
-            return newCommunity;
+            if (organizerError) {
+                console.error('Erro ao adicionar organizador:', organizerError);
+                throw organizerError;
+            }
+
+            return community;
         } catch (error) {
             console.error('Erro ao criar comunidade:', error);
             throw error;

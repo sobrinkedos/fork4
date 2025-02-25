@@ -83,6 +83,26 @@ export const communityMembersService = {
 
     async addMembers(communityId: string, playerIds: string[]) {
         try {
+            console.log('Adicionando membros...', { communityId, playerIds });
+            
+            // Verificar se é organizador
+            const { data: organizers, error: organizersError } = await supabase
+                .from('community_organizers')
+                .select('id')
+                .eq('community_id', communityId)
+                .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+
+            if (organizersError) {
+                console.error('Erro ao verificar organizador:', organizersError);
+                throw organizersError;
+            }
+
+            console.log('Verificação de organizador:', { organizers });
+
+            if (!organizers || organizers.length === 0) {
+                throw new Error('Usuário não é organizador da comunidade');
+            }
+
             const { data, error } = await supabase
                 .from('community_members')
                 .insert(
@@ -99,7 +119,11 @@ export const communityMembersService = {
                     )
                 `);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Erro ao inserir membros:', error);
+                throw error;
+            }
+
             return data;
         } catch (error) {
             console.error('Erro ao adicionar membros:', error);
