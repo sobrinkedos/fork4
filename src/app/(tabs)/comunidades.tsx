@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Alert, Modal as RNModal, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Alert, Modal as RNModal, ActivityIndicator, TouchableOpacity, View, FlatList, ScrollView } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/styles/colors';
-import { Header } from '@/components/Header';
 import { Community, communityService } from '@/services/communityService';
-import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
+import { Header } from '@/components/Header';
 
 const Container = styled.View`
     flex: 1;
@@ -250,6 +250,11 @@ const SaveButtonText = styled.Text`
     text-align: center;
 `;
 
+const Content = styled.View`
+    flex: 1;
+    padding: 16px;
+`;
+
 export default function Comunidades() {
     const router = useRouter();
     const [createdCommunities, setCreatedCommunities] = useState<Community[]>([]);
@@ -335,36 +340,38 @@ export default function Comunidades() {
 
     return (
         <Container>
-            <Header title="Comunidades" />
-            {loading ? (
-                <LoadingContainer>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                </LoadingContainer>
-            ) : (
-                <ScrollContent>
-                    <SectionTitle>Minhas Comunidades</SectionTitle>
-                    {createdCommunities.length === 0 ? (
-                        <EmptyText>Você ainda não criou nenhuma comunidade</EmptyText>
-                    ) : (
-                        createdCommunities.map(renderCommunityCard)
-                    )}
+            <Header title="COMUNIDADES" />
+            <Content>
+                {loading ? (
+                    <LoadingContainer>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                    </LoadingContainer>
+                ) : (
+                    <ScrollContent>
+                        <SectionTitle>Minhas Comunidades</SectionTitle>
+                        {createdCommunities.length === 0 ? (
+                            <EmptyText>Você ainda não criou nenhuma comunidade</EmptyText>
+                        ) : (
+                            createdCommunities.map(renderCommunityCard)
+                        )}
 
-                    {organizedCommunities.length > 0 && (
-                        <>
-                            <SectionTitle style={{ marginTop: 24 }}>Comunidades que Organizo</SectionTitle>
-                            {organizedCommunities.map(renderCommunityCard)}
-                        </>
-                    )}
+                        {organizedCommunities.length > 0 && (
+                            <>
+                                <SectionTitle style={{ marginTop: 24 }}>Comunidades que Organizo</SectionTitle>
+                                {organizedCommunities.map(renderCommunityCard)}
+                            </>
+                        )}
 
-                    <AddButton onPress={() => setShowModal(true)}>
-                        <MaterialCommunityIcons
-                            name="plus"
-                            size={24}
-                            color={colors.text}
-                        />
-                    </AddButton>
-                </ScrollContent>
-            )}
+                        <AddButton onPress={() => setShowModal(true)}>
+                            <MaterialCommunityIcons
+                                name="plus"
+                                size={24}
+                                color={colors.text}
+                            />
+                        </AddButton>
+                    </ScrollContent>
+                )}
+            </Content>
 
             <RNModal
                 visible={showModal}

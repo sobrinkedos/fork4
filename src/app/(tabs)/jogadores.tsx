@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Alert, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { Alert, FlatList, RefreshControl, ActivityIndicator, View } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../styles/colors';
 import { Player, playerService } from '@/services/playerService';
-import { Header } from '@/components/Header';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Header } from '@/components/Header';
 
 export default function Jogadores() {
     const router = useRouter();
@@ -150,7 +150,7 @@ export default function Jogadores() {
     if (loading) {
         return (
             <Container>
-                <Header title="Jogadores" onNotificationPress={() => {}} onProfilePress={() => {}} />
+                <Header />
                 <LoadingContainer>
                     <ActivityIndicator size="large" color={colors.primary} />
                 </LoadingContainer>
@@ -160,25 +160,26 @@ export default function Jogadores() {
 
     return (
         <Container>
-            <Header title="Jogadores" onNotificationPress={() => {}} onProfilePress={() => {}} />
+            <Header title="JOGADORES" />
+            <Content>
+                <FlatList
+                    data={sections}
+                    renderItem={renderItem}
+                    keyExtractor={(item, index) => item.id || `section-${index}`}
+                    contentContainerStyle={{ padding: 16 }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            colors={[colors.primary]}
+                        />
+                    }
+                />
 
-            <FlatList
-                data={sections}
-                renderItem={renderItem}
-                keyExtractor={(item, index) => item.id || `section-${index}`}
-                contentContainerStyle={{ padding: 16 }}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                        colors={[colors.primary]}
-                    />
-                }
-            />
-
-            <FAB onPress={() => router.push('/jogador/novo')}>
-                <Feather name="plus" size={24} color={colors.gray100} />
-            </FAB>
+                <FAB onPress={() => router.push('/jogador/novo')}>
+                    <Feather name="plus" size={24} color={colors.gray100} />
+                </FAB>
+            </Content>
         </Container>
     );
 }
@@ -281,4 +282,8 @@ const EmptyText = styled.Text`
     font-size: 14px;
     text-align: center;
     margin: 12px 0;
+`;
+
+const Content = styled.View`
+    flex: 1;
 `;

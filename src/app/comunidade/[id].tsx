@@ -10,6 +10,7 @@ import { communityOrganizersService } from '@/services/communityOrganizersServic
 import { playersService } from '@/services/playersService';
 import { competitionService } from '@/services/competitionService';
 import { useAuth } from '@/hooks/useAuth';
+import { Header } from '@/components/Header';
 
 type CommunityOrganizer = {
     id: string;
@@ -54,57 +55,6 @@ type Competition = {
 const Container = styled.View`
     flex: 1;
     background-color: ${colors.backgroundDark};
-`;
-
-const PageHeader = styled.View`
-    flex-direction: row;
-    align-items: center;
-    padding: 16px 24px;
-    padding-top: 60px;
-    background-color: ${colors.backgroundDark};
-`;
-
-const BackButton = styled.TouchableOpacity`
-    padding: 8px;
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    color: ${colors.gray100};
-    font-size: 20px;
-    font-weight: bold;
-    flex: 1;
-    text-align: center;
-`;
-
-const HeaderSubtitle = styled.Text`
-    color: ${colors.gray300};
-    font-size: 14px;
-    text-align: center;
-`;
-
-const HeaderLeft = styled.View`
-    flex-direction: row;
-    align-items: center;
-`;
-
-const HeaderRight = styled.View`
-    flex-direction: row;
-    align-items: center;
-`;
-
-const StatsButton = styled.TouchableOpacity`
-    flex-direction: row;
-    align-items: center;
-    padding: 8px 16px;
-    border-radius: 8px;
-    background-color: ${colors.gray800};
-`;
-
-const StatsButtonText = styled.Text`
-    color: ${colors.gray100};
-    font-size: 14px;
-    margin-left: 8px;
 `;
 
 const MainContent = styled.View`
@@ -822,19 +772,15 @@ export default function CommunityDetails() {
 
     return (
         <Container>
-            <PageHeader>
-                <BackButton onPress={() => router.back()}>
-                    <Feather name="arrow-left" size={24} color={colors.gray100} />
-                </BackButton>
-                <HeaderTitle>{community?.name}</HeaderTitle>
-                <HeaderRight>
-                    <StatsButton onPress={() => router.push(`/comunidade/${params.id}/estatisticas`)}>
-                        <Feather name="bar-chart-2" size={20} color={colors.gray100} />
-                        <StatsButtonText>Estatísticas</StatsButtonText>
-                    </StatsButton>
-                </HeaderRight>
-            </PageHeader>
-
+            <Header 
+                title={community?.name} 
+                showBackButton
+                rightContent={
+                    <TouchableOpacity onPress={() => router.push(`/comunidade/${params.id}/estatisticas`)}>
+                        <Feather name="bar-chart-2" size={24} color={colors.gray100} />
+                    </TouchableOpacity>
+                }
+            />
             <MainContent>
                 <ScrollContainer>
                     <ContentContainer>

@@ -422,166 +422,161 @@ const Dashboard: React.FC = () => {
     }, [session?.user?.id]);
 
     return (
-        <PageTransition>
-            <Container>
-                <Header 
-                    onNotificationPress={() => {}}
-                    onProfilePress={() => router.push('/(pages)/profile')}
-                />
-                <ScrollContent showsVerticalScrollIndicator={false}>
-                    <Content>
-                        <WelcomeContainer>
-                            <WelcomeText>Olá!</WelcomeText>
-                            <WelcomeSubtext>Confira as estatísticas do seu domínio</WelcomeSubtext>
-                        </WelcomeContainer>
+        <Container>
+            <Header isDashboard />
+            <ScrollContent showsVerticalScrollIndicator={false}>
+                <Content>
+                    <WelcomeContainer>
+                        <WelcomeText>Olá!</WelcomeText>
+                        <WelcomeSubtext>Confira as estatísticas do seu domínio</WelcomeSubtext>
+                    </WelcomeContainer>
 
-                        <StatisticsContainer>
-                            <StatCardWrapper>
-                                <StatCard onPress={() => router.push("/jogos")}>
-                                    <StatIcon>
-                                        <MaterialCommunityIcons name="cards-playing-outline" size={24} color={colors.primary} />
-                                    </StatIcon>
-                                    <StatValue>{stats?.totalGames || 0}</StatValue>
-                                    <StatLabel>Jogos</StatLabel>
-                                </StatCard>
-                            </StatCardWrapper>
+                    <StatisticsContainer>
+                        <StatCardWrapper>
+                            <StatCard onPress={() => router.push("/jogos")}>
+                                <StatIcon>
+                                    <MaterialCommunityIcons name="cards-playing-outline" size={24} color={colors.primary} />
+                                </StatIcon>
+                                <StatValue>{stats?.totalGames || 0}</StatValue>
+                                <StatLabel>Jogos</StatLabel>
+                            </StatCard>
+                        </StatCardWrapper>
 
-                            <StatCardWrapper>
-                                <StatCard onPress={() => router.push("/competicoes")}>
-                                    <StatIcon>
-                                        <MaterialCommunityIcons name="trophy-outline" size={24} color={colors.primary} />
-                                    </StatIcon>
-                                    <StatValue>{stats?.totalCompetitions || 0}</StatValue>
-                                    <StatLabel>Competições</StatLabel>
-                                </StatCard>
-                            </StatCardWrapper>
+                        <StatCardWrapper>
+                            <StatCard onPress={() => router.push("/competicoes")}>
+                                <StatIcon>
+                                    <MaterialCommunityIcons name="trophy-outline" size={24} color={colors.primary} />
+                                </StatIcon>
+                                <StatValue>{stats?.totalCompetitions || 0}</StatValue>
+                                <StatLabel>Competições</StatLabel>
+                            </StatCard>
+                        </StatCardWrapper>
 
-                            <StatCardWrapper>
-                                <StatCard onPress={() => router.push("/jogadores")}>
-                                    <StatIcon>
-                                        <MaterialCommunityIcons name="account-group-outline" size={24} color={colors.primary} />
-                                    </StatIcon>
-                                    <StatValue>{stats?.totalPlayers || 0}</StatValue>
-                                    <StatLabel>Jogadores</StatLabel>
-                                </StatCard>
-                            </StatCardWrapper>
+                        <StatCardWrapper>
+                            <StatCard onPress={() => router.push("/jogadores")}>
+                                <StatIcon>
+                                    <MaterialCommunityIcons name="account-group-outline" size={24} color={colors.primary} />
+                                </StatIcon>
+                                <StatValue>{stats?.totalPlayers || 0}</StatValue>
+                                <StatLabel>Jogadores</StatLabel>
+                            </StatCard>
+                        </StatCardWrapper>
 
-                            <StatCardWrapper>
-                                <StatCard onPress={() => router.push('/comunidades')}>
-                                    <StatIcon>
-                                        <MaterialCommunityIcons name="account-multiple" size={24} color={colors.primary} />
-                                    </StatIcon>
-                                    <StatValue>{stats?.totalCommunities || 0}</StatValue>
-                                    <StatLabel>Comunidades</StatLabel>
-                                </StatCard>
-                            </StatCardWrapper>
-                        </StatisticsContainer>
+                        <StatCardWrapper>
+                            <StatCard onPress={() => router.push('/comunidades')}>
+                                <StatIcon>
+                                    <MaterialCommunityIcons name="account-multiple" size={24} color={colors.primary} />
+                                </StatIcon>
+                                <StatValue>{stats?.totalCommunities || 0}</StatValue>
+                                <StatLabel>Comunidades</StatLabel>
+                            </StatCard>
+                        </StatCardWrapper>
+                    </StatisticsContainer>
 
-                        <ChartContainer>
-                            <ChartTitle>Jogos por Mês</ChartTitle>
-                            <LineChart
-                                data={chartData}
-                                width={Math.max(Dimensions.get("window").width - 80, 0)}
-                                height={220}
-                                chartConfig={chartConfig}
-                                bezier
-                                style={{
-                                    marginVertical: 8,
-                                    borderRadius: 16
-                                }}
-                            />
-                        </ChartContainer>
+                    <ChartContainer>
+                        <ChartTitle>Jogos por Mês</ChartTitle>
+                        <LineChart
+                            data={chartData}
+                            width={Math.max(Dimensions.get("window").width - 80, 0)}
+                            height={220}
+                            chartConfig={chartConfig}
+                            bezier
+                            style={{
+                                marginVertical: 8,
+                                borderRadius: 16
+                            }}
+                        />
+                    </ChartContainer>
 
-                        <SectionContainer>
-                            <SectionHeader>
-                                <SectionTitle>Top Jogadores</SectionTitle>
-                                <SeeAllButton onPress={() => router.push('/top-jogadores')}>
-                                    <SeeAllButtonText>Ver todas</SeeAllButtonText>
-                                </SeeAllButton>
-                            </SectionHeader>
+                    <SectionContainer>
+                        <SectionHeader>
+                            <SectionTitle>Top Jogadores</SectionTitle>
+                            <SeeAllButton onPress={() => router.push('/top-jogadores')}>
+                                <SeeAllButtonText>Ver todas</SeeAllButtonText>
+                            </SeeAllButton>
+                        </SectionHeader>
 
-                            {topPlayers.map((player, index) => {
-                                const position = calculatePosition(index, topPlayers);
-                                return (
-                                    <PlayerCard key={player.id} onPress={() => router.push(`/jogador/${player.id}`)}>
-                                        <MaterialCommunityIcons 
-                                            name={position === 1 ? "crown" : "star"} 
-                                            size={24} 
-                                            color={position === 1 ? "#FFD700" : colors.gray300} 
-                                        />
-                                        <PlayerInfo>
-                                            <PlayerName>{player.name}</PlayerName>
-                                            <PlayerStats>
-                                                {player.wins} vitórias • {player.buchudas} buchudas • {player.winRate.toFixed(2)}% aproveitamento
-                                            </PlayerStats>
-                                        </PlayerInfo>
-                                    </PlayerCard>
-                                );
-                            })}
-                        </SectionContainer>
-
-                        <SectionContainer>
-                            <SectionHeader>
-                                <SectionTitle>Top Duplas</SectionTitle>
-                                <SeeAllButton onPress={() => router.push('/top-duplas')}>
-                                    <SeeAllButtonText>Ver todas</SeeAllButtonText>
-                                </SeeAllButton>
-                            </SectionHeader>
-
-                            {topPairs.map((pair, index) => {
-                                const position = calculatePosition(index, topPairs);
-                                return (
-                                    <PlayerCard key={pair.id}>
-                                        <MaterialCommunityIcons 
-                                            name={position === 1 ? "crown" : "star"} 
-                                            size={24} 
-                                            color={position === 1 ? "#FFD700" : colors.gray300} 
-                                        />
-                                        <PlayerInfo>
-                                            <PlayerName>{pair.player1.name} & {pair.player2.name}</PlayerName>
-                                            <PlayerStats>
-                                                {pair.wins} vitórias • {pair.buchudas} buchudas • {pair.buchudasDeRe} buchudas de ré • {pair.winRate.toFixed(2)}% aproveitamento
-                                            </PlayerStats>
-                                        </PlayerInfo>
-                                    </PlayerCard>
-                                );
-                            })}
-                        </SectionContainer>
-
-                        <SectionContainer>
-                            <SectionHeader>
-                                <SectionTitle>Atividades Recentes</SectionTitle>
-                                <SeeAllButton>
-                                    <SeeAllButtonText>Ver todas</SeeAllButtonText>
-                                </SeeAllButton>
-                            </SectionHeader>
-
-                            {recentActivities.map(activity => (
-                                <ActivityCard key={activity.id}>
-                                    <MaterialCommunityIcons
-                                        name={
-                                            activity.type === 'game' 
-                                                ? "cards-playing" 
-                                                : activity.type === 'competition' 
-                                                    ? "trophy" 
-                                                    : "account"
-                                        }
-                                        size={24}
-                                        color={colors.primary}
+                        {topPlayers.map((player, index) => {
+                            const position = calculatePosition(index, topPlayers);
+                            return (
+                                <PlayerCard key={player.id} onPress={() => router.push(`/jogador/${player.id}`)}>
+                                    <MaterialCommunityIcons 
+                                        name={position === 1 ? "crown" : "star"} 
+                                        size={24} 
+                                        color={position === 1 ? "#FFD700" : colors.gray300} 
                                     />
-                                    <ActivityInfo>
-                                        <ActivityText>{activity.description}</ActivityText>
-                                        <ActivityTime>
-                                            {format(activity.time, "d 'de' MMMM 'às' HH:mm", { locale: ptBR })}
-                                        </ActivityTime>
-                                    </ActivityInfo>
-                                </ActivityCard>
-                            ))}
-                        </SectionContainer>
-                    </Content>
-                </ScrollContent>
-            </Container>
-        </PageTransition>
+                                    <PlayerInfo>
+                                        <PlayerName>{player.name}</PlayerName>
+                                        <PlayerStats>
+                                            {player.wins} vitórias • {player.buchudas} buchudas • {player.winRate.toFixed(2)}% aproveitamento
+                                        </PlayerStats>
+                                    </PlayerInfo>
+                                </PlayerCard>
+                            );
+                        })}
+                    </SectionContainer>
+
+                    <SectionContainer>
+                        <SectionHeader>
+                            <SectionTitle>Top Duplas</SectionTitle>
+                            <SeeAllButton onPress={() => router.push('/top-duplas')}>
+                                <SeeAllButtonText>Ver todas</SeeAllButtonText>
+                            </SeeAllButton>
+                        </SectionHeader>
+
+                        {topPairs.map((pair, index) => {
+                            const position = calculatePosition(index, topPairs);
+                            return (
+                                <PlayerCard key={pair.id}>
+                                    <MaterialCommunityIcons 
+                                        name={position === 1 ? "crown" : "star"} 
+                                        size={24} 
+                                        color={position === 1 ? "#FFD700" : colors.gray300} 
+                                    />
+                                    <PlayerInfo>
+                                        <PlayerName>{pair.player1.name} & {pair.player2.name}</PlayerName>
+                                        <PlayerStats>
+                                            {pair.wins} vitórias • {pair.buchudas} buchudas • {pair.buchudasDeRe} buchudas de ré • {pair.winRate.toFixed(2)}% aproveitamento
+                                        </PlayerStats>
+                                    </PlayerInfo>
+                                </PlayerCard>
+                            );
+                        })}
+                    </SectionContainer>
+
+                    <SectionContainer>
+                        <SectionHeader>
+                            <SectionTitle>Atividades Recentes</SectionTitle>
+                            <SeeAllButton>
+                                <SeeAllButtonText>Ver todas</SeeAllButtonText>
+                            </SeeAllButton>
+                        </SectionHeader>
+
+                        {recentActivities.map(activity => (
+                            <ActivityCard key={activity.id}>
+                                <MaterialCommunityIcons
+                                    name={
+                                        activity.type === 'game' 
+                                            ? "cards-playing" 
+                                            : activity.type === 'competition' 
+                                                ? "trophy" 
+                                                : "account"
+                                    }
+                                    size={24}
+                                    color={colors.primary}
+                                />
+                                <ActivityInfo>
+                                    <ActivityText>{activity.description}</ActivityText>
+                                    <ActivityTime>
+                                        {format(activity.time, "d 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                                    </ActivityTime>
+                                </ActivityInfo>
+                            </ActivityCard>
+                        ))}
+                    </SectionContainer>
+                </Content>
+            </ScrollContent>
+        </Container>
     );
 }
 

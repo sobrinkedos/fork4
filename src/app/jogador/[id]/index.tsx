@@ -1,13 +1,14 @@
 import { Redirect } from 'expo-router';
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { getPlayer } from '@/services/playerService';
 import { Header } from '@/components/Header';
 import { colors } from '@/styles/colors';
 import styled from 'styled-components/native';
 import { PageTransition } from '@/components/Transitions';
+import { Feather } from '@expo/vector-icons';
 
 const Container = styled.View`
     flex: 1;
@@ -81,7 +82,15 @@ export default function PlayerDetails() {
   return (
     <PageTransition>
       <Container>
-        <Header title="Detalhes do Jogador" showBackButton />
+        <Header 
+          title="Detalhes do Jogador" 
+          showBackButton
+          rightContent={
+            <TouchableOpacity onPress={() => router.push(`/jogador/${id}/estatisticas`)}>
+              <Feather name="bar-chart-2" size={24} color={colors.gray100} />
+            </TouchableOpacity>
+          }
+        />
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color={colors.primary} />

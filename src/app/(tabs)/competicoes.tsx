@@ -1,10 +1,10 @@
-import { View, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native"
+import { View, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, Modal } from "react-native"
 import styled from "styled-components/native"
 import { colors } from "@/styles/colors"
 import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { SlideTransition } from "@/components/Transitions"
 import { Header } from "@/components/Header"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState, useFocusEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Competition, competitionService } from "@/services/competitionService"
 import { useRouter } from 'expo-router'
@@ -124,6 +124,10 @@ const EmptyText = styled.Text`
   color: ${colors.gray300};
   font-size: 16px;
   text-align: center;
+`;
+
+const Content = styled.View`
+  flex: 1;
 `;
 
 const getStatusColor = (status: string) => {
@@ -256,28 +260,30 @@ export default function Competicoes() {
 
   return (
     <Container>
-      <Header title="Competições" />
-      {loading ? (
-        <LoadingContainer>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </LoadingContainer>
-      ) : (
-        <ScrollContent>
-          <SectionTitle>Minhas Competições</SectionTitle>
-          {competitions.created.length === 0 ? (
-            <EmptyText>Você ainda não criou nenhuma competição</EmptyText>
-          ) : (
-            competitions.created.map(renderCompetitionCard)
-          )}
+      <Header title="COMPETIÇÕES" />
+      <Content>
+        {loading ? (
+          <LoadingContainer>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </LoadingContainer>
+        ) : (
+          <ScrollContent>
+            <SectionTitle>Minhas Competições</SectionTitle>
+            {competitions.created.length === 0 ? (
+              <EmptyText>Você ainda não criou nenhuma competição</EmptyText>
+            ) : (
+              competitions.created.map(renderCompetitionCard)
+            )}
 
-          {competitions.organized.length > 0 && (
-            <>
-              <SectionTitle style={{ marginTop: 24 }}>Competições que Organizo</SectionTitle>
-              {competitions.organized.map(renderCompetitionCard)}
-            </>
-          )}
-        </ScrollContent>
-      )}
+            {competitions.organized.length > 0 && (
+              <>
+                <SectionTitle style={{ marginTop: 24 }}>Competições que Organizo</SectionTitle>
+                {competitions.organized.map(renderCompetitionCard)}
+              </>
+            )}
+          </ScrollContent>
+        )}
+      </Content>
     </Container>
   );
 }
