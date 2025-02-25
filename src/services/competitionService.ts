@@ -602,20 +602,187 @@ export const competitionService = {
 
     async getCompetitionResults(id: string): Promise<CompetitionResult> {
         try {
-            const { data: competition, error: competitionError } = await supabase
-                .from('competitions')
-                .select('status')
-                .eq('id', id)
-                .single();
+            // Busca todos os jogos da competição
+            const { data: games, error: gamesError } = await supabase
+                .from('games')
+                .select('*')
+                .eq('competition_id', id);
 
-            if (competitionError) throw competitionError;
-            if (competition.status !== 'finished') {
-                throw new Error('Competição não está finalizada');
+            if (gamesError) throw gamesError;
+
+            // Inicializa os resultados
+            const playerStats: Record<string, {
+                score: number;
+                wins: number;
+                losses: number;
+                buchudas: number;
+                buchudasDeRe: number;
+                pairs: Set<string>;
+            }> = {};
+
+            const pairStats: Record<string, {
+                score: number;
+                wins: number;
+                losses: number;
+                buchudas: number;
+                buchudasDeRe: number;
+            }> = {};
+
+            // Processa cada jogo
+            for (const game of games) {
+                if (game.status !== 'finished') continue;
+
+                // Inicializa estatísticas dos jogadores se necessário
+                [...game.team1, ...game.team2].forEach(playerId => {
+                    if (!playerStats[playerId]) {
+                        playerStats[playerId] = {
+                            score: 0,
+                            wins: 0,
+                            losses: 0,
+                            buchudas: 0,
+                            buchudasDeRe: 0,
+                            pairs: new Set()
+                        };
+                    }
+                });
+
+                // Cria chaves para as duplas
+                const team1Key = game.team1.sort().join('_');
+                const team2Key = game.team2.sort().join('_');
+
+                // Inicializa estatísticas das duplas se necessário
+                if (!pairStats[team1Key]) {
+                    pairStats[team1Key] = {
+                        score: 0,
+                        wins: 0,
+                        losses: 0,
+                        buchudas: 0,
+                        buchudasDeRe: 0
+                    };
+                }
+                if (!pairStats[team2Key]) {
+                    pairStats[team2Key] = {
+                        score: 0,
+                        wins: 0,
+                        losses: 0,
+                        buchudas: 0,
+                        buchudasDeRe: 0
+                    };
+                }
+
+                // Registra as duplas para cada jogador
+                game.team1.forEach(playerId => {
+                    playerStats[playerId].pairs.add(team1Key);
+                });
+                game.team2.forEach(playerId => {
+                    playerStats[playerId].pairs.add(team2Key);
+                });
+
+                // Atualiza estatísticas baseado no resultado
+                if (game.team1_score > game.team2_score) {
+                    // Time 1 venceu
+                    game.team1.forEach(playerId => {
+                        playerStats[playerId].wins++;
+                        playerStats[playerId].score += game.team1_score;
+                    });
+                    game.team2.forEach(playerId => {
+                        playerStats[playerId].losses++;
+                        playerStats[playerId].score += game.team2_score;
+                    });
+                    pairStats[team1Key].wins++;
+                    pairStats[team1Key].score += game.team1_score;
+                    pairStats[team2Key].losses++;
+                    pairStats[team2Key].score += game.team2_score;
+
+                    // Buchuda normal (6x0)
+                    if (game.team1_score === 6 && game.team2_score === 0) {
+                        game.team1.forEach(playerId => playerStats[playerId].buchudas++);
+                        pairStats[team1Key].buchudas++;
+                    }
+                    // Buchuda de Ré (time 1 estava perdendo de 5x0 e virou)
+                    if (game.team1_was_losing_5_0) {
+                        game.team1.forEach(playerId => playerStats[playerId].buchudasDeRe++);
+                        pairStats[team1Key].buchudasDeRe++;
+                    }
+                } else {
+                    // Time 2 venceu
+                    game.team2.forEach(playerId => {
+                        playerStats[playerId].wins++;
+                        playerStats[playerId].score += game.team2_score;
+                    });
+                    game.team1.forEach(playerId => {
+                        playerStats[playerId].losses++;
+                        playerStats[playerId].score += game.team1_score;
+                    });
+                    pairStats[team2Key].wins++;
+                    pairStats[team2Key].score += game.team2_score;
+                    pairStats[team1Key].losses++;
+                    pairStats[team1Key].score += game.team1_score;
+
+                    // Buchuda normal (6x0)
+                    if (game.team2_score === 6 && game.team1_score === 0) {
+                        game.team2.forEach(playerId => playerStats[playerId].buchudas++);
+                        pairStats[team2Key].buchudas++;
+                    }
+                    // Buchuda de Ré (time 2 estava perdendo de 5x0 e virou)
+                    if (game.team2_was_losing_5_0) {
+                        game.team2.forEach(playerId => playerStats[playerId].buchudasDeRe++);
+                        pairStats[team2Key].buchudasDeRe++;
+                    }
+                }
             }
 
-            return this.finishCompetition(id);
+            // Busca os nomes dos jogadores
+            const playerIds = Object.keys(playerStats);
+            const players = await Promise.all(
+                playerIds.map(async (id) => {
+                    const player = await this.getPlayerById(id);
+                    return {
+                        id,
+                        name: player.name,
+                        score: playerStats[id].score,
+                        wins: playerStats[id].wins,
+                        losses: playerStats[id].losses,
+                        buchudas: playerStats[id].buchudas,
+                        buchudasDeRe: playerStats[id].buchudasDeRe
+                    };
+                })
+            );
+
+            // Formata as estatísticas das duplas
+            const pairs = Object.entries(pairStats).map(([key, stats]) => ({
+                players: key.split('_'),
+                ...stats
+            }));
+
+            // Ordena os jogadores por pontuação
+            const sortedPlayers = players.sort((a, b) => {
+                // 1. Mais vitórias
+                if (a.wins !== b.wins) return b.wins - a.wins;
+                // 2. Menos derrotas
+                if (a.losses !== b.losses) return a.losses - b.losses;
+                // 3. Mais pontos
+                if (a.score !== b.score) return b.score - a.score;
+                return 0;
+            });
+
+            // Ordena as duplas por pontuação
+            const sortedPairs = pairs.sort((a, b) => {
+                // 1. Mais vitórias
+                if (a.wins !== b.wins) return b.wins - a.wins;
+                // 2. Menos derrotas
+                if (a.losses !== b.losses) return a.losses - b.losses;
+                // 3. Mais pontos
+                if (a.score !== b.score) return b.score - a.score;
+                return 0;
+            });
+
+            return {
+                players: sortedPlayers,
+                pairs: sortedPairs
+            };
         } catch (error) {
-            console.error('Erro ao buscar resultados:', error);
+            console.error('Erro ao buscar resultados da competição:', error);
             throw error;
         }
     },
