@@ -3,7 +3,6 @@ import styled from "styled-components/native"
 import { colors } from "@/styles/colors"
 import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { SlideTransition } from "@/components/Transitions"
-import { FloatingButton } from "@/components/FloatingButton"
 import { Header } from "@/components/Header"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
@@ -113,19 +112,6 @@ const ProgressBarFill = styled.View<{ width: string; status: string }>`
         return colors.warning;
     }
   }};
-`;
-
-const AddButton = styled.TouchableOpacity`
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  width: 56px;
-  height: 56px;
-  border-radius: 28px;
-  background-color: ${colors.accent};
-  align-items: center;
-  justify-content: center;
-  elevation: 5;
 `;
 
 const LoadingContainer = styled.View`
@@ -292,14 +278,6 @@ export default function Competicoes() {
           )}
         </ScrollContent>
       )}
-
-      <AddButton onPress={() => router.push('/comunidade/nova-competicao')}>
-        <MaterialCommunityIcons
-          name="plus"
-          size={24}
-          color={colors.text}
-        />
-      </AddButton>
     </Container>
   );
 }
