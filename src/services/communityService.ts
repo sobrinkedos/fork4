@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { activityService } from './activityService';
 
 export interface Community {
     id: string;
@@ -200,8 +201,48 @@ class CommunityService {
                 ]);
 
             if (organizerError) {
-                console.error('Erro ao adicionar organizador:', organizerError);
-                throw organizerError;
+                console.error('Erro ao adicionar criador como organizador:', organizerError);
+                // Não vamos lançar o erro aqui para não impedir a criação da comunidade
+            }
+
+            // Registrar a atividade de criação da comunidade com sistema de retry
+            if (community) {
+                const maxRetries = 3;
+                const baseDelay = 1000; // 1 segundo
+
+                const createActivityWithRetry = async (attempt: number) => {
+                    try {
+                        console.log(`Tentativa ${attempt} de criar atividade...`);
+                        await activityService.createActivity({
+                            type: 'community',
+                            description: `Nova comunidade "${data.name}" foi criada`,
+                            metadata: {
+                                community_id: community.id,
+                                name: community.name,
+                                description: community.description
+                            }
+                        });
+                        console.log('Atividade criada com sucesso!');
+                        return true;
+                    } catch (activityError) {
+                        console.error(`Erro na tentativa ${attempt}:`, activityError);
+                        
+                        if (attempt < maxRetries) {
+                            const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
+                            console.log(`Aguardando ${delay}ms antes da próxima tentativa...`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            return createActivityWithRetry(attempt + 1);
+                        }
+                        
+                        console.error('Todas as tentativas de criar atividade falharam');
+                        return false;
+                    }
+                };
+
+                // Inicia o processo de retry em background
+                createActivityWithRetry(1).catch(error => {
+                    console.error('Erro no processo de retry:', error);
+                });
             }
 
             return community;

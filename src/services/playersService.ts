@@ -107,25 +107,62 @@ export const playersService = {
 
     async createPlayer(name: string) {
         try {
-            const { data, error } = await supabase
+            console.log('Iniciando criação de jogador:', name);
+
+            // Criar jogador
+            const { data: player, error: playerError } = await supabase
                 .from('players')
                 .insert([{ name }])
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (playerError) {
+                console.error('Erro ao criar jogador:', playerError);
+                throw playerError;
+            }
 
-            // Registrar atividade de criação do jogador
-            await activityService.createActivity({
-                type: 'player',
-                description: `Novo jogador "${name}" foi criado`,
-                metadata: {
-                    player_id: data.id,
-                    name: data.name
-                }
-            });
+            console.log('Jogador criado com sucesso:', player);
 
-            return data;
+            // Registrar a atividade de criação do jogador com sistema de retry
+            if (player) {
+                const maxRetries = 3;
+                const baseDelay = 1000; // 1 segundo
+
+                const createActivityWithRetry = async (attempt: number) => {
+                    try {
+                        console.log(`Tentativa ${attempt} de criar atividade...`);
+                        await activityService.createActivity({
+                            type: 'player',
+                            description: `Novo jogador "${name}" foi criado`,
+                            metadata: {
+                                player_id: player.id,
+                                name: player.name
+                            }
+                        });
+                        console.log('Atividade criada com sucesso!');
+                        return true;
+                    } catch (activityError) {
+                        console.error(`Erro na tentativa ${attempt}:`, activityError);
+                        
+                        if (attempt < maxRetries) {
+                            const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
+                            console.log(`Aguardando ${delay}ms antes da próxima tentativa...`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            return createActivityWithRetry(attempt + 1);
+                        }
+                        
+                        console.error('Todas as tentativas de criar atividade falharam');
+                        return false;
+                    }
+                };
+
+                // Inicia o processo de retry em background
+                createActivityWithRetry(1).catch(error => {
+                    console.error('Erro no processo de retry:', error);
+                });
+            }
+
+            return player;
         } catch (error) {
             console.error('Erro ao criar jogador:', error);
             throw error;

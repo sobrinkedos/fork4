@@ -489,34 +489,110 @@ export const competitionService = {
 
             if (updateError) throw updateError;
 
-            return {
-                players: players.sort((a, b) => {
-                    // 1. Mais vitórias
-                    if (a.wins !== b.wins) return b.wins - a.wins;
-                    
-                    // 2. Menos derrotas
-                    if (a.losses !== b.losses) return a.losses - b.losses;
-                    
-                    // 3. Mais pontos
-                    if (a.score !== b.score) return b.score - a.score;
-                    
-                    // 4. Mais buchudas dadas
-                    if (a.buchudas !== b.buchudas) return b.buchudas - a.buchudas;
-                    
-                    // 5. Mais buchudas de Ré dadas
-                    if (a.buchudasDeRe !== b.buchudasDeRe) return b.buchudasDeRe - a.buchudasDeRe;
-                    
-                    return 0;
-                }),
-                pairs: pairs.sort((a, b) => {
-                    // Mantém a mesma lógica para as duplas
-                    if (a.wins !== b.wins) return b.wins - a.wins;
-                    if (a.losses !== b.losses) return a.losses - b.losses;
-                    if (a.score !== b.score) return b.score - a.score;
-                    if (a.buchudas !== b.buchudas) return b.buchudas - a.buchudas;
-                    if (a.buchudasDeRe !== b.buchudasDeRe) return b.buchudasDeRe - a.buchudasDeRe;
-                    return 0;
+            // Buscar informações da competição
+            const { data: competition } = await supabase
+                .from('competitions')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            // Buscar informações da comunidade
+            let communityName = 'Desconhecida';
+            if (competition?.community_id) {
+                const { data: community } = await supabase
+                    .from('communities')
+                    .select('name')
+                    .eq('id', competition.community_id)
+                    .single();
+                
+                if (community) {
+                    communityName = community.name;
+                }
+            }
+
+            // Ordena os jogadores por pontuação
+            const sortedPlayers = players.sort((a, b) => {
+                // 1. Mais vitórias
+                if (a.wins !== b.wins) return b.wins - a.wins;
+                // 2. Menos derrotas
+                if (a.losses !== b.losses) return a.losses - b.losses;
+                // 3. Mais pontos
+                if (a.score !== b.score) return b.score - a.score;
+                return 0;
+            });
+
+            // Ordena as duplas por pontuação
+            const sortedPairs = pairs.sort((a, b) => {
+                // 1. Mais vitórias
+                if (a.wins !== b.wins) return b.wins - a.wins;
+                // 2. Menos derrotas
+                if (a.losses !== b.losses) return a.losses - b.losses;
+                // 3. Mais pontos
+                if (a.score !== b.score) return b.score - a.score;
+                return 0;
+            });
+
+            // Pega os dois melhores jogadores e a melhor dupla
+            const topPlayers = sortedPlayers.slice(0, 2);
+            const topPair = sortedPairs[0];
+
+            // Busca os nomes dos jogadores da melhor dupla
+            const topPairPlayers = await Promise.all(
+                topPair.players.map(async (id) => {
+                    const player = await this.getPlayerById(id);
+                    return player.name;
                 })
+            );
+
+            // Formata a descrição dos resultados
+            const resultDescription = `
+                Competição finalizada! 
+                1º Lugar Individual: ${topPlayers[0].name} (${topPlayers[0].wins} vitórias, ${topPlayers[0].score} pontos)
+                2º Lugar Individual: ${topPlayers[1].name} (${topPlayers[1].wins} vitórias, ${topPlayers[1].score} pontos)
+                Melhor Dupla: ${topPairPlayers.join(' e ')} (${topPair.wins} vitórias, ${topPair.score} pontos)
+            `.trim().replace(/\s+/g, ' ');
+
+            // Registra a atividade de finalização da competição
+            try {
+                await activityService.createActivity({
+                    type: 'competition',
+                    description: `Competição "${competition?.name || 'Desconhecida'}" da Comunidade ${communityName} foi finalizada! ${resultDescription}`,
+                    metadata: {
+                        competition_id: id,
+                        competition_name: competition?.name,
+                        community_id: competition?.community_id,
+                        community_name: communityName,
+                        top_players: topPlayers.map(p => ({
+                            id: p.id,
+                            name: p.name,
+                            wins: p.wins,
+                            losses: p.losses,
+                            score: p.score,
+                            buchudas: p.buchudas,
+                            buchudasDeRe: p.buchudasDeRe
+                        })),
+                        top_pair: {
+                            players: topPair.players.map((id, index) => ({
+                                id,
+                                name: topPairPlayers[index]
+                            })),
+                            wins: topPair.wins,
+                            losses: topPair.losses,
+                            score: topPair.score,
+                            buchudas: topPair.buchudas,
+                            buchudasDeRe: topPair.buchudasDeRe
+                        }
+                    }
+                });
+                console.log('Atividade criada com sucesso!');
+            } catch (activityError) {
+                console.error('Erro ao criar atividade:', activityError);
+                // Não propaga o erro para não impedir a finalização da competição
+            }
+
+            return {
+                players: sortedPlayers,
+                pairs: sortedPairs
             };
         } catch (error) {
             console.error('Erro ao finalizar competição:', error);

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { activityService } from './activityService';
 
 export type VictoryType = 
     | 'simple' // 1 ponto
@@ -67,6 +68,98 @@ export const gameService = {
                 console.error('Erro detalhado:', error);
                 throw error;
             }
+
+            // Registrar a atividade de criação do jogo com sistema de retry
+            if (newGame) {
+                // Buscar informações da competição
+                const { data: competition } = await supabase
+                    .from('competitions')
+                    .select('*')
+                    .eq('id', newGame.competition_id)
+                    .single();
+
+                console.log('Dados da competição:', competition);
+
+                // Buscar informações da comunidade
+                let communityName = 'Desconhecida';
+                if (competition?.community_id) {
+                    const { data: community } = await supabase
+                        .from('communities')
+                        .select('name')
+                        .eq('id', competition.community_id)
+                        .single();
+                    
+                    if (community) {
+                        communityName = community.name;
+                    }
+                }
+
+                console.log('Nome da comunidade:', communityName);
+
+                // Buscar informações dos jogadores do time 1
+                const { data: team1Players } = await supabase
+                    .from('players')
+                    .select('name')
+                    .in('id', newGame.team1);
+
+                // Buscar informações dos jogadores do time 2
+                const { data: team2Players } = await supabase
+                    .from('players')
+                    .select('name')
+                    .in('id', newGame.team2);
+
+                // Formatar os nomes dos times
+                const team1Names = team1Players?.map(p => p.name).join(' e ') || 'Time 1';
+                const team2Names = team2Players?.map(p => p.name).join(' e ') || 'Time 2';
+
+                const maxRetries = 3;
+                const baseDelay = 1000; // 1 segundo
+
+                const createActivityWithRetry = async (attempt: number) => {
+                    try {
+                        console.log(`Tentativa ${attempt} de criar atividade...`);
+                        await activityService.createActivity({
+                            type: 'game',
+                            description: `Novo jogo criado na Comunidade ${communityName}, Competição ${competition?.name || 'Desconhecida'} entre as duplas ${team1Names} vs ${team2Names}`,
+                            metadata: {
+                                game_id: newGame.id,
+                                competition_id: newGame.competition_id,
+                                competition_name: competition?.name,
+                                community_id: competition?.community_id,
+                                community_name: communityName,
+                                team1: {
+                                    ids: newGame.team1,
+                                    names: team1Players?.map(p => p.name) || []
+                                },
+                                team2: {
+                                    ids: newGame.team2,
+                                    names: team2Players?.map(p => p.name) || []
+                                }
+                            }
+                        });
+                        console.log('Atividade criada com sucesso!');
+                        return true;
+                    } catch (activityError) {
+                        console.error(`Erro na tentativa ${attempt}:`, activityError);
+                        
+                        if (attempt < maxRetries) {
+                            const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
+                            console.log(`Aguardando ${delay}ms antes da próxima tentativa...`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            return createActivityWithRetry(attempt + 1);
+                        }
+                        
+                        console.error('Todas as tentativas de criar atividade falharam');
+                        return false;
+                    }
+                };
+
+                // Inicia o processo de retry em background
+                createActivityWithRetry(1).catch(error => {
+                    console.error('Erro no processo de retry:', error);
+                });
+            }
+
             return newGame;
         } catch (error) {
             console.error('Erro ao criar jogo:', error);
@@ -218,14 +311,113 @@ export const gameService = {
 
             if (updateError) throw updateError;
 
-            console.log('GameService: Jogo atualizado com sucesso:', {
-                id: updatedGame.id,
-                team1Score: updatedGame.team1_score,
-                team2Score: updatedGame.team2_score,
-                isBuchuda: updatedGame.is_buchuda,
-                isBuchudaDeRe: updatedGame.is_buchuda_de_re,
-                status: updatedGame.status
-            });
+            // Se o jogo foi finalizado, registra a atividade
+            if (updateData.status === 'finished') {
+                // Buscar informações da competição
+                const { data: competition } = await supabase
+                    .from('competitions')
+                    .select('*')
+                    .eq('id', game.competition_id)
+                    .single();
+
+                console.log('Dados da competição:', competition);
+
+                // Buscar informações da comunidade
+                let communityName = 'Desconhecida';
+                if (competition?.community_id) {
+                    const { data: community } = await supabase
+                        .from('communities')
+                        .select('name')
+                        .eq('id', competition.community_id)
+                        .single();
+                    
+                    if (community) {
+                        communityName = community.name;
+                    }
+                }
+
+                // Buscar informações dos jogadores do time 1
+                const { data: team1Players } = await supabase
+                    .from('players')
+                    .select('name')
+                    .in('id', game.team1);
+
+                // Buscar informações dos jogadores do time 2
+                const { data: team2Players } = await supabase
+                    .from('players')
+                    .select('name')
+                    .in('id', game.team2);
+
+                // Formatar os nomes dos times
+                const team1Names = team1Players?.map(p => p.name).join(' e ') || 'Time 1';
+                const team2Names = team2Players?.map(p => p.name).join(' e ') || 'Time 2';
+
+                // Determinar o time vencedor
+                const winningTeam = team1Score >= 6 ? team1Names : team2Names;
+                const losingTeam = team1Score >= 6 ? team2Names : team1Names;
+                const winningScore = team1Score >= 6 ? team1Score : team2Score;
+                const losingScore = team1Score >= 6 ? team2Score : team1Score;
+
+                // Construir a descrição do resultado
+                let resultDescription = `${winningTeam} venceu ${losingTeam} por ${winningScore}x${losingScore}`;
+                if (isBuchuda) {
+                    resultDescription += ' (Buchuda!)';
+                } else if (isBuchudaDeRe) {
+                    resultDescription += ' (Buchuda de Ré!)';
+                }
+
+                const maxRetries = 3;
+                const baseDelay = 1000;
+
+                const createActivityWithRetry = async (attempt: number) => {
+                    try {
+                        console.log(`Tentativa ${attempt} de criar atividade...`);
+                        await activityService.createActivity({
+                            type: 'game_finished',
+                            description: `Jogo finalizado na Comunidade ${communityName}, Competição ${competition?.name || 'Desconhecida'}: ${resultDescription}`,
+                            metadata: {
+                                game_id: game.id,
+                                competition_id: game.competition_id,
+                                competition_name: competition?.name,
+                                community_id: competition?.community_id,
+                                community_name: communityName,
+                                team1: {
+                                    ids: game.team1,
+                                    names: team1Players?.map(p => p.name) || [],
+                                    score: team1Score
+                                },
+                                team2: {
+                                    ids: game.team2,
+                                    names: team2Players?.map(p => p.name) || [],
+                                    score: team2Score
+                                },
+                                is_buchuda: isBuchuda,
+                                is_buchuda_de_re: isBuchudaDeRe,
+                                winning_team: team1Score >= 6 ? 1 : 2
+                            }
+                        });
+                        console.log('Atividade criada com sucesso!');
+                        return true;
+                    } catch (activityError) {
+                        console.error(`Erro na tentativa ${attempt}:`, activityError);
+                        
+                        if (attempt < maxRetries) {
+                            const delay = baseDelay * Math.pow(2, attempt - 1);
+                            console.log(`Aguardando ${delay}ms antes da próxima tentativa...`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            return createActivityWithRetry(attempt + 1);
+                        }
+                        
+                        console.error('Todas as tentativas de criar atividade falharam');
+                        return false;
+                    }
+                };
+
+                // Inicia o processo de retry em background
+                createActivityWithRetry(1).catch(error => {
+                    console.error('Erro no processo de retry:', error);
+                });
+            }
 
             return updatedGame;
         } catch (error) {

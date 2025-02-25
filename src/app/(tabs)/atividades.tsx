@@ -179,7 +179,7 @@ export default function ActivityList() {
             <FlatList
                 data={activities}
                 renderItem={renderItem}
-                keyExtractor={item => item.id}
+                keyExtractor={item => `${item.id}-${item.created_at}`}
                 ListEmptyComponent={
                     <EmptyContainer>
                         <EmptyText>Nenhuma atividade encontrada</EmptyText>

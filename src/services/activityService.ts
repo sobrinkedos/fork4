@@ -96,8 +96,11 @@ export const activityService = {
                 throw error;
             }
 
+            // Remove possíveis duplicatas baseado no id
+            const uniqueActivities = data ? Array.from(new Map(data.map(item => [item.id, item])).values()) : [];
+
             return {
-                activities: data as Activity[],
+                activities: uniqueActivities as Activity[],
                 totalCount: count || 0,
                 currentPage: page,
                 pageSize,
@@ -156,17 +159,6 @@ export const activityService = {
                 },
                 isBuchuda,
                 isBuchudaDeRe
-            }
-        });
-    },
-
-    async registerCompetitionCompletion(competitionId: string, winners: string[]) {
-        await this.createActivity({
-            type: 'competition',
-            description: `Competição finalizada! ${winners.join(' e ')} são os campeões!`,
-            metadata: {
-                competition_id: competitionId,
-                winners
             }
         });
     },
