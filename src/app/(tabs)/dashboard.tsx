@@ -12,6 +12,7 @@ import { LineChart } from "@/components/WebLineChart";
 import { useAuth } from "@/hooks/useAuth";
 import { statisticsService } from "@/services/statisticsService";
 import { rankingService } from "@/services/rankingService";
+import { activityService } from "@/services/activityService";
 
 interface Stats {
     totalGames: number;
@@ -48,9 +49,9 @@ interface Pair {
 
 interface Activity {
     id: string;
-    type: 'game' | 'competition' | 'player';
+    type: 'game' | 'competition' | 'player' | 'community';
     description: string;
-    time: Date;
+    created_at: Date;
 }
 
 const Container = styled.View`
@@ -333,26 +334,21 @@ const Dashboard: React.FC = () => {
 
         loadTopPairs();
     }, []);
-    const [recentActivities, setRecentActivities] = useState<Activity[]>([
-        {
-            id: '1',
-            type: 'game',
-            description: 'Eliane e Bruna venceram com uma buchuda!',
-            time: new Date(2024, 1, 14, 16, 30)
-        },
-        {
-            id: '2',
-            type: 'competition',
-            description: 'Nova competição "Torneio de Verão" criada',
-            time: new Date(2024, 1, 14, 15, 45)
-        },
-        {
-            id: '3',
-            type: 'player',
-            description: 'Mariana completou 50 jogos!',
-            time: new Date(2024, 1, 14, 14, 20)
+
+    const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+
+    useEffect(() => {
+        async function loadRecentActivities() {
+            try {
+                const activities = await activityService.getRecentActivities();
+                setRecentActivities(activities);
+            } catch (error) {
+                console.error('Dashboard: Erro ao carregar atividades recentes:', error);
+            }
         }
-    ]);
+
+        loadRecentActivities();
+    }, []);
 
     const [totalCommunities, setTotalCommunities] = useState(0);
 
@@ -575,7 +571,9 @@ const Dashboard: React.FC = () => {
                                             ? "cards-playing" 
                                             : activity.type === 'competition' 
                                                 ? "trophy" 
-                                                : "account"
+                                                : activity.type === 'community'
+                                                    ? "account-group"
+                                                    : "account"
                                     }
                                     size={24}
                                     color={colors.primary}
@@ -583,7 +581,7 @@ const Dashboard: React.FC = () => {
                                 <ActivityInfo>
                                     <ActivityText>{activity.description}</ActivityText>
                                     <ActivityTime>
-                                        {format(activity.time, "d 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                                        {format(new Date(activity.created_at!), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
                                     </ActivityTime>
                                 </ActivityInfo>
                             </ActivityCard>

@@ -121,7 +121,7 @@ export const activityService = {
                 .from('activities')
                 .select('*')
                 .order('created_at', { ascending: false })
-                .limit(10);
+                .limit(5);
 
             if (error) throw error;
 
