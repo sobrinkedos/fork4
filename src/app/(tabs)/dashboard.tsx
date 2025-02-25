@@ -405,7 +405,7 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         async function loadStatistics() {
             if (session?.user?.id) {
-                const userStats = await statisticsService.getUserStatistics(session.user.id);
+                const userStats = await statisticsService.getUserStats();
                 setStats(userStats);
             }
         }
@@ -413,13 +413,27 @@ const Dashboard: React.FC = () => {
         loadStatistics();
     }, [session?.user?.id]);
 
-    useEffect(() => {
-        const fetchStatistics = async () => {
-            const stats = await statisticsService.getUserStatistics(session?.user?.id);
-            setTotalCommunities(stats.totalCommunities);
-        };
-        fetchStatistics();
-    }, [session?.user?.id]);
+    const fetchStatistics = async () => {
+        try {
+            if (!session?.user?.id) return;
+            const userStats = await statisticsService.getUserStats();
+            setStats(userStats);
+        } catch (error) {
+            console.error('Erro ao buscar estatísticas:', error);
+        }
+    };
+
+    const refreshStatistics = async () => {
+        try {
+            setRefreshing(true);
+            const stats = await statisticsService.getUserStats();
+            setStats(stats);
+        } catch (error) {
+            console.error('Erro ao atualizar estatísticas:', error);
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     return (
         <Container>

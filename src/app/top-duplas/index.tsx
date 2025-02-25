@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
 import { useTheme } from '@/contexts/ThemeProvider';
-import { Header } from '@/components/Header';
+import { InternalHeader } from '@/components/InternalHeader';
 import { PageTransition } from '@/components/Transitions';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { rankingService, PairRanking } from '@/services/rankingService';
@@ -191,7 +191,7 @@ export default function TopDuplas() {
     if (loading) {
         return (
             <Container>
-                <Header title="Top Duplas" />
+                <InternalHeader title="Top Duplas" />
                 <LoadingContainer>
                     <ActivityIndicator size="large" color={colors.primary} />
                 </LoadingContainer>
@@ -202,7 +202,7 @@ export default function TopDuplas() {
     if (error) {
         return (
             <Container>
-                <Header title="Top Duplas" />
+                <InternalHeader title="Top Duplas" />
                 <ErrorContainer>
                     <ErrorText>{error}</ErrorText>
                 </ErrorContainer>
@@ -213,7 +213,7 @@ export default function TopDuplas() {
     return (
         <PageTransition>
             <Container>
-                <Header title="Top Duplas" />
+                <InternalHeader title="Top Duplas" />
                 <Content>
                     {pairs.length > 0 ? (
                         <FlatList

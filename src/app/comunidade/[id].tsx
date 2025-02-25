@@ -10,7 +10,7 @@ import { communityOrganizersService } from '@/services/communityOrganizersServic
 import { playersService } from '@/services/playersService';
 import { competitionService } from '@/services/competitionService';
 import { useAuth } from '@/hooks/useAuth';
-import { Header } from '@/components/Header';
+import { InternalHeader } from '@/components/InternalHeader';
 
 type CommunityOrganizer = {
     id: string;
@@ -778,12 +778,11 @@ export default function CommunityDetails() {
 
     return (
         <Container>
-            <Header 
-                title={community?.name} 
-                showBackButton
+            <InternalHeader 
+                title={community?.name || 'Comunidade'} 
                 rightContent={
                     <TouchableOpacity onPress={() => router.push(`/comunidade/${params.id}/estatisticas`)}>
-                        <Feather name="bar-chart-2" size={24} color={colors.gray100} />
+                        <Feather name="bar-chart-2" size={24} color={colors.white} />
                     </TouchableOpacity>
                 }
             />

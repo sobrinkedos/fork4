@@ -5,24 +5,31 @@ import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
 import { Feather } from '@expo/vector-icons';
 import { communityStatsService, CommunityStats } from '@/services/communityStatsService';
+import { communityService } from '@/services/communityService';
+import { InternalHeader } from '@/components/InternalHeader';
 
 export default function CommunityStatsPage() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
     const [stats, setStats] = useState<CommunityStats | null>(null);
+    const [community, setCommunity] = useState<{ name: string } | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        loadStats();
+        loadData();
     }, []);
 
-    const loadStats = async () => {
+    const loadData = async () => {
         try {
             setLoading(true);
-            const stats = await communityStatsService.getCommunityStats(id as string);
-            setStats(stats);
+            const [communityData, statsData] = await Promise.all([
+                communityService.getById(id as string),
+                communityStatsService.getCommunityStats(id as string)
+            ]);
+            setCommunity(communityData);
+            setStats(statsData);
         } catch (error) {
-            console.error('Erro ao carregar estatísticas:', error);
+            console.error('Erro ao carregar dados:', error);
         } finally {
             setLoading(false);
         }
@@ -30,21 +37,18 @@ export default function CommunityStatsPage() {
 
     if (loading) {
         return (
-            <LoadingContainer>
-                <ActivityIndicator size="large" color={colors.primary} />
-            </LoadingContainer>
+            <Container>
+                <InternalHeader title="Estatísticas" />
+                <LoadingContainer>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </LoadingContainer>
+            </Container>
         );
     }
 
     return (
         <Container>
-            <PageHeader>
-                <BackButton onPress={() => router.back()}>
-                    <Feather name="arrow-left" size={24} color={colors.gray100} />
-                </BackButton>
-                <HeaderTitle>Estatísticas</HeaderTitle>
-            </PageHeader>
-
+            <InternalHeader title={`Estatísticas - ${community?.name || ''}`} />
             <ScrollView>
                 <ContentContainer>
                     <Section>
@@ -129,25 +133,6 @@ const LoadingContainer = styled.View`
     flex: 1;
     justify-content: center;
     align-items: center;
-    background-color: ${colors.backgroundDark};
-`;
-
-const PageHeader = styled.View`
-    flex-direction: row;
-    align-items: center;
-    padding: 24px;
-    background-color: ${colors.backgroundDark};
-    padding-top: 60px;
-`;
-
-const BackButton = styled.TouchableOpacity`
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
-    color: ${colors.gray100};
 `;
 
 const ContentContainer = styled.View`
@@ -166,10 +151,10 @@ const SectionTitle = styled.Text`
 `;
 
 const StatCard = styled.View`
-    background-color: ${colors.gray800};
+    background-color: ${colors.backgroundLight};
     border-radius: 8px;
     padding: 16px;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 `;
 
 const PlayerName = styled.Text`
@@ -194,7 +179,6 @@ const StatRow = styled.View`
 
 const StatItem = styled.View`
     align-items: center;
-    flex: 1;
 `;
 
 const StatLabel = styled.Text`

@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { gameService, Game } from '@/services/gameService';
 import { competitionService } from '@/services/competitionService';
 import { useFocusEffect } from '@react-navigation/native';
+import { InternalHeader } from '@/components/InternalHeader';
 
 interface Player {
     id: string;
@@ -85,13 +86,7 @@ export default function GameDetails() {
 
     return (
         <Container>
-            <PageHeader>
-                <BackButton onPress={() => router.back()}>
-                    <Feather name="arrow-left" size={24} color={colors.gray100} />
-                </BackButton>
-                <HeaderTitle>Detalhes do Jogo</HeaderTitle>
-            </PageHeader>
-
+            <InternalHeader title="Detalhes do Jogo" />
             <MainContent 
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 32 }}
@@ -258,24 +253,6 @@ const LoadingContainer = styled.View`
     justify-content: center;
     align-items: center;
     background-color: ${colors.backgroundDark};
-`;
-
-const PageHeader = styled.View`
-    padding: 20px;
-    background-color: ${colors.secondary};
-    padding-top: 60px;
-    flex-direction: row;
-    align-items: center;
-`;
-
-const BackButton = styled.TouchableOpacity`
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
-    color: ${colors.gray100};
 `;
 
 const MainContent = styled.ScrollView`

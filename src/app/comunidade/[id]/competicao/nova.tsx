@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Alert, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
 import { Feather } from '@expo/vector-icons';
 import { competitionService } from '@/services/competitionService';
 import { DatePickerInput } from 'react-native-paper-dates';
 import { PaperProvider, TextInput } from 'react-native-paper';
+import { InternalHeader } from '@/components/InternalHeader';
 
 export default function NovaCompeticao() {
     const router = useRouter();
@@ -55,103 +56,99 @@ export default function NovaCompeticao() {
     return (
         <PaperProvider>
             <Container>
-                <PageHeader>
-                    <BackButton onPress={() => router.back()}>
-                        <Feather name="arrow-left" size={24} color={colors.gray100} />
-                    </BackButton>
-                    <HeaderTitle>Nova Competição</HeaderTitle>
-                </PageHeader>
+                <InternalHeader title="Nova Competição" />
+                <ScrollView>
+                    <Content>
+                        <FormGroup>
+                            <Label>Nome</Label>
+                            <TextInput
+                                mode="outlined"
+                                value={formData.name}
+                                onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+                                placeholder="Nome da competição"
+                                style={{
+                                    backgroundColor: colors.backgroundDark,
+                                }}
+                                theme={{
+                                    colors: {
+                                        primary: colors.primary,
+                                        text: colors.gray100,
+                                        placeholder: colors.gray300,
+                                        background: colors.backgroundDark,
+                                        surface: colors.backgroundDark,
+                                        onSurface: colors.gray100,
+                                        outline: colors.gray700,
+                                    }
+                                }}
+                            />
+                        </FormGroup>
 
-                <Content>
-                    <FormGroup>
-                        <Label>Nome</Label>
-                        <TextInput
-                            mode="outlined"
-                            value={formData.name}
-                            onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
-                            placeholder="Nome da competição"
-                            style={{
-                                backgroundColor: colors.backgroundDark,
-                            }}
-                            theme={{
-                                colors: {
-                                    primary: colors.primary,
-                                    text: colors.gray100,
-                                    placeholder: colors.gray300,
-                                    background: colors.backgroundDark,
-                                    surface: colors.backgroundDark,
-                                    onSurface: colors.gray100,
-                                    outline: colors.gray700,
-                                }
-                            }}
-                        />
-                    </FormGroup>
+                        <FormGroup>
+                            <Label>Descrição</Label>
+                            <TextInput
+                                mode="outlined"
+                                value={formData.description}
+                                onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
+                                placeholder="Descrição da competição"
+                                multiline
+                                numberOfLines={4}
+                                textAlignVertical="top"
+                                contentStyle={{
+                                    paddingTop: 16,
+                                    minHeight: 120,
+                                }}
+                                style={{
+                                    backgroundColor: colors.backgroundDark,
+                                }}
+                                theme={{
+                                    colors: {
+                                        primary: colors.primary,
+                                        text: colors.gray100,
+                                        placeholder: colors.gray300,
+                                        background: colors.backgroundDark,
+                                        surface: colors.backgroundDark,
+                                        onSurface: colors.gray100,
+                                        outline: colors.gray700,
+                                    }
+                                }}
+                            />
+                        </FormGroup>
 
-                    <FormGroup>
-                        <Label>Descrição</Label>
-                        <TextInput
-                            mode="outlined"
-                            value={formData.description}
-                            onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
-                            placeholder="Descrição da competição"
-                            multiline
-                            numberOfLines={4}
-                            textAlignVertical="top"
-                            contentStyle={{
-                                paddingTop: 16,
-                                minHeight: 120,
-                            }}
-                            style={{
-                                backgroundColor: colors.backgroundDark,
-                            }}
-                            theme={{
-                                colors: {
-                                    primary: colors.primary,
-                                    text: colors.gray100,
-                                    placeholder: colors.gray300,
-                                    background: colors.backgroundDark,
-                                    surface: colors.backgroundDark,
-                                    onSurface: colors.gray100,
-                                    outline: colors.gray700,
-                                }
-                            }}
-                        />
-                    </FormGroup>
+                        <FormGroup>
+                            <Label>Data da Competição</Label>
+                            <DatePickerInput
+                                locale="pt"
+                                label="Data"
+                                value={formData.start_date}
+                                onChange={(date) => date && setFormData(prev => ({ ...prev, start_date: date }))}
+                                inputMode="start"
+                                mode="outlined"
+                                style={{
+                                    backgroundColor: colors.backgroundDark,
+                                }}
+                                theme={{
+                                    colors: {
+                                        primary: colors.primary,
+                                        text: colors.gray100,
+                                        placeholder: colors.gray300,
+                                        background: colors.backgroundDark,
+                                        surface: colors.backgroundDark,
+                                        onSurface: colors.gray100,
+                                        outline: colors.gray700,
+                                    }
+                                }}
+                            />
+                        </FormGroup>
 
-                    <FormGroup>
-                        <Label>Data da Competição</Label>
-                        <DatePickerInput
-                            locale="pt"
-                            label="Data"
-                            value={formData.start_date}
-                            onChange={(date) => date && setFormData(prev => ({ ...prev, start_date: date }))}
-                            inputMode="start"
-                            mode="outlined"
-                            style={{
-                                backgroundColor: colors.backgroundDark,
-                            }}
-                            theme={{
-                                colors: {
-                                    primary: colors.primary,
-                                    text: colors.gray100,
-                                    placeholder: colors.gray300,
-                                    background: colors.backgroundDark,
-                                    surface: colors.backgroundDark,
-                                    onSurface: colors.gray100,
-                                    outline: colors.gray700,
-                                }
-                            }}
-                        />
-                    </FormGroup>
-
-                    <SaveButton onPress={handleSave} disabled={loading}>
-                        {loading ? (
-                            <ActivityIndicator color={colors.gray100} />
-                        ) : (
-                            <SaveButtonText>Criar Competição</SaveButtonText>
-                        )}
-                    </SaveButton>
-                </Content>
+                        <SaveButton onPress={handleSave} disabled={loading}>
+                            {loading ? (
+                                <ActivityIndicator color={colors.gray100} />
+                            ) : (
+                                <SaveButtonText>Criar Competição</SaveButtonText>
+                            )}
+                        </SaveButton>
+                    </Content>
+                </ScrollView>
             </Container>
         </PaperProvider>
     );
@@ -162,31 +159,9 @@ const Container = styled.View`
     background-color: ${colors.backgroundDark};
 `;
 
-const PageHeader = styled.View`
+const Content = styled.View`
     padding: 20px;
-    background-color: ${colors.secondary};
-    padding-top: 60px;
-    flex-direction: row;
-    align-items: center;
 `;
-
-const BackButton = styled.TouchableOpacity`
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
-    color: ${colors.gray100};
-    flex: 1;
-`;
-
-const Content = styled.ScrollView.attrs({
-    contentContainerStyle: {
-        flexGrow: 1,
-        padding: 20,
-    },
-})``;
 
 const FormGroup = styled.View`
     margin-bottom: 20px;

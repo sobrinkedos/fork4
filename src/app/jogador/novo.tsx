@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Alert, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
+import { useRouter } from 'expo-router';
+import { InternalHeader } from '@/components/InternalHeader';
 import { colors } from '@/styles/colors';
-import { Feather } from '@expo/vector-icons';
 import { playerService } from '@/services/playerService';
+import { Feather } from '@expo/vector-icons';
 import { TextInput } from 'react-native-paper';
 
 export default function NovoJogador() {
@@ -46,13 +47,7 @@ export default function NovoJogador() {
 
     return (
         <Container>
-            <PageHeader>
-                <BackButton onPress={() => router.back()}>
-                    <Feather name="arrow-left" size={24} color={colors.gray100} />
-                </BackButton>
-                <HeaderTitle>Novo Jogador</HeaderTitle>
-            </PageHeader>
-
+            <InternalHeader title="Novo Jogador" />
             <Content>
                 <FormGroup>
                     <Label>Nome</Label>
@@ -125,24 +120,6 @@ export default function NovoJogador() {
 const Container = styled.View`
     flex: 1;
     background-color: ${colors.backgroundDark};
-`;
-
-const PageHeader = styled.View`
-    padding: 20px;
-    background-color: ${colors.secondary};
-    padding-top: 60px;
-    flex-direction: row;
-    align-items: center;
-`;
-
-const BackButton = styled.TouchableOpacity`
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
-    color: ${colors.gray100};
 `;
 
 const Content = styled.ScrollView.attrs({

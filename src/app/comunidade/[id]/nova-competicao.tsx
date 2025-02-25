@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Alert, ActivityIndicator } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
+import { competitionService } from '@/services/competitionService';
+import { InternalHeader } from '@/components/InternalHeader';
 import { Feather } from '@expo/vector-icons';
 
 export default function NovaCompeticao() {
@@ -21,13 +23,7 @@ export default function NovaCompeticao() {
 
     return (
         <Container>
-            <PageHeader>
-                <BackButton onPress={() => router.back()}>
-                    <Feather name="arrow-left" size={24} color={colors.gray100} />
-                </BackButton>
-                <HeaderTitle>Nova Competição</HeaderTitle>
-            </PageHeader>
-
+            <InternalHeader title="Nova Competição" />
             <Content>
                 <Form>
                     <FormGroup>
@@ -65,25 +61,6 @@ export default function NovaCompeticao() {
 const Container = styled.View`
     flex: 1;
     background-color: ${colors.backgroundDark};
-`;
-
-const PageHeader = styled.View`
-    padding: 20px;
-    background-color: ${colors.secondary};
-    padding-top: 60px;
-    flex-direction: row;
-    align-items: center;
-`;
-
-const BackButton = styled.TouchableOpacity`
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
-    color: ${colors.gray100};
-    flex: 1;
 `;
 
 const Content = styled.ScrollView.attrs({

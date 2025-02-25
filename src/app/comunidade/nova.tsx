@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Alert, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
-import { Feather } from '@expo/vector-icons';
 import { communityService } from '@/services/communityService';
+import { InternalHeader } from '@/components/InternalHeader';
+import { Feather } from '@expo/vector-icons';
 import { TextInput } from 'react-native-paper';
 
 export default function NovaComunidade() {
@@ -41,77 +42,73 @@ export default function NovaComunidade() {
 
     return (
         <Container>
-            <PageHeader>
-                <BackButton onPress={() => router.back()}>
-                    <Feather name="arrow-left" size={24} color={colors.gray100} />
-                </BackButton>
-                <HeaderTitle>Nova Comunidade</HeaderTitle>
-            </PageHeader>
+            <InternalHeader title="Nova Comunidade" />
+            <ScrollView>
+                <Content>
+                    <FormGroup>
+                        <Label>Nome</Label>
+                        <TextInput
+                            mode="outlined"
+                            value={formData.name}
+                            onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+                            placeholder="Nome da comunidade"
+                            style={{
+                                backgroundColor: colors.backgroundDark,
+                            }}
+                            theme={{
+                                colors: {
+                                    primary: colors.primary,
+                                    text: colors.gray100,
+                                    placeholder: colors.gray300,
+                                    background: colors.backgroundDark,
+                                    surface: colors.backgroundDark,
+                                    onSurface: colors.gray100,
+                                    outline: colors.gray700,
+                                }
+                            }}
+                        />
+                    </FormGroup>
 
-            <Content>
-                <FormGroup>
-                    <Label>Nome</Label>
-                    <TextInput
-                        mode="outlined"
-                        value={formData.name}
-                        onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
-                        placeholder="Nome da comunidade"
-                        style={{
-                            backgroundColor: colors.backgroundDark,
-                        }}
-                        theme={{
-                            colors: {
-                                primary: colors.primary,
-                                text: colors.gray100,
-                                placeholder: colors.gray300,
-                                background: colors.backgroundDark,
-                                surface: colors.backgroundDark,
-                                onSurface: colors.gray100,
-                                outline: colors.gray700,
-                            }
-                        }}
-                    />
-                </FormGroup>
+                    <FormGroup>
+                        <Label>Descrição</Label>
+                        <TextInput
+                            mode="outlined"
+                            value={formData.description}
+                            onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
+                            placeholder="Descrição da comunidade"
+                            multiline
+                            numberOfLines={4}
+                            textAlignVertical="top"
+                            contentStyle={{
+                                paddingTop: 16,
+                                minHeight: 120,
+                            }}
+                            style={{
+                                backgroundColor: colors.backgroundDark,
+                            }}
+                            theme={{
+                                colors: {
+                                    primary: colors.primary,
+                                    text: colors.gray100,
+                                    placeholder: colors.gray300,
+                                    background: colors.backgroundDark,
+                                    surface: colors.backgroundDark,
+                                    onSurface: colors.gray100,
+                                    outline: colors.gray700,
+                                }
+                            }}
+                        />
+                    </FormGroup>
 
-                <FormGroup>
-                    <Label>Descrição</Label>
-                    <TextInput
-                        mode="outlined"
-                        value={formData.description}
-                        onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
-                        placeholder="Descrição da comunidade"
-                        multiline
-                        numberOfLines={4}
-                        textAlignVertical="top"
-                        contentStyle={{
-                            paddingTop: 16,
-                            minHeight: 120,
-                        }}
-                        style={{
-                            backgroundColor: colors.backgroundDark,
-                        }}
-                        theme={{
-                            colors: {
-                                primary: colors.primary,
-                                text: colors.gray100,
-                                placeholder: colors.gray300,
-                                background: colors.backgroundDark,
-                                surface: colors.backgroundDark,
-                                onSurface: colors.gray100,
-                                outline: colors.gray700,
-                            }
-                        }}
-                    />
-                </FormGroup>
-
-                <SaveButton onPress={handleSave} disabled={loading}>
-                    {loading ? (
-                        <ActivityIndicator color={colors.gray100} />
-                    ) : (
-                        <SaveButtonText>Criar Comunidade</SaveButtonText>
-                    )}
-                </SaveButton>
-            </Content>
+                    <SaveButton onPress={handleSave} disabled={loading}>
+                        {loading ? (
+                            <ActivityIndicator color={colors.gray100} />
+                        ) : (
+                            <SaveButtonText>Criar Comunidade</SaveButtonText>
+                        )}
+                    </SaveButton>
+                </Content>
+            </ScrollView>
         </Container>
     );
 }
@@ -121,30 +118,9 @@ const Container = styled.View`
     background-color: ${colors.backgroundDark};
 `;
 
-const PageHeader = styled.View`
+const Content = styled.View`
     padding: 20px;
-    background-color: ${colors.secondary};
-    padding-top: 60px;
-    flex-direction: row;
-    align-items: center;
 `;
-
-const BackButton = styled.TouchableOpacity`
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
-    color: ${colors.gray100};
-`;
-
-const Content = styled.ScrollView.attrs({
-    contentContainerStyle: {
-        flexGrow: 1,
-        padding: 20,
-    },
-})``;
 
 const FormGroup = styled.View`
     margin-bottom: 20px;

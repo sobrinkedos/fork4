@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import { useTheme } from '@/contexts/ThemeProvider';
-import { Header } from '@/components/Header';
+import { InternalHeader } from '@/components/InternalHeader';
 import { PageTransition } from '@/components/Transitions';
 import { Feather } from '@expo/vector-icons';
 import { rankingService, PlayerRanking } from '@/services/rankingService';
@@ -135,15 +135,7 @@ export default function TopJogadores() {
     if (loading) {
         return (
             <Container>
-                <Header 
-                    title="Top Jogadores" 
-                    showBackButton
-                    rightContent={
-                        <TouchableOpacity onPress={() => router.push(`/top-jogadores/estatisticas`)}>
-                            <Feather name="bar-chart-2" size={24} color={colors.gray100} />
-                        </TouchableOpacity>
-                    }
-                />
+                <InternalHeader title="Top Jogadores" />
                 <LoadingContainer>
                     <ActivityIndicator size="large" color={colors.primary} />
                 </LoadingContainer>
@@ -154,15 +146,7 @@ export default function TopJogadores() {
     if (error) {
         return (
             <Container>
-                <Header 
-                    title="Top Jogadores" 
-                    showBackButton
-                    rightContent={
-                        <TouchableOpacity onPress={() => router.push(`/top-jogadores/estatisticas`)}>
-                            <Feather name="bar-chart-2" size={24} color={colors.gray100} />
-                        </TouchableOpacity>
-                    }
-                />
+                <InternalHeader title="Top Jogadores" />
                 <ErrorContainer>
                     <ErrorText>{error}</ErrorText>
                 </ErrorContainer>
@@ -173,15 +157,7 @@ export default function TopJogadores() {
     if (players.length === 0) {
         return (
             <Container>
-                <Header 
-                    title="Top Jogadores" 
-                    showBackButton
-                    rightContent={
-                        <TouchableOpacity onPress={() => router.push(`/top-jogadores/estatisticas`)}>
-                            <Feather name="bar-chart-2" size={24} color={colors.gray100} />
-                        </TouchableOpacity>
-                    }
-                />
+                <InternalHeader title="Top Jogadores" />
                 <EmptyContainer>
                     <EmptyText>Nenhum jogador encontrado</EmptyText>
                 </EmptyContainer>
@@ -232,15 +208,11 @@ export default function TopJogadores() {
     return (
         <PageTransition>
             <Container>
-                <Header 
-                    title="Top Jogadores" 
-                    showBackButton
-                    rightContent={
+                <InternalHeader title="Top Jogadores" rightContent={
                         <TouchableOpacity onPress={() => router.push(`/top-jogadores/estatisticas`)}>
                             <Feather name="bar-chart-2" size={24} color={colors.gray100} />
                         </TouchableOpacity>
-                    }
-                />
+                    }/>
                 <Content>
                     <FlatList
                         data={players}

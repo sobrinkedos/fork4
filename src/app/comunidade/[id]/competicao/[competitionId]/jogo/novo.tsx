@@ -12,6 +12,7 @@ import { colors } from '@/styles/colors';
 import { Feather } from '@expo/vector-icons';
 import { competitionService } from '@/services/competitionService';
 import { gameService } from '@/services/gameService';
+import { InternalHeader } from '@/components/InternalHeader';
 
 interface Player {
     id: string;
@@ -137,90 +138,86 @@ export default function NewGame() {
 
     return (
         <Container>
-            <PageHeader>
-                <BackButton onPress={() => router.back()}>
-                    <Feather name="arrow-left" size={24} color={colors.gray100} />
-                </BackButton>
-                <HeaderTitle>Novo Jogo</HeaderTitle>
-            </PageHeader>
+            <InternalHeader title="Novo Jogo" />
+            <ScrollView>
+                <MainContent>
+                    <SelectionButtons>
+                        <SelectionButton 
+                            onPress={handleRandomize}
+                            style={{ marginRight: 8 }}
+                        >
+                            <Feather name="shuffle" size={20} color={colors.white} />
+                            <SelectionButtonText>Sortear Times</SelectionButtonText>
+                        </SelectionButton>
 
-            <MainContent>
-                <SelectionButtons>
-                    <SelectionButton 
-                        onPress={handleRandomize}
-                        style={{ marginRight: 8 }}
-                    >
-                        <Feather name="shuffle" size={20} color={colors.white} />
-                        <SelectionButtonText>Sortear Times</SelectionButtonText>
-                    </SelectionButton>
+                        <SelectionButton 
+                            onPress={() => {
+                                setIsManualSelection(true);
+                                setTeam1({ players: [] });
+                                setTeam2({ players: [] });
+                                setSelectedPlayers([]);
+                            }}
+                            style={{ marginLeft: 8 }}
+                        >
+                            <Feather name="users" size={20} color={colors.white} />
+                            <SelectionButtonText>Selecionar Times</SelectionButtonText>
+                        </SelectionButton>
+                    </SelectionButtons>
 
-                    <SelectionButton 
-                        onPress={() => {
-                            setIsManualSelection(true);
-                            setTeam1({ players: [] });
-                            setTeam2({ players: [] });
-                            setSelectedPlayers([]);
-                        }}
-                        style={{ marginLeft: 8 }}
-                    >
-                        <Feather name="users" size={20} color={colors.white} />
-                        <SelectionButtonText>Selecionar Times</SelectionButtonText>
-                    </SelectionButton>
-                </SelectionButtons>
+                    <TeamsContainer>
+                        <TeamSection>
+                            <TeamTitle>Time 1</TeamTitle>
+                            {team1.players.map(player => (
+                                <PlayerCard key={player.id}>
+                                    <PlayerName>{player.name}</PlayerName>
+                                    {isManualSelection && (
+                                        <TouchableOpacity onPress={() => handleTogglePlayer(player.id)}>
+                                            <Feather name="x" size={20} color={colors.error} />
+                                        </TouchableOpacity>
+                                    )}
+                                </PlayerCard>
+                            ))}
+                        </TeamSection>
 
-                <TeamsContainer>
-                    <TeamSection>
-                        <TeamTitle>Time 1</TeamTitle>
-                        {team1.players.map(player => (
-                            <PlayerCard key={player.id}>
-                                <PlayerName>{player.name}</PlayerName>
-                                {isManualSelection && (
-                                    <TouchableOpacity onPress={() => handleTogglePlayer(player.id)}>
-                                        <Feather name="x" size={20} color={colors.error} />
-                                    </TouchableOpacity>
-                                )}
-                            </PlayerCard>
-                        ))}
-                    </TeamSection>
+                        <TeamSection>
+                            <TeamTitle>Time 2</TeamTitle>
+                            {team2.players.map(player => (
+                                <PlayerCard key={player.id}>
+                                    <PlayerName>{player.name}</PlayerName>
+                                    {isManualSelection && (
+                                        <TouchableOpacity onPress={() => handleTogglePlayer(player.id)}>
+                                            <Feather name="x" size={20} color={colors.error} />
+                                        </TouchableOpacity>
+                                    )}
+                                </PlayerCard>
+                            ))}
+                        </TeamSection>
+                    </TeamsContainer>
 
-                    <TeamSection>
-                        <TeamTitle>Time 2</TeamTitle>
-                        {team2.players.map(player => (
-                            <PlayerCard key={player.id}>
-                                <PlayerName>{player.name}</PlayerName>
-                                {isManualSelection && (
-                                    <TouchableOpacity onPress={() => handleTogglePlayer(player.id)}>
-                                        <Feather name="x" size={20} color={colors.error} />
-                                    </TouchableOpacity>
-                                )}
-                            </PlayerCard>
-                        ))}
-                    </TeamSection>
-                </TeamsContainer>
+                    {isManualSelection && (
+                        <>
+                            <SectionTitle>Jogadores Disponíveis</SectionTitle>
+                            <PlayersList>
+                                {members
+                                    .filter(m => !selectedPlayers.includes(m.id))
+                                    .map(player => (
+                                        <PlayerCard key={player.id} onPress={() => handleTogglePlayer(player.id)}>
+                                            <PlayerName>{player.name}</PlayerName>
+                                            <Feather name="plus" size={20} color={colors.primary} />
+                                        </PlayerCard>
+                                    ))
+                                }
+                            </PlayersList>
+                        </>
+                    )}
 
-                {isManualSelection && (
-                    <>
-                        <SectionTitle>Jogadores Disponíveis</SectionTitle>
-                        <PlayersList>
-                            {members
-                                .filter(m => !selectedPlayers.includes(m.id))
-                                .map(player => (
-                                    <PlayerCard key={player.id} onPress={() => handleTogglePlayer(player.id)}>
-                                        <PlayerName>{player.name}</PlayerName>
-                                        <Feather name="plus" size={20} color={colors.primary} />
-                                    </PlayerCard>
-                                ))
-                            }
-                        </PlayersList>
-                    </>
-                )}
-
-                {(team1.players.length === 2 && team2.players.length === 2) && (
-                    <ConfirmButton onPress={handleCreateGame}>
-                        <ConfirmButtonText>Confirmar Times</ConfirmButtonText>
-                    </ConfirmButton>
-                )}
-            </MainContent>
+                    {(team1.players.length === 2 && team2.players.length === 2) && (
+                        <ConfirmButton onPress={handleCreateGame}>
+                            <ConfirmButtonText>Confirmar Times</ConfirmButtonText>
+                        </ConfirmButton>
+                    )}
+                </MainContent>
+            </ScrollView>
         </Container>
     );
 }
@@ -237,25 +234,7 @@ const LoadingContainer = styled.View`
     background-color: ${colors.backgroundDark};
 `;
 
-const PageHeader = styled.View`
-    padding: 20px;
-    background-color: ${colors.secondary};
-    padding-top: 60px;
-    flex-direction: row;
-    align-items: center;
-`;
-
-const BackButton = styled.TouchableOpacity`
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
-    color: ${colors.gray100};
-`;
-
-const MainContent = styled.ScrollView`
+const MainContent = styled.View`
     flex: 1;
     padding: 20px;
 `;

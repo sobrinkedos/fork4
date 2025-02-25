@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Alert, Text, TouchableOpacity } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { InternalHeader } from '@/components/InternalHeader';
 import { colors } from '@/styles/colors';
-import { gameService } from '@/services/gameService';
-import { playerService } from '@/services/playerService';
 import { Feather } from '@expo/vector-icons';
+import { gameService, Game } from '@/services/gameService';
+import { playerService } from '@/services/playerService';
 
 type Game = {
     id: string;
@@ -26,44 +27,97 @@ type Player = {
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.background};
+    background-color: ${colors.backgroundDark};
 `;
 
-const PageHeader = styled.View`
-    flex-direction: row;
-    align-items: center;
-    padding: 16px 24px;
-    padding-top: 60px;
-    background-color: ${colors.primary};
-`;
-
-const BackButton = styled.TouchableOpacity`
-    padding: 8px;
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    color: ${colors.white};
-    font-size: 20px;
-    font-weight: bold;
+const Content = styled.View`
     flex: 1;
+    padding: 16px;
 `;
 
-const HeaderSubtitle = styled.Text`
-    color: ${colors.white};
+const GamesList = styled.FlatList`
+    flex: 1;
+    padding: 16px;
+`;
+
+const GameCard = styled.View`
+    background-color: ${colors.backgroundLight};
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+`;
+
+const GameDate = styled.Text`
+    color: ${colors.gray300};
     font-size: 14px;
-    margin-top: 4px;
+    margin-bottom: 8px;
 `;
 
-const HeaderLeft = styled.View`
+const GameScore = styled.View`
     flex-direction: row;
     align-items: center;
+    justify-content: space-between;
+`;
+
+const TeamScore = styled.View`
+    align-items: center;
+`;
+
+const TeamName = styled.Text`
+    color: ${colors.gray100};
+    font-size: 14px;
+    margin-bottom: 4px;
+`;
+
+const Score = styled.Text`
+    color: ${colors.gray100};
+    font-size: 24px;
+    font-weight: bold;
+`;
+
+const Separator = styled.Text`
+    color: ${colors.gray300};
+    font-size: 20px;
+    margin: 0 12px;
+`;
+
+const LoadingContainer = styled.View`
     flex: 1;
+    justify-content: center;
+    align-items: center;
 `;
 
-const HeaderRight = styled.View`
-    flex-direction: row;
+const LoadingText = styled.Text`
+    font-size: 18px;
+    color: ${colors.text};
+    text-align: center;
+    margin-top: 20px;
+`;
+
+const EmptyContainer = styled.View`
+    flex: 1;
+    justify-content: center;
     align-items: center;
+    padding: 20px;
+`;
+
+const EmptyText = styled.Text`
+    color: ${colors.gray300};
+    font-size: 16px;
+    text-align: center;
+`;
+
+const BuchudaTag = styled.View`
+    background-color: ${colors.primary};
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+    align-self: flex-start;
+`;
+
+const BuchudaText = styled.Text`
+    color: ${colors.white};
+    font-size: 12px;
 `;
 
 const StatsButton = styled.TouchableOpacity`
@@ -74,173 +128,100 @@ const StatsButton = styled.TouchableOpacity`
     background-color: ${colors.white}20;
 `;
 
-const Content = styled.View`
-    flex: 1;
-`;
-
-const GamesList = styled.FlatList`
-    flex: 1;
-    padding: 16px;
-`;
-
-const GameCard = styled.View`
-    background-color: ${colors.surface};
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-`;
-
-const GameDate = styled.Text`
-    font-size: 14px;
-    color: ${colors.textSecondary};
-    margin-bottom: 8px;
-`;
-
-const GameScore = styled.View`
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-`;
-
-const TeamScore = styled.View`
-    flex: 1;
-    align-items: center;
-`;
-
-const TeamName = styled.Text`
-    font-size: 16px;
-    color: ${colors.text};
-    margin-bottom: 4px;
-`;
-
-const Score = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
-    color: ${colors.text};
-`;
-
-const Separator = styled.Text`
-    font-size: 18px;
-    color: ${colors.text};
-    margin: 0 12px;
-`;
-
-const LoadingText = styled.Text`
-    font-size: 18px;
-    color: ${colors.text};
-    text-align: center;
-    margin-top: 20px;
-`;
-
-const ErrorText = styled.Text`
-    font-size: 18px;
-    color: ${colors.error};
-    text-align: center;
-    margin-top: 20px;
-`;
-
-const EmptyText = styled.Text`
-    font-size: 18px;
-    color: ${colors.textSecondary};
-    text-align: center;
-    margin-top: 20px;
+const BackButton = styled.TouchableOpacity`
+    padding: 8px;
+    margin-right: 16px;
 `;
 
 export default function PlayerGames() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
-    const [games, setGames] = useState<Game[]>([]);
-    const [player, setPlayer] = useState<Player | null>(null);
     const [loading, setLoading] = useState(true);
+    const [player, setPlayer] = useState<any>(null);
+    const [games, setGames] = useState<Game[]>([]);
 
     useEffect(() => {
         loadPlayerAndGames();
-    }, [id]);
+    }, []);
 
     const loadPlayerAndGames = async () => {
         try {
-            const playerData = await playerService.getPlayerById(id as string);
+            setLoading(true);
+            const [playerData, gamesData] = await Promise.all([
+                playerService.getById(id as string),
+                gameService.listByPlayer(id as string)
+            ]);
             setPlayer(playerData);
-
-            const gamesData = await gameService.getPlayerGames(id as string);
             setGames(gamesData);
         } catch (error) {
-            console.error(error);
-            Alert.alert('Erro', 'Não foi possível carregar os jogos do jogador');
+            console.error('Erro ao carregar jogador e jogos:', error);
         } finally {
             setLoading(false);
         }
     };
 
     if (loading) {
-        return <LoadingText>Carregando...</LoadingText>;
-    }
-
-    if (!player) {
-        return <ErrorText>Jogador não encontrado</ErrorText>;
+        return (
+            <Container>
+                <InternalHeader title="Jogos do Jogador" />
+                <LoadingContainer>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <LoadingText>Carregando...</LoadingText>
+                </LoadingContainer>
+            </Container>
+        );
     }
 
     return (
         <Container>
-            <PageHeader>
-                <HeaderLeft>
-                    <BackButton onPress={() => router.back()}>
-                        <Feather name="arrow-left" size={24} color={colors.white} />
-                    </BackButton>
-                    <View>
-                        <HeaderTitle>{player.name}</HeaderTitle>
-                        <HeaderSubtitle>{games.length} jogos</HeaderSubtitle>
-                    </View>
-                </HeaderLeft>
-                <HeaderRight>
-                    <StatsButton onPress={() => router.push(`/jogador/${id}`)}>
-                        <Feather name="bar-chart-2" size={20} color={colors.white} />
-                        <Text style={{ color: colors.white, marginLeft: 8 }}>Estatísticas</Text>
-                    </StatsButton>
-                </HeaderRight>
-            </PageHeader>
-
-            {games.length === 0 ? (
-                <Content>
-                    <EmptyText>Nenhum jogo encontrado</EmptyText>
-                </Content>
-            ) : (
-                <Content>
-                    <GamesList
-                        data={games}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                            <GameCard>
-                                <GameDate>
-                                    {new Date(item.created_at).toLocaleDateString('pt-BR')}
-                                </GameDate>
-                                <GameScore>
-                                    <TeamScore>
-                                        <TeamName>Time 1</TeamName>
-                                        <Score>{item.team1_score}</Score>
-                                    </TeamScore>
-                                    <Separator>x</Separator>
-                                    <TeamScore>
-                                        <TeamName>Time 2</TeamName>
-                                        <Score>{item.team2_score}</Score>
-                                    </TeamScore>
-                                </GameScore>
-                                {item.is_buchuda && (
-                                    <Text style={{ color: colors.white, backgroundColor: colors.primary, padding: 4, borderRadius: 4, marginTop: 8, alignSelf: 'flex-start' }}>
-                                        Buchuda
-                                    </Text>
-                                )}
-                                {item.is_buchuda_de_re && (
-                                    <Text style={{ color: colors.white, backgroundColor: colors.primary, padding: 4, borderRadius: 4, marginTop: 8, alignSelf: 'flex-start' }}>
-                                        Buchuda de Ré
-                                    </Text>
-                                )}
-                            </GameCard>
-                        )}
-                    />
-                </Content>
-            )}
+            <InternalHeader title={`Jogos de ${player?.name || ''}`} />
+            <Content>
+                <GamesList
+                    data={games}
+                    renderItem={({ item }) => (
+                        <GameCard>
+                            <GameDate>
+                                {new Date(item.created_at).toLocaleDateString('pt-BR')}
+                            </GameDate>
+                            <GameScore>
+                                <TeamScore>
+                                    <TeamName>Time 1</TeamName>
+                                    <Score>{item.team1_score}</Score>
+                                </TeamScore>
+                                <Separator>x</Separator>
+                                <TeamScore>
+                                    <TeamName>Time 2</TeamName>
+                                    <Score>{item.team2_score}</Score>
+                                </TeamScore>
+                            </GameScore>
+                            {item.is_buchuda && (
+                                <BuchudaTag>
+                                    <BuchudaText>Buchuda</BuchudaText>
+                                </BuchudaTag>
+                            )}
+                            {item.is_buchuda_de_re && (
+                                <BuchudaTag>
+                                    <BuchudaText>Buchuda de Ré</BuchudaText>
+                                </BuchudaTag>
+                            )}
+                        </GameCard>
+                    )}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                    ListEmptyComponent={() => (
+                        <EmptyContainer>
+                            <EmptyText>Nenhum jogo encontrado</EmptyText>
+                        </EmptyContainer>
+                    )}
+                />
+            </Content>
+            <StatsButton onPress={() => router.push(`/jogador/${id}`)}>
+                <Feather name="bar-chart-2" size={20} color={colors.white} />
+                <Text style={{ color: colors.white, marginLeft: 8 }}>Estatísticas</Text>
+            </StatsButton>
+            <BackButton onPress={() => router.back()}>
+                <Feather name="arrow-left" size={24} color={colors.white} />
+            </BackButton>
         </Container>
     );
 }
