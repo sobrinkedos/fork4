@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Alert, Text } from 'react-native';
+import { View, Alert, Text, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
@@ -23,6 +23,129 @@ type Player = {
     id: string;
     name: string;
 };
+
+const Container = styled.View`
+    flex: 1;
+    background-color: ${colors.background};
+`;
+
+const PageHeader = styled.View`
+    flex-direction: row;
+    align-items: center;
+    padding: 16px 24px;
+    padding-top: 60px;
+    background-color: ${colors.primary};
+`;
+
+const BackButton = styled.TouchableOpacity`
+    padding: 8px;
+    margin-right: 16px;
+`;
+
+const HeaderTitle = styled.Text`
+    color: ${colors.white};
+    font-size: 20px;
+    font-weight: bold;
+    flex: 1;
+`;
+
+const HeaderSubtitle = styled.Text`
+    color: ${colors.white};
+    font-size: 14px;
+    margin-top: 4px;
+`;
+
+const HeaderLeft = styled.View`
+    flex-direction: row;
+    align-items: center;
+    flex: 1;
+`;
+
+const HeaderRight = styled.View`
+    flex-direction: row;
+    align-items: center;
+`;
+
+const StatsButton = styled.TouchableOpacity`
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background-color: ${colors.white}20;
+`;
+
+const Content = styled.View`
+    flex: 1;
+`;
+
+const GamesList = styled.FlatList`
+    flex: 1;
+    padding: 16px;
+`;
+
+const GameCard = styled.View`
+    background-color: ${colors.surface};
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+`;
+
+const GameDate = styled.Text`
+    font-size: 14px;
+    color: ${colors.textSecondary};
+    margin-bottom: 8px;
+`;
+
+const GameScore = styled.View`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+`;
+
+const TeamScore = styled.View`
+    flex: 1;
+    align-items: center;
+`;
+
+const TeamName = styled.Text`
+    font-size: 16px;
+    color: ${colors.text};
+    margin-bottom: 4px;
+`;
+
+const Score = styled.Text`
+    font-size: 24px;
+    font-weight: bold;
+    color: ${colors.text};
+`;
+
+const Separator = styled.Text`
+    font-size: 18px;
+    color: ${colors.text};
+    margin: 0 12px;
+`;
+
+const LoadingText = styled.Text`
+    font-size: 18px;
+    color: ${colors.text};
+    text-align: center;
+    margin-top: 20px;
+`;
+
+const ErrorText = styled.Text`
+    font-size: 18px;
+    color: ${colors.error};
+    text-align: center;
+    margin-top: 20px;
+`;
+
+const EmptyText = styled.Text`
+    font-size: 18px;
+    color: ${colors.textSecondary};
+    text-align: center;
+    margin-top: 20px;
+`;
 
 export default function PlayerGames() {
     const router = useRouter();
@@ -60,178 +183,64 @@ export default function PlayerGames() {
 
     return (
         <Container>
-            <Header>
-                <BackButton onPress={() => router.back()}>
-                    <Feather name="arrow-left" size={24} color={colors.text} />
-                </BackButton>
-                <HeaderContent>
-                    <PlayerName>{player.name}</PlayerName>
-                    <GamesCount>{games.length} jogos</GamesCount>
-                </HeaderContent>
-            </Header>
+            <PageHeader>
+                <HeaderLeft>
+                    <BackButton onPress={() => router.back()}>
+                        <Feather name="arrow-left" size={24} color={colors.white} />
+                    </BackButton>
+                    <View>
+                        <HeaderTitle>{player.name}</HeaderTitle>
+                        <HeaderSubtitle>{games.length} jogos</HeaderSubtitle>
+                    </View>
+                </HeaderLeft>
+                <HeaderRight>
+                    <StatsButton onPress={() => router.push(`/jogador/${id}`)}>
+                        <Feather name="bar-chart-2" size={20} color={colors.white} />
+                        <Text style={{ color: colors.white, marginLeft: 8 }}>Estatísticas</Text>
+                    </StatsButton>
+                </HeaderRight>
+            </PageHeader>
 
             {games.length === 0 ? (
-                <EmptyText>Nenhum jogo encontrado</EmptyText>
+                <Content>
+                    <EmptyText>Nenhum jogo encontrado</EmptyText>
+                </Content>
             ) : (
-                <GamesList
-                    data={games}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <GameCard>
-                            <GameDate>
-                                {new Date(item.created_at).toLocaleDateString('pt-BR')}
-                            </GameDate>
-                            <GameScore>
-                                <TeamScore>
-                                    Time 1: {item.team1_score}
-                                </TeamScore>
-                                <Separator>x</Separator>
-                                <TeamScore>
-                                    Time 2: {item.team2_score}
-                                </TeamScore>
-                            </GameScore>
-                            {(item.is_buchuda || item.is_buchuda_de_re) && (
-                                <View style={{ marginTop: 8 }}>
-                                    {item.is_buchuda && (
-                                        <View style={{
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            backgroundColor: colors.primary,
-                                            padding: 8,
-                                            borderRadius: 8,
-                                            marginTop: 4,
-                                        }}>
-                                            <Text style={{
-                                                fontSize: 16,
-                                                marginRight: 4,
-                                                color: colors.white,
-                                            }}>👻</Text>
-                                            <Text style={{
-                                                color: colors.white,
-                                                fontSize: 14,
-                                                fontWeight: 'bold',
-                                            }}>Buchuda!</Text>
-                                        </View>
-                                    )}
-                                    {item.is_buchuda_de_re && (
-                                        <View style={{
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            backgroundColor: colors.primary,
-                                            padding: 8,
-                                            borderRadius: 8,
-                                            marginTop: 4,
-                                        }}>
-                                            <Text style={{
-                                                fontSize: 16,
-                                                marginRight: 4,
-                                                color: colors.white,
-                                            }}>🔄</Text>
-                                            <Text style={{
-                                                color: colors.white,
-                                                fontSize: 14,
-                                                fontWeight: 'bold',
-                                            }}>Buchuda de Ré!</Text>
-                                        </View>
-                                    )}
-                                </View>
-                            )}
-                        </GameCard>
-                    )}
-                />
+                <Content>
+                    <GamesList
+                        data={games}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => (
+                            <GameCard>
+                                <GameDate>
+                                    {new Date(item.created_at).toLocaleDateString('pt-BR')}
+                                </GameDate>
+                                <GameScore>
+                                    <TeamScore>
+                                        <TeamName>Time 1</TeamName>
+                                        <Score>{item.team1_score}</Score>
+                                    </TeamScore>
+                                    <Separator>x</Separator>
+                                    <TeamScore>
+                                        <TeamName>Time 2</TeamName>
+                                        <Score>{item.team2_score}</Score>
+                                    </TeamScore>
+                                </GameScore>
+                                {item.is_buchuda && (
+                                    <Text style={{ color: colors.white, backgroundColor: colors.primary, padding: 4, borderRadius: 4, marginTop: 8, alignSelf: 'flex-start' }}>
+                                        Buchuda
+                                    </Text>
+                                )}
+                                {item.is_buchuda_de_re && (
+                                    <Text style={{ color: colors.white, backgroundColor: colors.primary, padding: 4, borderRadius: 4, marginTop: 8, alignSelf: 'flex-start' }}>
+                                        Buchuda de Ré
+                                    </Text>
+                                )}
+                            </GameCard>
+                        )}
+                    />
+                </Content>
             )}
         </Container>
     );
 }
-
-const Container = styled.View`
-    flex: 1;
-    background-color: ${colors.background};
-`;
-
-const Header = styled.View`
-    flex-direction: row;
-    align-items: center;
-    padding: 16px;
-    padding-top: 60px;
-    background-color: ${colors.surface};
-`;
-
-const BackButton = styled.TouchableOpacity`
-    padding: 8px;
-    margin-right: 16px;
-`;
-
-const HeaderContent = styled.View`
-    flex: 1;
-`;
-
-const PlayerName = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
-    color: ${colors.text};
-    margin-bottom: 4px;
-`;
-
-const GamesCount = styled.Text`
-    font-size: 16px;
-    color: ${colors.textSecondary};
-`;
-
-const GamesList = styled.FlatList`
-    flex: 1;
-    padding: 16px;
-`;
-
-const GameCard = styled.View`
-    background-color: ${colors.surface};
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 12px;
-`;
-
-const GameDate = styled.Text`
-    font-size: 14px;
-    color: ${colors.textSecondary};
-    margin-bottom: 8px;
-`;
-
-const GameScore = styled.View`
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 8px;
-`;
-
-const TeamScore = styled.Text`
-    font-size: 18px;
-    font-weight: bold;
-    color: ${colors.text};
-`;
-
-const Separator = styled.Text`
-    font-size: 18px;
-    color: ${colors.text};
-    margin: 0 12px;
-`;
-
-const LoadingText = styled.Text`
-    font-size: 18px;
-    color: ${colors.text};
-    text-align: center;
-    margin-top: 20px;
-`;
-
-const ErrorText = styled.Text`
-    font-size: 18px;
-    color: ${colors.error};
-    text-align: center;
-    margin-top: 20px;
-`;
-
-const EmptyText = styled.Text`
-    font-size: 16px;
-    color: ${colors.textSecondary};
-    text-align: center;
-    margin-top: 20px;
-`;

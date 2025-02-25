@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView } from 'react-native';
-import { Link } from 'expo-router';
+import { ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import { Link, useRouter } from 'expo-router';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
 import { GameWithDetails, gamesService } from '@/services/gamesService';
@@ -8,6 +8,7 @@ import { Feather } from '@expo/vector-icons';
 import { formatDate } from '@/utils/date';
 
 export default function GamesPage() {
+    const router = useRouter();
     const [games, setGames] = useState<GameWithDetails[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -38,6 +39,9 @@ export default function GamesPage() {
     return (
         <Container>
             <PageHeader>
+                <BackButton onPress={() => router.back()}>
+                    <Feather name="arrow-left" size={24} color={colors.gray100} />
+                </BackButton>
                 <HeaderTitle>Meus Jogos</HeaderTitle>
             </PageHeader>
 
@@ -106,15 +110,22 @@ const LoadingContainer = styled.View`
 `;
 
 const PageHeader = styled.View`
-    padding: 24px;
-    background-color: ${colors.backgroundDark};
+    flex-direction: row;
+    align-items: center;
+    padding: 16px 24px;
     padding-top: 60px;
+    background-color: ${colors.backgroundDark};
+`;
+
+const BackButton = styled.TouchableOpacity`
+    padding: 8px;
+    margin-right: 16px;
 `;
 
 const HeaderTitle = styled.Text`
+    color: ${colors.gray100};
     font-size: 24px;
     font-weight: bold;
-    color: ${colors.gray100};
 `;
 
 const ContentContainer = styled.View`

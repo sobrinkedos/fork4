@@ -20,11 +20,16 @@ const Container = styled.View<{ statusBarHeight: number }>`
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    background-color: ${colors.secondary};
+    background-color: ${colors.primary};
     padding-top: ${props => Platform.OS === 'android' ? Math.floor(props.statusBarHeight / 2) + 16 : 16}px;
     padding-bottom: 20px;
     padding-left: 20px;
     padding-right: 20px;
+`;
+
+const LeftContainer = styled.View`
+    flex-direction: row;
+    align-items: center;
 `;
 
 const LogoContainer = styled.View`
@@ -83,18 +88,19 @@ const BadgeText = styled.Text`
 `;
 
 const Title = styled.Text`
-    font-size: 24px;
+    font-size: 20px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${colors.white};
 `;
 
 interface HeaderProps {
     onNotificationPress?: () => void;
     onProfilePress?: () => void;
     title?: string;
+    showBackButton?: boolean;
 }
 
-export function Header({ onNotificationPress, onProfilePress, title }: HeaderProps) {
+export function Header({ onNotificationPress, onProfilePress, title, showBackButton }: HeaderProps) {
     const { signOut } = useAuth();
     const router = useRouter();
     const statusBarHeight = StatusBar.currentHeight || 0;
@@ -106,32 +112,43 @@ export function Header({ onNotificationPress, onProfilePress, title }: HeaderPro
 
     return (
         <Container statusBarHeight={statusBarHeight}>
-            {title ? (
-                <Title>{title}</Title>
-            ) : (
-                <LogoContainer>
-                    <LogoIconContainer>
-                        <SvgXml
-                            width="30"
-                            height="30"
-                            xml={logoSvg}
-                        />
-                    </LogoIconContainer>
-                    <LogoText>Dominó</LogoText>
-                </LogoContainer>
-            )}
+            <LeftContainer>
+                {showBackButton && (
+                    <IconButton onPress={() => router.back()}>
+                        <MaterialCommunityIcons name="arrow-left" size={24} color={colors.white} />
+                    </IconButton>
+                )}
+                {title ? (
+                    <Title>{title}</Title>
+                ) : (
+                    <LogoContainer>
+                        <LogoIconContainer>
+                            <SvgXml
+                                width="30"
+                                height="30"
+                                xml={logoSvg}
+                            />
+                        </LogoIconContainer>
+                        <LogoText>Dominó</LogoText>
+                    </LogoContainer>
+                )}
+            </LeftContainer>
             
             <ActionContainer>
-                <IconButton onPress={onNotificationPress}>
-                    <MaterialCommunityIcons name="bell-outline" size={24} color={colors.accent} />
-                </IconButton>
+                {onNotificationPress && (
+                    <IconButton onPress={onNotificationPress}>
+                        <MaterialCommunityIcons name="bell-outline" size={24} color={colors.white} />
+                    </IconButton>
+                )}
 
-                <IconButton onPress={onProfilePress}>
-                    <MaterialCommunityIcons name="account-circle-outline" size={24} color={colors.accent} />
-                </IconButton>
+                {onProfilePress && (
+                    <IconButton onPress={onProfilePress}>
+                        <MaterialCommunityIcons name="account-circle-outline" size={24} color={colors.white} />
+                    </IconButton>
+                )}
 
                 <IconButton onPress={handleLogout}>
-                    <MaterialCommunityIcons name="logout" size={24} color={colors.gray200} />
+                    <MaterialCommunityIcons name="logout" size={24} color={colors.white} />
                 </IconButton>
             </ActionContainer>
         </Container>

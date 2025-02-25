@@ -59,13 +59,14 @@ const Container = styled.View`
 const PageHeader = styled.View`
     flex-direction: row;
     align-items: center;
-    padding: 24px;
+    padding: 16px 24px;
+    padding-top: 60px;
     background-color: ${colors.backgroundDark};
 `;
 
 const BackButton = styled.TouchableOpacity`
     padding: 8px;
-    margin-right: 8px;
+    margin-right: 16px;
 `;
 
 const HeaderTitle = styled.Text`
