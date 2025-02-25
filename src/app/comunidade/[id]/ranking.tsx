@@ -4,18 +4,16 @@ import { useLocalSearchParams } from 'expo-router';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
 import { rankingService, PlayerRanking, PairRanking } from '@/services/rankingService';
+import { InternalHeader } from '@/components/InternalHeader';
 
 const Container = styled.View`
   flex: 1;
   background-color: ${colors.backgroundDark};
-  padding: 16px;
 `;
 
-const Title = styled.Text`
-  font-size: 24px;
-  font-weight: bold;
-  color: ${colors.textPrimary};
-  margin-bottom: 16px;
+const Content = styled.View`
+  flex: 1;
+  padding: 16px;
 `;
 
 const SectionTitle = styled.Text`
@@ -91,75 +89,69 @@ export default function CommunityRanking() {
   if (loading) {
     return (
       <Container>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <InternalHeader title="Classificação" />
+        <Content>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </Content>
       </Container>
     );
   }
 
   return (
     <Container>
+      <InternalHeader title="Classificação" />
       <ScrollView>
-        <Title>Classificação da Comunidade</Title>
+        <Content>
+          <SectionTitle>Ranking Individual</SectionTitle>
+          {players.map((player, index) => (
+            <RankingCard key={player.id}>
+              <RankingText>{index + 1}. {player.name}</RankingText>
+              <StatsContainer>
+                <StatItem>
+                  <StatValue>{player.points}</StatValue>
+                  <StatLabel>Pontos</StatLabel>
+                </StatItem>
+                <StatItem>
+                  <StatValue>{player.wins}</StatValue>
+                  <StatLabel>Vitórias</StatLabel>
+                </StatItem>
+                <StatItem>
+                  <StatValue>{player.losses}</StatValue>
+                  <StatLabel>Derrotas</StatLabel>
+                </StatItem>
+                <StatItem>
+                  <StatValue>{player.winRate}%</StatValue>
+                  <StatLabel>Taxa de Vitória</StatLabel>
+                </StatItem>
+              </StatsContainer>
+            </RankingCard>
+          ))}
 
-        <SectionTitle>Jogadores</SectionTitle>
-        {players.map((player, index) => (
-          <RankingCard key={player.id}>
-            <RankingText>{`${index + 1}. ${player.name}`}</RankingText>
-            <StatsContainer>
-              <StatItem>
-                <StatValue>{player.wins}</StatValue>
-                <StatLabel>Vitórias</StatLabel>
-              </StatItem>
-              <StatItem>
-                <StatValue>{player.totalGames}</StatValue>
-                <StatLabel>Jogos</StatLabel>
-              </StatItem>
-              <StatItem>
-                <StatValue>{player.buchudas}</StatValue>
-                <StatLabel>Buchudas</StatLabel>
-              </StatItem>
-              <StatItem>
-                <StatValue>{player.buchudasDeRe}</StatValue>
-                <StatLabel>Buchudas de Ré</StatLabel>
-              </StatItem>
-              <StatItem>
-                <StatValue>{`${player.winRate.toFixed(1)}%`}</StatValue>
-                <StatLabel>Taxa de Vitória</StatLabel>
-              </StatItem>
-            </StatsContainer>
-          </RankingCard>
-        ))}
-
-        <SectionTitle>Duplas</SectionTitle>
-        {pairs.map((pair, index) => (
-          <RankingCard key={pair.id}>
-            <RankingText>
-              {`${index + 1}. ${pair.player1.name} & ${pair.player2.name}`}
-            </RankingText>
-            <StatsContainer>
-              <StatItem>
-                <StatValue>{pair.wins}</StatValue>
-                <StatLabel>Vitórias</StatLabel>
-              </StatItem>
-              <StatItem>
-                <StatValue>{pair.totalGames}</StatValue>
-                <StatLabel>Jogos</StatLabel>
-              </StatItem>
-              <StatItem>
-                <StatValue>{pair.buchudas}</StatValue>
-                <StatLabel>Buchudas</StatLabel>
-              </StatItem>
-              <StatItem>
-                <StatValue>{pair.buchudasDeRe}</StatValue>
-                <StatLabel>Buchudas de Ré</StatLabel>
-              </StatItem>
-              <StatItem>
-                <StatValue>{`${pair.winRate.toFixed(1)}%`}</StatValue>
-                <StatLabel>Taxa de Vitória</StatLabel>
-              </StatItem>
-            </StatsContainer>
-          </RankingCard>
-        ))}
+          <SectionTitle>Ranking de Duplas</SectionTitle>
+          {pairs.map((pair, index) => (
+            <RankingCard key={`${pair.player1.id}-${pair.player2.id}`}>
+              <RankingText>{index + 1}. {pair.player1.name} e {pair.player2.name}</RankingText>
+              <StatsContainer>
+                <StatItem>
+                  <StatValue>{pair.points}</StatValue>
+                  <StatLabel>Pontos</StatLabel>
+                </StatItem>
+                <StatItem>
+                  <StatValue>{pair.wins}</StatValue>
+                  <StatLabel>Vitórias</StatLabel>
+                </StatItem>
+                <StatItem>
+                  <StatValue>{pair.losses}</StatValue>
+                  <StatLabel>Derrotas</StatLabel>
+                </StatItem>
+                <StatItem>
+                  <StatValue>{pair.winRate}%</StatValue>
+                  <StatLabel>Taxa de Vitória</StatLabel>
+                </StatItem>
+              </StatsContainer>
+            </RankingCard>
+          ))}
+        </Content>
       </ScrollView>
     </Container>
   );

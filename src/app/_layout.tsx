@@ -7,12 +7,16 @@ import { SafeAreaView } from 'react-native';
 import styled from 'styled-components/native';
 import { colors } from '../styles/colors';
 import { enGB, registerTranslation } from 'react-native-paper-dates';
+import { LoggedLayout } from '@/components/LoggedLayout';
+import { usePathname } from 'expo-router';
 
 registerTranslation('en-GB', enGB);
 
 export default function RootLayout() {
     const { session } = useAuth();
     const statusBarHeight = StatusBar.currentHeight || 0;
+    const pathname = usePathname();
+    const isAuthScreen = pathname === '/login' || pathname === '/register';
 
     return (
         <AuthProvider>
@@ -23,17 +27,25 @@ export default function RootLayout() {
                         backgroundColor={colors.backgroundDark}
                         translucent
                     />
-                    <Stack screenOptions={{ headerShown: false }}>
-                        <Stack.Screen name="login" options={{ headerShown: false }} />
-                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                        <Stack.Screen name="(pages)" options={{ headerShown: false }} />
-                        <Stack.Screen name="comunidade/[id]" options={{ headerShown: false }} />
-                        <Stack.Screen name="competicao/[id]" options={{ headerShown: false }} />
-                        <Stack.Screen name="jogo/[id]" options={{ headerShown: false }} />
-                        <Stack.Screen name="jogador/[id]" options={{ headerShown: false }} />
-                        <Stack.Screen name="top-jogadores" options={{ headerShown: false }} />
-                        <Stack.Screen name="profile" options={{ headerShown: false }} />
-                    </Stack>
+                    {!isAuthScreen ? (
+                        <LoggedLayout>
+                            <Stack screenOptions={{ headerShown: false }}>
+                                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                                <Stack.Screen name="(pages)" options={{ headerShown: false }} />
+                                <Stack.Screen name="comunidade/[id]" options={{ headerShown: false }} />
+                                <Stack.Screen name="competicao/[id]" options={{ headerShown: false }} />
+                                <Stack.Screen name="jogo/[id]" options={{ headerShown: false }} />
+                                <Stack.Screen name="jogador/[id]" options={{ headerShown: false }} />
+                                <Stack.Screen name="top-jogadores" options={{ headerShown: false }} />
+                                <Stack.Screen name="profile" options={{ headerShown: false }} />
+                            </Stack>
+                        </LoggedLayout>
+                    ) : (
+                        <Stack screenOptions={{ headerShown: false }}>
+                            <Stack.Screen name="login" options={{ headerShown: false }} />
+                            <Stack.Screen name="register" options={{ headerShown: false }} />
+                        </Stack>
+                    )}
                 </SafeContainer>
             </ThemeProvider>
         </AuthProvider>

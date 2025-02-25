@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
 import { CompetitionResult, competitionService } from '@/services/competitionService';
+import { InternalHeader } from '@/components/InternalHeader';
 
 export default function CompetitionScores() {
     const router = useRouter();
@@ -38,21 +39,18 @@ export default function CompetitionScores() {
 
     if (loading) {
         return (
-            <LoadingContainer>
-                <ActivityIndicator size="large" color={colors.primary} />
-            </LoadingContainer>
+            <Container>
+                <InternalHeader title="Classificação" />
+                <LoadingContainer>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </LoadingContainer>
+            </Container>
         );
     }
 
     return (
         <Container>
-            <Header>
-                <BackButton onPress={() => router.back()}>
-                    <Feather name="arrow-left" size={24} color={colors.gray100} />
-                </BackButton>
-                <HeaderTitle>Classificação</HeaderTitle>
-            </Header>
-
+            <InternalHeader title="Classificação" />
             <MainContent>
                 <ContentContainer>
                     <Section>
@@ -134,33 +132,14 @@ const LoadingContainer = styled.View`
     flex: 1;
     justify-content: center;
     align-items: center;
-    background-color: ${colors.backgroundDark};
-`;
-
-const Header = styled.View`
-    flex-direction: row;
-    align-items: center;
-    padding: 20px;
-    background-color: ${colors.backgroundMedium};
-`;
-
-const BackButton = styled.TouchableOpacity`
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    color: ${colors.gray100};
-    font-size: 20px;
-    font-weight: bold;
 `;
 
 const MainContent = styled.ScrollView`
     flex: 1;
-    padding: 24px;
 `;
 
 const ContentContainer = styled.View`
-    flex: 1;
+    padding: 16px;
 `;
 
 const Section = styled.View`
@@ -168,67 +147,67 @@ const Section = styled.View`
 `;
 
 const SectionTitle = styled.Text`
-    color: ${colors.gray100};
     font-size: 18px;
     font-weight: bold;
+    color: ${colors.textPrimary};
     margin-bottom: 16px;
 `;
 
 const PlayerCard = styled.View`
+    flex-direction: row;
     background-color: ${colors.backgroundMedium};
     border-radius: 8px;
-    padding: 16px;
+    padding: 12px;
     margin-bottom: 8px;
-    flex-direction: row;
-    align-items: center;
 `;
 
+const PairCard = styled(PlayerCard)``;
+
 const Position = styled.Text`
-    font-size: 24px;
-    font-weight: bold;
     color: ${colors.primary};
-    margin-right: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    margin-right: 12px;
+    min-width: 30px;
 `;
 
 const PlayerInfo = styled.View`
     flex: 1;
 `;
 
+const PairInfo = styled(PlayerInfo)``;
+
 const PlayerName = styled.Text`
-    color: ${colors.gray100};
+    color: ${colors.textPrimary};
     font-size: 16px;
     font-weight: bold;
     margin-bottom: 4px;
 `;
+
+const PairPlayers = styled(PlayerName)``;
 
 const PlayerStats = styled.View`
     flex-direction: row;
     flex-wrap: wrap;
 `;
 
+const PairStats = styled(PlayerStats)``;
+
 const StatItem = styled.View`
     flex-direction: row;
     align-items: center;
     margin-right: 16px;
-    margin-top: 4px;
+    margin-bottom: 4px;
 `;
 
 const StatLabel = styled.Text`
-    color: ${colors.gray300};
+    color: ${colors.textTertiary};
     font-size: 14px;
     margin-right: 4px;
 `;
 
 const StatValue = styled.Text`
-    color: ${colors.gray100};
+    color: ${colors.textPrimary};
     font-size: 14px;
     font-weight: bold;
 `;
-
-const PairCard = styled(PlayerCard)``;
-
-const PairInfo = styled(PlayerInfo)``;
-
-const PairPlayers = styled(PlayerName)``;
-
-const PairStats = styled(PlayerStats)``;
