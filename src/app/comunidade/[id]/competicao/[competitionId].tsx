@@ -197,7 +197,7 @@ export default function CompetitionDetails() {
 
     if (isLoading || !competition) {
         return (
-            <LoadingContainer>
+            <LoadingContainer colors={colors}>
                 <ActivityIndicator size="large" color={colors.primary} />
             </LoadingContainer>
         );
@@ -206,7 +206,7 @@ export default function CompetitionDetails() {
     const canStartCompetition = members.length >= 4 && competition.status === 'pending';
 
     return (
-        <Container>
+        <Container colors={colors}>
             <InternalHeader 
                 title={competition?.name || ''} 
                 rightContent={
@@ -217,8 +217,8 @@ export default function CompetitionDetails() {
             />
             <ContentContainer>
                 <SectionHeader>
-                    <SectionTitle>Detalhes</SectionTitle>
-                    <CompetitionStatus status={competition?.status || 'pending'}>
+                    <SectionTitle colors={colors}>Detalhes</SectionTitle>
+                    <CompetitionStatus colors={colors} status={competition?.status || 'pending'}>
                         {competition?.status === 'pending' && 'Aguardando Início'}
                         {competition?.status === 'in_progress' && 'Em Andamento'}
                         {competition?.status === 'finished' && 'Finalizado'}
@@ -226,13 +226,13 @@ export default function CompetitionDetails() {
                 </SectionHeader>
 
                 {competition?.status === 'in_progress' && canFinish && (
-                    <FinishButton onPress={handleFinishCompetition} disabled={loading}>
+                    <FinishButton onPress={handleFinishCompetition} disabled={loading} colors={colors}>
                         {loading ? (
                             <ActivityIndicator color={colors.gray100} />
                         ) : (
                             <>
                                 <Feather name="flag" size={24} color={colors.gray100} />
-                                <FinishButtonText>Encerrar Competição</FinishButtonText>
+                                <FinishButtonText colors={colors}>Encerrar Competição</FinishButtonText>
                             </>
                         )}
                     </FinishButton>
@@ -244,13 +244,14 @@ export default function CompetitionDetails() {
                             <View>
                                 <ViewScoresButton 
                                     onPress={() => router.push(`/comunidade/${communityId}/competicao/${competitionId}/scores`)}
+                                    colors={colors}
                                 >
                                     <Feather name="award" size={24} color={colors.gray100} />
-                                    <ViewScoresButtonText>Ver Classificação</ViewScoresButtonText>
+                                    <ViewScoresButtonText colors={colors}>Ver Classificação</ViewScoresButtonText>
                                 </ViewScoresButton>
 
                                 <Section>
-                                    <SectionTitle>Jogos</SectionTitle>
+                                    <SectionTitle colors={colors}>Jogos</SectionTitle>
                                 </Section>
                             </View>
                         )}
@@ -260,26 +261,27 @@ export default function CompetitionDetails() {
                             <GameCard 
                                 key={item.id}
                                 onPress={() => router.push(`/comunidade/${communityId}/competicao/${competitionId}/jogo/${item.id}`)}
+                                colors={colors}
                             >
                                 <GameTeams>
-                                    <TeamScore>
-                                        <Score>{item.team1_score}</Score>
-                                        <TeamName>
+                                    <TeamScore colors={colors}>
+                                        <Score colors={colors}>{item.team1_score}</Score>
+                                        <TeamName colors={colors}>
                                             {item.team1_players?.map(player => player.name).join(' e ')}
                                         </TeamName>
                                     </TeamScore>
                                     
-                                    <Versus>X</Versus>
+                                    <Versus colors={colors}>X</Versus>
                                     
-                                    <TeamScore>
-                                        <Score>{item.team2_score}</Score>
-                                        <TeamName>
+                                    <TeamScore colors={colors}>
+                                        <Score colors={colors}>{item.team2_score}</Score>
+                                        <TeamName colors={colors}>
                                             {item.team2_players?.map(player => player.name).join(' e ')}
                                         </TeamName>
                                     </TeamScore>
                                 </GameTeams>
 
-                                <GameStatus status={item.status}>
+                                <GameStatus colors={colors} status={item.status}>
                                     {item.status === 'pending' && 'Aguardando Início'}
                                     {item.status === 'in_progress' && 'Em Andamento'}
                                     {item.status === 'finished' && 'Finalizado'}
@@ -288,31 +290,31 @@ export default function CompetitionDetails() {
                         )}
                         ListEmptyComponent={() => (
                             <EmptyContainer>
-                                <EmptyText>Nenhum jogo registrado</EmptyText>
+                                <EmptyText colors={colors}>Nenhum jogo registrado</EmptyText>
                             </EmptyContainer>
                         )}
                         contentContainerStyle={{ padding: 16 }}
                     />
                 ) : (
                     <View style={{ flex: 1 }}>
-                        <Description>{competition?.description}</Description>
+                        <Description colors={colors}>{competition?.description}</Description>
 
                         <Section>
                             <SectionHeader>
-                                <SectionTitle>Membros ({members.length})</SectionTitle>
+                                <SectionTitle colors={colors}>Membros ({members.length})</SectionTitle>
                                 
-                                <ManageButton onPress={() => setIsAddMemberModalVisible(true)}>
+                                <ManageButton onPress={() => setIsAddMemberModalVisible(true)} colors={colors}>
                                     <Feather name="users" size={20} color={colors.primary} />
-                                    <ManageButtonText>Gerenciar</ManageButtonText>
+                                    <ManageButtonText colors={colors}>Gerenciar</ManageButtonText>
                                 </ManageButton>
                             </SectionHeader>
 
                             <MembersList 
                                 data={members} 
                                 renderItem={({ item }) => (
-                                    <MemberItem key={item.id}>
+                                    <MemberItem key={item.id} colors={colors}>
                                         <MemberInfo>
-                                            <MemberName>{item.players?.name || 'Nome não disponível'}</MemberName>
+                                            <MemberName colors={colors}>{item.players?.name || 'Nome não disponível'}</MemberName>
                                         </MemberInfo>
                                     </MemberItem>
                                 )} 
@@ -326,8 +328,9 @@ export default function CompetitionDetails() {
                                 onPress={handleStartCompetition}
                                 disabled={!canStartCompetition}
                                 style={{ opacity: canStartCompetition ? 1 : 0.5 }}
+                                colors={colors}
                             >
-                                <StartButtonText>
+                                <StartButtonText colors={colors}>
                                     {members.length < 4 
                                         ? `Adicione mais ${4 - members.length} membro${4 - members.length === 1 ? '' : 's'}`
                                         : 'Iniciar Competição'
@@ -339,7 +342,7 @@ export default function CompetitionDetails() {
                         {competition?.status === 'in_progress' && (
                             <>
                                 <SectionHeader>
-                                    <SectionTitle>Jogos</SectionTitle>
+                                    <SectionTitle colors={colors}>Jogos</SectionTitle>
                                     <TouchableOpacity onPress={() => setIsGamesModalVisible(true)}>
                                         <Feather 
                                             name="list" 
@@ -351,8 +354,8 @@ export default function CompetitionDetails() {
 
                                 {games.length === 0 ? (
                                     <EmptyContainer>
-                                        <EmptyText>Nenhum jogo registrado</EmptyText>
-                                        <EmptyDescription>
+                                        <EmptyText colors={colors}>Nenhum jogo registrado</EmptyText>
+                                        <EmptyDescription colors={colors}>
                                             Clique no botão + para adicionar um novo jogo
                                         </EmptyDescription>
                                     </EmptyContainer>
@@ -364,26 +367,27 @@ export default function CompetitionDetails() {
                                             <GameCard 
                                                 key={item.id}
                                                 onPress={() => router.push(`/comunidade/${communityId}/competicao/${competitionId}/jogo/${item.id}`)}
+                                                colors={colors}
                                             >
                                                 <GameTeams>
-                                                    <TeamScore>
-                                                        <Score>{item.team1_score}</Score>
-                                                        <TeamName>
+                                                    <TeamScore colors={colors}>
+                                                        <Score colors={colors}>{item.team1_score}</Score>
+                                                        <TeamName colors={colors}>
                                                             {item.team1_players?.map(player => player.name).join(' e ')}
                                                         </TeamName>
                                                     </TeamScore>
                                                     
-                                                    <Versus>X</Versus>
+                                                    <Versus colors={colors}>X</Versus>
                                                     
-                                                    <TeamScore>
-                                                        <Score>{item.team2_score}</Score>
-                                                        <TeamName>
+                                                    <TeamScore colors={colors}>
+                                                        <Score colors={colors}>{item.team2_score}</Score>
+                                                        <TeamName colors={colors}>
                                                             {item.team2_players?.map(player => player.name).join(' e ')}
                                                         </TeamName>
                                                     </TeamScore>
                                                 </GameTeams>
 
-                                                <GameStatus status={item.status}>
+                                                <GameStatus colors={colors} status={item.status}>
                                                     {item.status === 'pending' && 'Aguardando Início'}
                                                     {item.status === 'in_progress' && 'Em Andamento'}
                                                     {item.status === 'finished' && 'Finalizado'}
@@ -399,20 +403,14 @@ export default function CompetitionDetails() {
                 )}
             </ContentContainer>
 
-            {competition?.status === 'in_progress' && (
-                <NewGameButton onPress={() => router.push(`/comunidade/${communityId}/competicao/${competitionId}/jogo/novo`)}>
-                    <Feather name="plus" size={24} color={colors.white} />
-                </NewGameButton>
-            )}
-
             <Modal
                 visible={isGamesModalVisible}
                 animationType="slide"
                 onRequestClose={() => setIsGamesModalVisible(false)}
             >
-                <ModalContainer>
-                    <ModalHeader>
-                        <HeaderTitle>Lista de Jogos</HeaderTitle>
+                <ModalContainer colors={colors}>
+                    <ModalHeader colors={colors}>
+                        <HeaderTitle colors={colors}>Lista de Jogos</HeaderTitle>
                         <CloseButton onPress={() => setIsGamesModalVisible(false)}>
                             <Feather name="x" size={24} color={colors.gray100} />
                         </CloseButton>
@@ -429,119 +427,31 @@ export default function CompetitionDetails() {
                                         setIsGamesModalVisible(false);
                                         router.push(`/comunidade/${communityId}/competicao/${competitionId}/jogo/${item.id}`);
                                     }}
+                                    colors={colors}
                                 >
                                     <GameTeams>
-                                        <TeamScore>
-                                            <Score>{item.team1_score}</Score>
-                                            <TeamName>
+                                        <TeamScore colors={colors}>
+                                            <Score colors={colors}>{item.team1_score}</Score>
+                                            <TeamName colors={colors}>
                                                 {item.team1_players?.map(player => player.name).join(' e ')}
                                             </TeamName>
                                         </TeamScore>
                                         
-                                        <Versus>X</Versus>
+                                        <Versus colors={colors}>X</Versus>
                                         
-                                        <TeamScore>
-                                            <Score>{item.team2_score}</Score>
-                                            <TeamName>
+                                        <TeamScore colors={colors}>
+                                            <Score colors={colors}>{item.team2_score}</Score>
+                                            <TeamName colors={colors}>
                                                 {item.team2_players?.map(player => player.name).join(' e ')}
                                             </TeamName>
                                         </TeamScore>
                                     </GameTeams>
 
-                                    <GameStatus status={item.status}>
+                                    <GameStatus colors={colors} status={item.status}>
                                         {item.status === 'pending' && 'Aguardando Início'}
                                         {item.status === 'in_progress' && 'Em Andamento'}
                                         {item.status === 'finished' && 'Finalizado'}
                                     </GameStatus>
-
-                                    {item.status === 'finished' && (
-                                        <View style={{ marginTop: 8 }}>
-                                            {(item.team1_score === 6 && item.team2_score === 0) && (
-                                                <View style={{
-                                                    flexDirection: 'row',
-                                                    alignItems: 'center',
-                                                    backgroundColor: colors.primary,
-                                                    padding: 8,
-                                                    borderRadius: 8,
-                                                    marginTop: 4,
-                                                }}>
-                                                    <Text style={{
-                                                        fontSize: 16,
-                                                        marginRight: 4,
-                                                        color: colors.white,
-                                                    }}>👻</Text>
-                                                    <Text style={{
-                                                        color: colors.white,
-                                                        fontSize: 14,
-                                                        fontWeight: 'bold',
-                                                    }}>Buchuda para {item.team1_players?.map(player => player.name).join(' e ')}! 🎉</Text>
-                                                </View>
-                                            )}
-                                            {(item.team2_score === 6 && item.team1_score === 0) && (
-                                                <View style={{
-                                                    flexDirection: 'row',
-                                                    alignItems: 'center',
-                                                    backgroundColor: colors.primary,
-                                                    padding: 8,
-                                                    borderRadius: 8,
-                                                    marginTop: 4,
-                                                }}>
-                                                    <Text style={{
-                                                        fontSize: 16,
-                                                        marginRight: 4,
-                                                        color: colors.white,
-                                                    }}>👻</Text>
-                                                    <Text style={{
-                                                        color: colors.white,
-                                                        fontSize: 14,
-                                                        fontWeight: 'bold',
-                                                    }}>Buchuda para {item.team2_players?.map(player => player.name).join(' e ')}! 🎉</Text>
-                                                </View>
-                                            )}
-                                            {item.team1_was_losing_5_0 && (
-                                                <View style={{
-                                                    flexDirection: 'row',
-                                                    alignItems: 'center',
-                                                    backgroundColor: colors.primary,
-                                                    padding: 8,
-                                                    borderRadius: 8,
-                                                    marginTop: 4,
-                                                }}>
-                                                    <Text style={{
-                                                        fontSize: 16,
-                                                        marginRight: 4,
-                                                        color: colors.white,
-                                                    }}>🔄</Text>
-                                                    <Text style={{
-                                                        color: colors.white,
-                                                        fontSize: 14,
-                                                        fontWeight: 'bold',
-                                                    }}>Buchuda de Ré para {item.team1_players?.map(player => player.name).join(' e ')}! 🔄</Text>
-                                                </View>
-                                            )}
-                                            {item.team2_was_losing_5_0 && (
-                                                <View style={{
-                                                    flexDirection: 'row',
-                                                    alignItems: 'center',
-                                                    backgroundColor: colors.primary,
-                                                    padding: 8,
-                                                    borderRadius: 8,
-                                                    marginTop: 4,
-                                                }}>
-                                                    <Text style={{
-                                                        fontSize: 16,
-                                                        marginRight: 4,
-                                                        color: colors.white,
-                                                    }}>🔄</Text>
-                                                    <Text style={{
-                                                        color: colors.white,
-                                                        fontSize: 14,
-                                                        fontWeight: 'bold',
-                                                    }}>Buchuda de Ré para {item.team2_players?.map(player => player.name).join(' e ')}! 🔄</Text>
-                                                </View>
-                                            )}
-                                        </View>
-                                    )}
                                 </ModalGameCard>
                             )}
                             contentContainerStyle={{ padding: 16 }}
@@ -556,27 +466,23 @@ export default function CompetitionDetails() {
                 visible={isAddMemberModalVisible}
                 onRequestClose={() => setIsAddMemberModalVisible(false)}
             >
-                <ModalContainer>
-                    <ModalContent
-                        contentContainerStyle={{
-                            flexGrow: 1,
-                            padding: 16
-                        }}
-                    >
-                        <ModalHeader>
+                <ModalContainer colors={colors}>
+                    <ModalContent>
+                        <ModalHeader colors={colors}>
                             <CloseButton onPress={() => setIsAddMemberModalVisible(false)}>
                                 <Feather name="x" size={24} color={colors.gray100} />
                             </CloseButton>
                         </ModalHeader>
 
                         <MembersList data={communityMembers} renderItem={({ item }) => (
-                            <MemberItem key={item.id}>
+                            <MemberItem key={item.id} colors={colors}>
                                 <MemberInfo>
-                                    <MemberName>{item.players.name}</MemberName>
+                                    <MemberName colors={colors}>{item.players.name}</MemberName>
                                 </MemberInfo>
                                 <SelectButton
                                     onPress={() => handleToggleMember(item.player_id)}
                                     selected={members.some(m => m.player_id === item.player_id)}
+                                    colors={colors}
                                 >
                                     {members.some(m => m.player_id === item.player_id) ? (
                                         <Feather name="check-circle" size={24} color={colors.primary} />
@@ -585,7 +491,7 @@ export default function CompetitionDetails() {
                                     )}
                                 </SelectButton>
                             </MemberItem>
-                        )} keyExtractor={(item) => item.id} />
+                        )} />
                     </ModalContent>
                 </ModalContainer>
             </Modal>
@@ -595,14 +501,14 @@ export default function CompetitionDetails() {
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${props => props.theme.colors.backgroundDark};
+    background-color: ${props => props.colors.backgroundDark};
 `;
 
 const LoadingContainer = styled.View`
     flex: 1;
     justify-content: center;
     align-items: center;
-    background-color: ${props => props.theme.colors.backgroundDark};
+    background-color: ${props => props.colors.backgroundDark};
 `;
 
 const ContentContainer = styled.View`
@@ -620,12 +526,12 @@ const SectionHeader = styled.View`
 const SectionTitle = styled.Text`
     font-size: 20px;
     font-weight: bold;
-    color: ${props => props.theme.colors.gray100};
+    color: ${props => props.colors.gray100};
 `;
 
 const Description = styled.Text`
     font-size: 16px;
-    color: ${props => props.theme.colors.gray100};
+    color: ${props => props.colors.gray100};
     margin-bottom: 16px;
 `;
 
@@ -633,13 +539,13 @@ const CompetitionStatus = styled.Text<{ status: 'pending' | 'in_progress' | 'fin
     color: ${props => {
         switch (props.status) {
             case 'pending':
-                return props.theme.colors.gray300;
+                return props.colors.gray300;
             case 'in_progress':
-                return props.theme.colors.primary;
+                return props.colors.primary;
             case 'finished':
-                return props.theme.colors.success;
+                return props.colors.success;
             default:
-                return props.theme.colors.gray300;
+                return props.colors.gray300;
         }
     }};
     font-size: 14px;
@@ -647,7 +553,7 @@ const CompetitionStatus = styled.Text<{ status: 'pending' | 'in_progress' | 'fin
 `;
 
 const StartButton = styled.TouchableOpacity`
-    background-color: ${props => props.theme.colors.primary};
+    background-color: ${props => props.colors.primary};
     padding: 16px;
     border-radius: 8px;
     align-items: center;
@@ -656,7 +562,7 @@ const StartButton = styled.TouchableOpacity`
 `;
 
 const StartButtonText = styled.Text`
-    color: ${props => props.theme.colors.white};
+    color: ${props => props.colors.white};
     font-size: 16px;
     font-weight: bold;
 `;
@@ -684,7 +590,7 @@ const MemberItem = styled.View`
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background-color: ${props => props.theme.colors.surface};
+    background-color: ${props => props.colors.surface};
     border-radius: 8px;
     margin-bottom: 8px;
 `;
@@ -694,13 +600,13 @@ const MemberInfo = styled.View`
 `;
 
 const MemberName = styled.Text`
-    color: ${props => props.theme.colors.gray100};
+    color: ${props => props.colors.gray100};
     font-size: 16px;
 `;
 
 const ModalContainer = styled.View`
     flex: 1;
-    background-color: ${props => props.theme.colors.backgroundDark};
+    background-color: ${props => props.colors.backgroundDark};
 `;
 
 const ModalHeader = styled.View`
@@ -708,7 +614,7 @@ const ModalHeader = styled.View`
     align-items: center;
     justify-content: space-between;
     padding: 20px;
-    background-color: ${props => props.theme.colors.backgroundMedium};
+    background-color: ${props => props.colors.backgroundMedium};
 `;
 
 const ModalContent = styled.View`
@@ -716,7 +622,7 @@ const ModalContent = styled.View`
 `;
 
 const ModalGameCard = styled(TouchableOpacity)`
-    background-color: ${props => props.theme.colors.backgroundMedium};
+    background-color: ${props => props.colors.backgroundMedium};
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 16px;
@@ -725,13 +631,13 @@ const ModalGameCard = styled(TouchableOpacity)`
 const ManageButton = styled.TouchableOpacity`
     flex-direction: row;
     align-items: center;
-    background-color: ${props => props.theme.colors.primary};
+    background-color: ${props => props.colors.primary};
     padding: 8px 16px;
     border-radius: 8px;
 `;
 
 const ManageButtonText = styled.Text`
-    color: ${props => props.theme.colors.gray100};
+    color: ${props => props.colors.gray100};
     font-size: 14px;
     font-weight: 500;
     margin-right: 8px;
@@ -744,14 +650,14 @@ const EmptyContainer = styled.View`
 `;
 
 const EmptyText = styled.Text`
+    color: ${props => props.colors.gray300};
     font-size: 16px;
-    color: ${props => props.theme.colors.gray300};
     margin-bottom: 8px;
 `;
 
 const EmptyDescription = styled.Text`
+    color: ${props => props.colors.gray300};
     font-size: 14px;
-    color: ${props => props.theme.colors.gray300};
     text-align: center;
 `;
 
@@ -760,7 +666,7 @@ const GamesList = styled.FlatList`
 `;
 
 const GameCard = styled.TouchableOpacity`
-    background-color: ${props => props.theme.colors.surface};
+    background-color: ${props => props.colors.surface};
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 8px;
@@ -776,25 +682,25 @@ const GameTeams = styled.View`
 const TeamScore = styled.View<{ winner?: boolean }>`
     align-items: center;
     flex: 1;
-    background-color: ${props => props.winner ? props.theme.colors.primary + '20' : 'transparent'};
+    background-color: ${props => props.winner ? props.colors.primary + '20' : 'transparent'};
     padding: 8px;
     border-radius: 8px;
 `;
 
 const Score = styled.Text`
-    color: ${props => props.theme.colors.gray100};
+    color: ${props => props.colors.gray100};
     font-size: 32px;
     font-weight: bold;
 `;
 
 const TeamName = styled.Text`
-    color: ${props => props.theme.colors.gray300};
+    color: ${props => props.colors.gray300};
     font-size: 14px;
     margin-top: 4px;
 `;
 
 const Versus = styled.Text`
-    color: ${props => props.theme.colors.gray300};
+    color: ${props => props.colors.gray300};
     font-size: 20px;
     margin-horizontal: 16px;
 `;
@@ -803,13 +709,13 @@ const GameStatus = styled.Text<{ status: 'pending' | 'in_progress' | 'finished' 
     color: ${props => {
         switch (props.status) {
             case 'pending':
-                return props.theme.colors.gray300;
+                return props.colors.gray300;
             case 'in_progress':
-                return props.theme.colors.primary;
+                return props.colors.primary;
             case 'finished':
-                return props.theme.colors.success;
+                return props.colors.success;
             default:
-                return props.theme.colors.gray300;
+                return props.colors.gray300;
         }
     }};
     font-size: 14px;
@@ -818,7 +724,7 @@ const GameStatus = styled.Text<{ status: 'pending' | 'in_progress' | 'finished' 
 `;
 
 const FinishButton = styled.TouchableOpacity<{ disabled?: boolean }>`
-    background-color: ${props => props.theme.colors.error};
+    background-color: ${props => props.colors.error};
     padding: 16px;
     border-radius: 8px;
     flex-direction: row;
@@ -830,14 +736,14 @@ const FinishButton = styled.TouchableOpacity<{ disabled?: boolean }>`
 `;
 
 const FinishButtonText = styled.Text`
-    color: ${props => props.theme.colors.gray100};
+    color: ${props => props.colors.gray100};
     font-size: 16px;
     font-weight: bold;
     margin-left: 8px;
 `;
 
 const ViewScoresButton = styled.TouchableOpacity`
-    background-color: ${props => props.theme.colors.primary};
+    background-color: ${props => props.colors.primary};
     padding: 16px;
     border-radius: 8px;
     flex-direction: row;
@@ -848,7 +754,7 @@ const ViewScoresButton = styled.TouchableOpacity`
 `;
 
 const ViewScoresButtonText = styled.Text`
-    color: ${props => props.theme.colors.gray100};
+    color: ${props => props.colors.gray100};
     font-size: 16px;
     font-weight: bold;
     margin-left: 8px;
@@ -863,7 +769,7 @@ const CloseButton = styled.TouchableOpacity`
 `;
 
 const Button = styled.TouchableOpacity`
-    background-color: ${props => props.theme.colors.primary};
+    background-color: ${props => props.colors.primary};
     padding: 16px;
     border-radius: 8px;
     align-items: center;
@@ -872,7 +778,7 @@ const Button = styled.TouchableOpacity`
 `;
 
 const ButtonText = styled.Text`
-    color: ${props => props.theme.colors.white};
+    color: ${props => props.colors.white};
     font-size: 16px;
     font-weight: bold;
 `;
@@ -884,7 +790,7 @@ const NewGameButton = styled.TouchableOpacity`
     width: 56px;
     height: 56px;
     border-radius: 28px;
-    background-color: ${props => props.theme.colors.primary};
+    background-color: ${props => props.colors.primary};
     align-items: center;
     justify-content: center;
     elevation: 8;
@@ -894,6 +800,6 @@ const NewGameButton = styled.TouchableOpacity`
 const HeaderTitle = styled.Text`
     font-size: 20px;
     font-weight: bold;
-    color: ${props => props.theme.colors.gray100};
+    color: ${props => props.colors.gray100};
     flex: 1;
 `;

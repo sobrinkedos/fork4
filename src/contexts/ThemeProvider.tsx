@@ -50,32 +50,40 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = async () => {
     try {
       const newTheme = theme === 'dark' ? 'light' : 'dark';
-      setTheme(newTheme);
       await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
+      setTheme(newTheme);
     } catch (error) {
       console.error('Erro ao salvar tema:', error);
     }
   };
 
-  const currentTheme: DefaultTheme = {
-    colors: themes[theme],
-    theme
-  };
+  const currentColors = theme === 'dark' ? themes.dark : themes.light;
 
   return (
-    <ThemeContext.Provider 
-      value={{ 
-        colors: themes[theme], 
-        theme, 
+    <ThemeContext.Provider
+      value={{
+        theme,
+        colors: currentColors,
         toggleTheme,
         isDarkTheme: theme === 'dark'
       }}
     >
-      <StyledThemeProvider theme={currentTheme}>
+      <StyledThemeProvider
+        theme={{
+          colors: currentColors,
+          theme
+        }}
+      >
         {children}
       </StyledThemeProvider>
     </ThemeContext.Provider>
   );
 }
 
-export const useTheme = () => useContext(ThemeContext);
+export function useTheme() {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+}

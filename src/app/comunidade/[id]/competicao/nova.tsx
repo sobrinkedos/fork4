@@ -63,11 +63,11 @@ export default function NovaCompeticao() {
 
     return (
         <PaperProvider theme={paperTheme}>
-            <Container>
+            <Container colors={colors}>
                 <InternalHeader title="Nova Competição" />
                 <Content>
                     <FormGroup>
-                        <Label>Nome da Competição</Label>
+                        <Label colors={colors}>Nome da Competição</Label>
                         <Input
                             mode="outlined"
                             placeholder="Digite o nome da competição"
@@ -80,7 +80,7 @@ export default function NovaCompeticao() {
                     </FormGroup>
 
                     <FormGroup>
-                        <Label>Descrição</Label>
+                        <Label colors={colors}>Descrição</Label>
                         <Input
                             mode="outlined"
                             placeholder="Digite uma descrição (opcional)"
@@ -95,7 +95,7 @@ export default function NovaCompeticao() {
                     </FormGroup>
 
                     <DatePickerContainer>
-                        <Label>Data de Início</Label>
+                        <Label colors={colors}>Data de Início</Label>
                         <DatePickerInput
                             locale="pt-BR"
                             label="Data"
@@ -113,13 +113,14 @@ export default function NovaCompeticao() {
                         <SaveButton 
                             onPress={handleSave}
                             disabled={loading}
+                            colors={colors}
                         >
                             {loading ? (
                                 <ActivityIndicator color={colors.white} size="small" />
                             ) : (
                                 <>
                                     <Feather name="save" size={20} color={colors.white} />
-                                    <ButtonText>Salvar Competição</ButtonText>
+                                    <ButtonText colors={colors}>Salvar Competição</ButtonText>
                                 </>
                             )}
                         </SaveButton>
@@ -132,7 +133,7 @@ export default function NovaCompeticao() {
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${props => props.theme.colors.backgroundDark};
+    background-color: ${props => props.colors.backgroundDark};
 `;
 
 const Content = styled.ScrollView`
@@ -147,7 +148,7 @@ const FormGroup = styled.View`
 const Label = styled.Text`
     font-size: 16px;
     margin-bottom: 8px;
-    color: ${props => props.theme.colors.textPrimary};
+    color: ${props => props.colors.textPrimary};
 `;
 
 const DatePickerContainer = styled.View`
@@ -158,16 +159,18 @@ const ButtonContainer = styled.View`
     margin-top: 20px;
 `;
 
-const SaveButton = styled.TouchableOpacity<{ disabled?: boolean }>`
-    background-color: ${props => props.disabled ? props.theme.colors.gray500 : props.theme.colors.primary};
+const SaveButton = styled.TouchableOpacity<{ disabled?: boolean, colors: any }>`
+    background-color: ${props => props.disabled ? props.colors.gray500 : props.colors.primary};
     padding: 16px;
     border-radius: 8px;
     align-items: center;
     opacity: ${props => props.disabled ? 0.7 : 1};
+    flex-direction: row;
+    justify-content: center;
 `;
 
 const ButtonText = styled.Text`
-    color: ${props => props.theme.colors.white};
+    color: ${props => props.colors.white};
     font-size: 16px;
     font-weight: bold;
     margin-left: 8px;
