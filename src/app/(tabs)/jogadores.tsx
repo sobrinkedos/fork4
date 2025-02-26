@@ -1,14 +1,115 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Alert, FlatList, RefreshControl, ActivityIndicator, View } from 'react-native';
 import styled from 'styled-components/native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../../styles/colors';
+import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { Player, playerService } from '@/services/playerService';
 import { useFocusEffect } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Header } from '@/components/Header';
 import { useTheme } from '@/contexts/ThemeProvider';
+
+const Container = styled.View`
+    flex: 1;
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
+`;
+
+const Content = styled.View`
+    flex: 1;
+`;
+
+const LoadingContainer = styled.View`
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+`;
+
+const PlayerCard = styled.View`
+    background-color: ${({ theme }) => theme.colors.secondary};
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    flex-direction: row;
+    justify-content: space-between;
+`;
+
+const PlayerInfo = styled.View`
+    flex: 1;
+`;
+
+const PlayerNameContainer = styled.View`
+    flex-direction: row;
+    align-items: center;
+`;
+
+const PlayerName = styled.Text`
+    font-size: 16px;
+    font-weight: bold;
+    color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const PlayerNickname = styled.Text`
+    font-size: 14px;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    margin-top: 4px;
+`;
+
+const PlayerPhone = styled.Text`
+    font-size: 14px;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    margin-top: 4px;
+`;
+
+const LinkedUserBadge = styled.View`
+    flex-direction: row;
+    align-items: center;
+    background-color: ${({ theme }) => theme.colors.successLight};
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+`;
+
+const LinkedUserText = styled.Text`
+    font-size: 12px;
+    color: ${({ theme }) => theme.colors.success};
+    margin-left: 4px;
+`;
+
+const ActionsContainer = styled.View`
+    flex-direction: row;
+    align-items: center;
+`;
+
+const ActionButton = styled.Pressable`
+    padding: 8px;
+`;
+
+const SectionTitle = styled.Text`
+    font-size: 18px;
+    font-weight: bold;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    margin-bottom: 16px;
+    margin-top: 24px;
+`;
+
+const EmptyText = styled.Text`
+    font-size: 14px;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    text-align: center;
+    margin: 16px 0;
+`;
+
+const FAB = styled.Pressable`
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background-color: ${({ theme }) => theme.colors.accent};
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+`;
 
 export default function Jogadores() {
     const router = useRouter();
@@ -154,7 +255,7 @@ export default function Jogadores() {
             <Container>
                 <Header />
                 <LoadingContainer>
-                    <ActivityIndicator size="large" color={colors.primary} />
+                    <ActivityIndicator size="large" color={colors.accent} />
                 </LoadingContainer>
             </Container>
         );
@@ -173,116 +274,15 @@ export default function Jogadores() {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={handleRefresh}
-                            colors={[colors.primary]}
+                            colors={[colors.accent]}
                         />
                     }
                 />
 
                 <FAB onPress={() => router.push('/jogador/novo')}>
-                    <Feather name="plus" size={24} color={colors.gray100} />
+                    <Feather name="plus" size={24} color={colors.backgroundLight} />
                 </FAB>
             </Content>
         </Container>
     );
 }
-
-const Container = styled.View`
-    flex: 1;
-    background-color: ${colors.backgroundDark};
-`;
-
-const LoadingContainer = styled.View`
-    flex: 1;
-    justify-content: center;
-    align-items: center;
-`;
-
-const SectionTitle = styled.Text`
-    font-size: 18px;
-    font-weight: bold;
-    color: ${colors.gray100};
-    margin: 24px 0 12px;
-`;
-
-const PlayerCard = styled.View`
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    background-color: ${colors.secondary};
-    border-radius: 8px;
-    margin-bottom: 8px;
-`;
-
-const PlayerInfo = styled.View`
-    flex: 1;
-`;
-
-const PlayerNameContainer = styled.View`
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-`;
-
-const PlayerName = styled.Text`
-    font-size: 16px;
-    color: ${colors.gray100};
-    font-weight: bold;
-`;
-
-const LinkedUserBadge = styled.View`
-    background-color: ${colors.primary};
-    padding: 2px 6px;
-    border-radius: 4px;
-`;
-
-const LinkedUserText = styled.Text`
-    color: ${colors.white};
-    font-size: 10px;
-    font-weight: bold;
-`;
-
-const PlayerNickname = styled.Text`
-    font-size: 14px;
-    color: ${colors.gray300};
-    margin-top: 4px;
-`;
-
-const PlayerPhone = styled.Text`
-    font-size: 14px;
-    color: ${colors.gray300};
-    margin-top: 4px;
-`;
-
-const ActionsContainer = styled.View`
-    flex-direction: row;
-    align-items: center;
-`;
-
-const ActionButton = styled.TouchableOpacity`
-    padding: 8px;
-`;
-
-const FAB = styled.TouchableOpacity`
-    position: absolute;
-    right: 16px;
-    bottom: 16px;
-    width: 56px;
-    height: 56px;
-    border-radius: 28px;
-    background-color: ${colors.primary};
-    justify-content: center;
-    align-items: center;
-    elevation: 4;
-`;
-
-const EmptyText = styled.Text`
-    color: ${colors.gray300};
-    font-size: 16px;
-    text-align: center;
-    margin: 16px;
-`;
-
-const Content = styled.View`
-    flex: 1;
-`;
