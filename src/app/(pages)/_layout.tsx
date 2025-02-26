@@ -21,31 +21,31 @@ export default function PagesLayout() {
                 }} 
             />
             <Stack.Screen 
-                name="comunidade/[id]" 
+                name="jogos" 
                 options={{
                     headerShown: false
                 }} 
             />
             <Stack.Screen 
-                name="competicao/[id]" 
+                name="comunidade/[id]/index" 
                 options={{
                     headerShown: false
                 }} 
             />
             <Stack.Screen 
-                name="jogo/[id]" 
+                name="comunidade/[id]/competicao/[competitionId]/jogo/index" 
                 options={{
                     headerShown: false
                 }} 
             />
             <Stack.Screen 
-                name="jogador/[id]" 
+                name="jogador/[id]/index" 
                 options={{
                     headerShown: false
                 }} 
             />
             <Stack.Screen 
-                name="top-jogadores" 
+                name="top-jogadores/index" 
                 options={{
                     headerShown: false
                 }} 

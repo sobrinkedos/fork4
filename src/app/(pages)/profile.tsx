@@ -4,14 +4,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { Stack, useRouter } from 'expo-router';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PageTransition } from '@/components/Transitions';
 import { Header } from '@/components/Header';
+import { useTheme } from 'styled-components/native';
 
 const Container = styled.View`
   flex: 1;
-  background-color: ${colors.backgroundDark};
+  background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
 const ScrollContent = styled.ScrollView`
@@ -29,29 +29,30 @@ const InputContainer = styled.View`
 
 const Label = styled.Text`
   font-size: 16px;
-  color: ${colors.gray100};
+  color: ${({ theme }) => theme.colors.textPrimary};
   font-weight: 500;
 `;
 
 const StyledInput = styled.TextInput`
-  background-color: ${colors.secondary};
+  background-color: ${({ theme }) => theme.colors.backgroundLight};
   padding: 16px;
   border-radius: 8px;
-  color: ${colors.gray100};
+  color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 16px;
 `;
 
 const SaveButton = styled.TouchableOpacity`
-  background-color: ${colors.primary};
+  background-color: ${({ theme }) => theme.colors.accent};
   padding: 16px;
   border-radius: 8px;
   align-items: center;
   justify-content: center;
   margin-top: 16px;
+  opacity: ${props => props.disabled ? 0.7 : 1};
 `;
 
 const ButtonText = styled.Text`
-  color: ${colors.gray100};
+  color: ${({ theme }) => theme.colors.white};
   font-size: 16px;
   font-weight: 600;
 `;
@@ -59,6 +60,7 @@ const ButtonText = styled.Text`
 export default function ProfileScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState({
     full_name: '',
@@ -303,7 +305,7 @@ export default function ProfileScreen() {
                 value={profile.full_name}
                 onChangeText={(text) => setProfile({ ...profile, full_name: text })}
                 placeholder="Seu nome completo"
-                placeholderTextColor={colors.gray300}
+                placeholderTextColor={colors.textSecondary}
               />
             </InputContainer>
 
@@ -313,7 +315,7 @@ export default function ProfileScreen() {
                 value={profile.nickname}
                 onChangeText={(text) => setProfile({ ...profile, nickname: text })}
                 placeholder="Seu apelido"
-                placeholderTextColor={colors.gray300}
+                placeholderTextColor={colors.textSecondary}
               />
             </InputContainer>
 
@@ -323,7 +325,7 @@ export default function ProfileScreen() {
                 value={profile.email}
                 editable={false}
                 placeholder="seu@email.com"
-                placeholderTextColor={colors.gray300}
+                placeholderTextColor={colors.textSecondary}
               />
             </InputContainer>
 
@@ -333,7 +335,7 @@ export default function ProfileScreen() {
                 value={profile.phone_number}
                 onChangeText={(text) => setProfile({ ...profile, phone_number: text })}
                 placeholder="(00) 00000-0000"
-                placeholderTextColor={colors.gray300}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="phone-pad"
               />
             </InputContainer>

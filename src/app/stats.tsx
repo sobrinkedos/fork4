@@ -1,13 +1,13 @@
 import React from 'react';
 import { View, ScrollView } from 'react-native';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
-import TopJogadores from '@/app/top-jogadores';
-import TopDuplas from '@/app/top-duplas';
+import { useTheme } from 'styled-components/native';
+import TopJogadores from '@/app/(pages)/top-jogadores/index';
+import TopDuplas from '@/app/top-duplas/index';
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
 const ScrollContent = styled.ScrollView`
@@ -19,9 +19,11 @@ const Section = styled.View`
 `;
 
 export default function StatsPage() {
+    const { colors } = useTheme();
+
     return (
         <Container>
-            <ScrollContent>
+            <ScrollContent showsVerticalScrollIndicator={false}>
                 <Section>
                     <TopJogadores />
                 </Section>
