@@ -68,11 +68,8 @@ export default function Register() {
                 throw new Error(signInError);
             }
 
-            Alert.alert(
-                'Sucesso',
-                'Conta criada com sucesso! Complete seu perfil para continuar.',
-                [{ text: 'OK', onPress: () => router.push('/profile') }]
-            );
+            // Redireciona imediatamente após o login bem-sucedido
+            router.replace('/(tabs)/dashboard');
 
         } catch (error: any) {
             console.error('Erro completo no registro:', error);
