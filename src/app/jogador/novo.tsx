@@ -3,13 +3,14 @@ import { Alert, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
 import { useRouter } from 'expo-router';
 import { InternalHeader } from '@/components/InternalHeader';
-import { colors } from '@/styles/colors';
 import { playerService } from '@/services/playerService';
 import { Feather } from '@expo/vector-icons';
 import { TextInput } from 'react-native-paper';
+import { useTheme } from 'styled-components/native';
 
 export default function NovoJogador() {
     const router = useRouter();
+    const { colors } = useTheme();
     const [formData, setFormData] = useState({
         name: '',
         phone: ''
@@ -61,13 +62,13 @@ export default function NovoJogador() {
                         }}
                         theme={{
                             colors: {
-                                primary: colors.primary,
-                                text: colors.gray100,
-                                placeholder: colors.gray300,
+                                primary: colors.accent,
+                                text: colors.textPrimary,
+                                placeholder: colors.textSecondary,
                                 background: colors.backgroundDark,
                                 surface: colors.backgroundDark,
-                                onSurface: colors.gray100,
-                                outline: colors.gray700,
+                                onSurface: colors.textPrimary,
+                                outline: colors.backgroundLight,
                             }
                         }}
                     />
@@ -93,13 +94,13 @@ export default function NovoJogador() {
                         }}
                         theme={{
                             colors: {
-                                primary: colors.primary,
-                                text: colors.gray100,
-                                placeholder: colors.gray300,
+                                primary: colors.accent,
+                                text: colors.textPrimary,
+                                placeholder: colors.textSecondary,
                                 background: colors.backgroundDark,
                                 surface: colors.backgroundDark,
-                                onSurface: colors.gray100,
-                                outline: colors.gray700,
+                                onSurface: colors.textPrimary,
+                                outline: colors.backgroundLight,
                             }
                         }}
                     />
@@ -107,7 +108,7 @@ export default function NovoJogador() {
 
                 <SaveButton onPress={handleSave} disabled={loading}>
                     {loading ? (
-                        <ActivityIndicator color={colors.gray100} />
+                        <ActivityIndicator color={colors.white} />
                     ) : (
                         <SaveButtonText>Criar Jogador</SaveButtonText>
                     )}
@@ -119,7 +120,7 @@ export default function NovoJogador() {
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
 const Content = styled.ScrollView.attrs({
@@ -135,12 +136,12 @@ const FormGroup = styled.View`
 
 const Label = styled.Text`
     font-size: 16px;
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.textPrimary};
     margin-bottom: 8px;
 `;
 
 const SaveButton = styled.TouchableOpacity<{ disabled?: boolean }>`
-    background-color: ${colors.primary};
+    background-color: ${({ theme }) => theme.colors.accent};
     padding: 16px;
     border-radius: 8px;
     align-items: center;
@@ -148,7 +149,7 @@ const SaveButton = styled.TouchableOpacity<{ disabled?: boolean }>`
 `;
 
 const SaveButtonText = styled.Text`
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.white};
     font-size: 16px;
     font-weight: bold;
 `;
