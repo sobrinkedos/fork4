@@ -16,11 +16,14 @@ export function InternalHeader({ title, onBack, rightContent }: InternalHeaderPr
     const statusBarHeight = StatusBar.currentHeight || 0;
 
     useEffect(() => {
+        // Configuração explícita para Android
         if (Platform.OS === 'android') {
-            StatusBar.setTranslucent(true);
-            StatusBar.setBackgroundColor('transparent');
+            StatusBar.setBackgroundColor(colors.primary);
+            StatusBar.setBarStyle('light-content');
+            StatusBar.setTranslucent(false);
+        } else {
+            StatusBar.setBarStyle('light-content');
         }
-        StatusBar.setBarStyle('light-content');
     }, []);
 
     const handleBack = () => {

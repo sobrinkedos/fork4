@@ -1,11 +1,75 @@
-import { useLocalSearchParams } from "expo-router";
-import { View, Text } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { View, Text, ActivityIndicator, StatusBar, Platform } from "react-native";
 import { useEffect, useState } from "react";
 import { Competition } from "../../../types/database.types";
 import { getCompetitionById } from "../../../services/competitionService";
+import { InternalHeader } from "@/components/InternalHeader";
+import { colors } from "@/styles/colors";
+import styled from "styled-components/native";
+import { PageTransition } from "@/components/Transitions";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+const Container = styled.View`
+  flex: 1;
+  background-color: ${colors.backgroundDark};
+`;
+
+const Content = styled.View`
+  flex: 1;
+  padding: 20px;
+`;
+
+const CompetitionCard = styled.View`
+  background-color: ${colors.backgroundMedium};
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+`;
+
+const CompetitionName = styled.Text`
+  color: ${colors.gray100};
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 16px;
+`;
+
+const InfoItem = styled.View`
+  margin-bottom: 12px;
+`;
+
+const InfoLabel = styled.Text`
+  color: ${colors.gray300};
+  font-size: 14px;
+  margin-bottom: 4px;
+`;
+
+const InfoValue = styled.Text`
+  color: ${colors.gray100};
+  font-size: 16px;
+`;
+
+// Componente personalizado para a StatusBar
+const StatusBarCustom = () => {
+  useEffect(() => {
+    // Configuração imediata
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor(colors.primary);
+      StatusBar.setBarStyle('light-content');
+      StatusBar.setTranslucent(false);
+    }
+    
+    return () => {
+      // Não restauramos ao sair para evitar flickering
+    };
+  }, []);
+  
+  return <StatusBar backgroundColor={colors.primary} barStyle="light-content" translucent={false} />;
+};
 
 export default function CompetitionDetails() {
   const { id } = useLocalSearchParams();
+  const router = useRouter();
   const [competition, setCompetition] = useState<Competition | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +80,7 @@ export default function CompetitionDetails() {
         const data = await getCompetitionById(id as string);
         setCompetition(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load competition');
+        setError(err instanceof Error ? err.message : 'Falha ao carregar competição');
       } finally {
         setLoading(false);
       }
@@ -25,36 +89,51 @@ export default function CompetitionDetails() {
     fetchCompetition();
   }, [id]);
 
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <Text className="text-red-500">{error}</Text>
-      </View>
-    );
-  }
-
-  if (!competition) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <Text>Competition not found</Text>
-      </View>
-    );
-  }
-
   return (
-    <View className="flex-1 p-4">
-      <Text className="text-2xl font-bold mb-4">{competition.name}</Text>
-      <Text className="mb-2">Description: {competition.description || 'No description available'}</Text>
-      <Text>Start Date: {new Date(competition.start_date).toLocaleDateString()}</Text>
-      <Text>End Date: {new Date(competition.end_date).toLocaleDateString()}</Text>
-    </View>
+    <PageTransition>
+      <Container>
+        <StatusBarCustom />
+        <InternalHeader title="Detalhes da Competição" />
+        
+        <Content>
+          {loading ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : error ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: colors.error }}>{error}</Text>
+            </View>
+          ) : !competition ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: colors.gray300 }}>Competição não encontrada</Text>
+            </View>
+          ) : (
+            <CompetitionCard>
+              <CompetitionName>{competition.name}</CompetitionName>
+              
+              <InfoItem>
+                <InfoLabel>Descrição</InfoLabel>
+                <InfoValue>{competition.description || 'Sem descrição disponível'}</InfoValue>
+              </InfoItem>
+              
+              <InfoItem>
+                <InfoLabel>Data de Início</InfoLabel>
+                <InfoValue>
+                  {format(new Date(competition.start_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                </InfoValue>
+              </InfoItem>
+              
+              <InfoItem>
+                <InfoLabel>Data de Término</InfoLabel>
+                <InfoValue>
+                  {format(new Date(competition.end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                </InfoValue>
+              </InfoItem>
+            </CompetitionCard>
+          )}
+        </Content>
+      </Container>
+    </PageTransition>
   );
 }
