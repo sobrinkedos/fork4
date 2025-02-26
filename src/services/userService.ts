@@ -9,15 +9,28 @@ export const userService = {
         nickname?: string
     ): Promise<{ data: UserProfile | null; error: Error | null }> {
         try {
-            // Verificar se já existe um usuário com este telefone
-            const { data: existingUser } = await this.findByPhoneNumber(phoneNumber);
+            // Primeiro verifica se já existe um perfil
+            const { data: existingProfile } = await supabase
+                .from('user_profiles')
+                .select()
+                .eq('user_id', userId)
+                .single();
 
-            // Se já existe, atualiza os roles
-            if (existingUser) {
-                const updatedRoles = Array.from(new Set([...existingUser.roles, 'admin', 'organizer']));
-                return await this.updateProfile(existingUser.id, {
-                    roles: updatedRoles
-                });
+            // Se já existe, atualiza
+            if (existingProfile) {
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .update({
+                        full_name: fullName,
+                        phone_number: phoneNumber,
+                        nickname
+                    })
+                    .eq('user_id', userId)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return { data, error: null };
             }
 
             // Se não existe, cria novo perfil
@@ -27,8 +40,7 @@ export const userService = {
                     user_id: userId,
                     full_name: fullName,
                     phone_number: phoneNumber,
-                    nickname,
-                    roles: ['admin', 'organizer'] as UserRole[]
+                    nickname
                 })
                 .select()
                 .single();
@@ -36,7 +48,7 @@ export const userService = {
             if (error) throw error;
             return { data, error: null };
         } catch (error) {
-            console.error('Error creating user profile:', error);
+            console.error('Error creating/updating user profile:', error);
             return { data: null, error: error as Error };
         }
     },

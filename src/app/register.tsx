@@ -5,6 +5,7 @@ import styled from 'styled-components/native';
 import { useAuth } from '../hooks/useAuth';
 import { userService } from '../services/userService';
 import { useTheme } from '../contexts/ThemeProvider';
+import { supabase } from '@/lib/supabase';
 
 export default function Register() {
     const router = useRouter();
@@ -14,14 +15,24 @@ export default function Register() {
     const [form, setForm] = useState({
         email: '',
         password: '',
+        confirmPassword: '',
         fullName: '',
-        phoneNumber: '',
         nickname: ''
     });
 
     const handleRegister = async () => {
-        if (!form.email || !form.password || !form.fullName || !form.phoneNumber) {
+        if (!form.email || !form.password || !form.fullName) {
             Alert.alert('Erro', 'Por favor, preencha todos os campos obrigatórios');
+            return;
+        }
+
+        if (form.password !== form.confirmPassword) {
+            Alert.alert('Erro', 'As senhas não conferem');
+            return;
+        }
+
+        if (form.password.length < 6) {
+            Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres');
             return;
         }
 
@@ -31,67 +42,43 @@ export default function Register() {
             const { data, error: signUpError } = await signUp(form.email, form.password);
             
             if (signUpError) {
-                console.error('Erro no signUp:', signUpError);
-                throw new Error(signUpError.message);
+                throw new Error(signUpError);
             }
 
-            if (!data.user) {
-                console.error('Usuário não criado após signUp');
+            if (!data?.user) {
                 throw new Error('Erro ao criar usuário. Por favor, tente novamente.');
             }
 
-            // 2. Verificar se já existe usuário com este telefone
-            const { data: existingUser } = await userService.findByPhoneNumber(form.phoneNumber);
-
-            // 3. Criar ou atualizar perfil
+            // 2. Criar perfil inicial (dados básicos)
             const { error: profileError } = await userService.createProfile(
                 data.user.id,
                 form.fullName,
-                form.phoneNumber,
+                '', // telefone será preenchido depois no perfil
                 form.nickname
             );
 
             if (profileError) {
-                console.error('Erro ao criar perfil:', profileError);
                 throw profileError;
             }
 
-            // 4. Fazer login automático
+            // 3. Fazer login automático
             const { error: signInError } = await signIn(form.email, form.password);
             
             if (signInError) {
-                console.error('Erro ao fazer login automático:', signInError);
-                throw signInError;
+                throw new Error(signInError);
             }
 
-            if (existingUser) {
-                Alert.alert(
-                    'Bem-vindo de volta!',
-                    'Identificamos que você já é um jogador. Sua conta foi atualizada com privilégios de administrador.',
-                    [
-                        {
-                            text: 'OK',
-                            onPress: () => router.push('/(tabs)/dashboard')
-                        }
-                    ]
-                );
-            } else {
-                Alert.alert(
-                    'Sucesso',
-                    'Conta criada com sucesso!',
-                    [
-                        {
-                            text: 'OK',
-                            onPress: () => router.push('/(tabs)/dashboard')
-                        }
-                    ]
-                );
-            }
+            Alert.alert(
+                'Sucesso',
+                'Conta criada com sucesso! Complete seu perfil para continuar.',
+                [{ text: 'OK', onPress: () => router.push('/profile') }]
+            );
+
         } catch (error: any) {
             console.error('Erro completo no registro:', error);
             Alert.alert(
                 'Erro',
-                error.message || 'Não foi possível criar sua conta. Tente novamente.'
+                typeof error === 'string' ? error : error?.message || 'Não foi possível criar sua conta. Tente novamente.'
             );
         } finally {
             setLoading(false);
@@ -100,83 +87,63 @@ export default function Register() {
 
     return (
         <Container>
-            <StatusBar style="light" backgroundColor={colors.primary} />
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                <Content>
-                    <Title>Cadastro</Title>
-                    
-                    <InputContainer>
-                        <InputLabel>Nome completo *</InputLabel>
-                        <Input
-                            placeholder="Digite seu nome completo"
-                            placeholderTextColor={colors.textDisabled}
-                            value={form.fullName}
-                            onChangeText={(text) => setForm(prev => ({ ...prev, fullName: text }))}
-                            editable={!loading}
-                        />
-                    </InputContainer>
-                    
-                    <InputContainer>
-                        <InputLabel>E-mail *</InputLabel>
-                        <Input
-                            placeholder="Digite seu e-mail"
-                            placeholderTextColor={colors.textDisabled}
-                            value={form.email}
-                            onChangeText={(text) => setForm(prev => ({ ...prev, email: text }))}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            editable={!loading}
-                        />
-                    </InputContainer>
-                    
-                    <InputContainer>
-                        <InputLabel>Senha *</InputLabel>
-                        <Input
-                            placeholder="Digite sua senha"
-                            placeholderTextColor={colors.textDisabled}
-                            value={form.password}
-                            onChangeText={(text) => setForm(prev => ({ ...prev, password: text }))}
-                            secureTextEntry
-                            editable={!loading}
-                        />
-                    </InputContainer>
-                    
-                    <InputContainer>
-                        <InputLabel>Telefone *</InputLabel>
-                        <Input
-                            placeholder="Digite seu telefone"
-                            placeholderTextColor={colors.textDisabled}
-                            value={form.phoneNumber}
-                            onChangeText={(text) => setForm(prev => ({ ...prev, phoneNumber: text }))}
-                            keyboardType="phone-pad"
-                            editable={!loading}
-                        />
-                    </InputContainer>
-                    
-                    <InputContainer>
-                        <InputLabel>Apelido (opcional)</InputLabel>
-                        <Input
-                            placeholder="Digite seu apelido"
-                            placeholderTextColor={colors.textDisabled}
-                            value={form.nickname}
-                            onChangeText={(text) => setForm(prev => ({ ...prev, nickname: text }))}
-                            editable={!loading}
-                        />
-                    </InputContainer>
-                    
-                    <RegisterButton onPress={handleRegister} disabled={loading}>
+            <StatusBar backgroundColor={colors.primary} barStyle="light-content" />
+            <ScrollContent showsVerticalScrollIndicator={false}>
+                <FormContainer>
+                    <Title>Criar Conta</Title>
+
+                    <Input
+                        placeholder="Nome completo"
+                        value={form.fullName}
+                        onChangeText={(text) => setForm({ ...form, fullName: text })}
+                        placeholderTextColor={colors.gray300}
+                    />
+
+                    <Input
+                        placeholder="E-mail"
+                        value={form.email}
+                        onChangeText={(text) => setForm({ ...form, email: text })}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        placeholderTextColor={colors.gray300}
+                    />
+
+                    <Input
+                        placeholder="Senha"
+                        value={form.password}
+                        onChangeText={(text) => setForm({ ...form, password: text })}
+                        secureTextEntry
+                        placeholderTextColor={colors.gray300}
+                    />
+
+                    <Input
+                        placeholder="Confirmar senha"
+                        value={form.confirmPassword}
+                        onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
+                        secureTextEntry
+                        placeholderTextColor={colors.gray300}
+                    />
+
+                    <Input
+                        placeholder="Apelido (opcional)"
+                        value={form.nickname}
+                        onChangeText={(text) => setForm({ ...form, nickname: text })}
+                        placeholderTextColor={colors.gray300}
+                    />
+
+                    <Button onPress={handleRegister} disabled={loading}>
                         {loading ? (
-                            <ActivityIndicator color={colors.secondary} />
+                            <ActivityIndicator color={colors.white} />
                         ) : (
-                            <RegisterButtonText>Cadastrar</RegisterButtonText>
+                            <ButtonText>Criar Conta</ButtonText>
                         )}
-                    </RegisterButton>
-                    
-                    <LoginButton onPress={() => router.push('/login')} disabled={loading}>
-                        <LoginButtonText>Já tem uma conta? Faça login</LoginButtonText>
-                    </LoginButton>
-                </Content>
-            </ScrollView>
+                    </Button>
+
+                    <LinkButton onPress={() => router.push('/login')}>
+                        <LinkText>Já tem uma conta? Faça login</LinkText>
+                    </LinkButton>
+                </FormContainer>
+            </ScrollContent>
         </Container>
     );
 }
@@ -186,61 +153,52 @@ const Container = styled.View`
     background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
-const Content = styled.View`
+const ScrollContent = styled.ScrollView`
     flex: 1;
-    padding: 24px;
-    justify-content: center;
+`;
+
+const FormContainer = styled.View`
+    padding: 20px;
 `;
 
 const Title = styled.Text`
-    font-size: 32px;
+    font-size: 24px;
     font-weight: bold;
-    color: ${({ theme }) => theme.colors.primary};
-    margin-bottom: 32px;
+    color: ${({ theme }) => theme.colors.gray100};
+    margin-bottom: 24px;
     text-align: center;
 `;
 
-const InputContainer = styled.View`
-    margin-bottom: 16px;
-`;
-
-const InputLabel = styled.Text`
-    font-size: 16px;
-    font-weight: 500;
-    color: ${({ theme }) => theme.colors.textPrimary};
-    margin-bottom: 8px;
-`;
-
 const Input = styled.TextInput`
-    background-color: ${({ theme }) => theme.colors.tertiary};
+    background-color: ${({ theme }) => theme.colors.backgroundMedium};
     border-radius: 8px;
-    padding: 16px;
+    padding: 12px;
+    margin-bottom: 16px;
+    color: ${({ theme }) => theme.colors.gray100};
     font-size: 16px;
-    color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-const RegisterButton = styled.TouchableOpacity`
-    background-color: ${({ theme }) => theme.colors.primary};
+const Button = styled.TouchableOpacity`
+    background-color: ${({ theme, disabled }) => 
+        disabled ? theme.colors.primary + '80' : theme.colors.primary};
     border-radius: 8px;
     padding: 16px;
     align-items: center;
-    margin-top: 24px;
-    opacity: ${({ disabled }) => (disabled ? 0.7 : 1)};
+    margin-top: 8px;
 `;
 
-const RegisterButtonText = styled.Text`
+const ButtonText = styled.Text`
+    color: ${({ theme }) => theme.colors.white};
     font-size: 16px;
     font-weight: bold;
-    color: ${({ theme }) => theme.colors.gray900};
 `;
 
-const LoginButton = styled.TouchableOpacity`
-    padding: 16px;
-    align-items: center;
+const LinkButton = styled.TouchableOpacity`
     margin-top: 16px;
+    align-items: center;
 `;
 
-const LoginButtonText = styled.Text`
-    font-size: 16px;
+const LinkText = styled.Text`
     color: ${({ theme }) => theme.colors.primary};
+    font-size: 14px;
 `;

@@ -20,8 +20,10 @@ class AuthService {
                 return 'E-mail inválido';
             case 'Password should be at least 6 characters':
                 return 'A senha deve ter pelo menos 6 caracteres';
+            case 'User already registered':
+                return 'Este e-mail já está cadastrado. Por favor, faça login ou use outro e-mail.';
             default:
-                return 'Erro ao realizar operação. Tente novamente.';
+                return `Erro ao realizar operação: ${error.message}`;
         }
     }
 
