@@ -75,7 +75,7 @@ export default function Login() {
                     )}
                 </LoginButton>
 
-                <SignUpButton onPress={() => router.push('/signup')} disabled={loading}>
+                <SignUpButton onPress={() => router.push('/register')} disabled={loading}>
                     <SignUpButtonText>Não tem uma conta? Cadastre-se</SignUpButtonText>
                 </SignUpButton>
             </Content>

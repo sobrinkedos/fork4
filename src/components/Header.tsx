@@ -82,6 +82,20 @@ export function Header({ title, showBackButton, isDashboard }: HeaderProps) {
         StatusBar.setBarStyle('light-content');
     }, []);
 
+    const handleLogout = async () => {
+        try {
+            const response = await signOut();
+            if (response.success) {
+                // Redirecionar para a página de login após logout bem-sucedido
+                router.replace('/login');
+            } else {
+                console.error('Erro ao fazer logout:', response.error);
+            }
+        } catch (error) {
+            console.error('Erro ao fazer logout:', error);
+        }
+    };
+
     return (
         <SafeAreaView>
             <StatusBar backgroundColor={colors.primary} barStyle="light-content" />
@@ -110,7 +124,7 @@ export function Header({ title, showBackButton, isDashboard }: HeaderProps) {
                     <IconButton onPress={() => router.push('/profile')}>
                         <MaterialCommunityIcons name="account-circle-outline" size={24} color={colors.white} />
                     </IconButton>
-                    <IconButton onPress={() => signOut()}>
+                    <IconButton onPress={handleLogout}>
                         <MaterialCommunityIcons name="logout" size={24} color={colors.white} />
                     </IconButton>
                 </ActionContainer>

@@ -16,7 +16,7 @@ export default function RootLayout() {
     const { session } = useAuth();
     const statusBarHeight = StatusBar.currentHeight || 0;
     const pathname = usePathname();
-    const isAuthScreen = pathname === '/login' || pathname === '/register';
+    const isAuthScreen = pathname === '/login' || pathname === '/register' || pathname === '/signup';
 
     return (
         <AuthProvider>
@@ -44,6 +44,7 @@ export default function RootLayout() {
                         <Stack screenOptions={{ headerShown: false }}>
                             <Stack.Screen name="login" options={{ headerShown: false }} />
                             <Stack.Screen name="register" options={{ headerShown: false }} />
+                            <Stack.Screen name="signup" options={{ headerShown: false }} />
                         </Stack>
                     )}
                 </SafeContainer>
