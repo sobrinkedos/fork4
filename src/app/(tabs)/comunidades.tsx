@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Alert, Modal as RNModal, ActivityIndicator, Pressable, View, ScrollView } from 'react-native';
+import { Alert, Modal as RNModal, ActivityIndicator, Pressable, View, ScrollView, RefreshControl } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Community, communityService } from '@/services/communityService';
@@ -196,8 +196,13 @@ export default function Comunidades() {
             <Header title="Comunidades" />
             
             <ScrollContent
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        colors={[colors.accent]}
+                    />
+                }
             >
                 {hasNoCommunities ? (
                     <EmptyContainer>
