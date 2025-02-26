@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { TouchableOpacity, StatusBar, Platform, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { ThemeToggle } from './ThemeToggle';
 
 const logoSvg = `
 <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -22,14 +23,16 @@ const Container = styled.View<{ statusBarHeight: number }>`
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 16px;
+    padding: 16px 12px;
     background-color: ${colors.primary};
     padding-top: ${({ statusBarHeight }) => Platform.OS === 'ios' ? 44 : 16}px;
+    width: 100%;
 `;
 
 const LeftContainer = styled.View`
     flex-direction: row;
     align-items: center;
+    max-width: 50%;
 `;
 
 const LogoContainer = styled.View`
@@ -46,17 +49,20 @@ const Title = styled.Text`
     font-size: 20px;
     font-weight: bold;
     text-transform: uppercase;
+    flex-shrink: 1;
 `;
 
 const AppTitle = styled(Title)`
     margin-left: 8px;
     text-transform: none;
+    flex-shrink: 1;
+    font-size: 18px;
 `;
 
 const ActionContainer = styled.View`
     flex-direction: row;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
 `;
 
 const IconButton = styled.TouchableOpacity`
@@ -124,6 +130,7 @@ export function Header({ title, showBackButton, isDashboard }: HeaderProps) {
                     <IconButton onPress={() => router.push('/profile')}>
                         <MaterialCommunityIcons name="account-circle-outline" size={24} color={colors.white} />
                     </IconButton>
+                    <ThemeToggle />
                     <IconButton onPress={handleLogout}>
                         <MaterialCommunityIcons name="logout" size={24} color={colors.white} />
                     </IconButton>

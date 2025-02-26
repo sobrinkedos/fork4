@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, ScrollView, TouchableOpacity, Dimensions } from "react-native";
 import styled from "styled-components/native";
+import { useTheme } from "@/contexts/ThemeProvider";
 import { colors } from "@/styles/colors";
 import { MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { PageTransition } from "@/components/Transitions";
@@ -56,7 +57,7 @@ interface Activity {
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
 const ScrollContent = styled.ScrollView`
@@ -76,12 +77,12 @@ const WelcomeContainer = styled.View`
 const WelcomeText = styled.Text`
     font-size: 28px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const WelcomeSubtext = styled.Text`
     font-size: 16px;
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.textSecondary};
     margin-top: 4px;
 `;
 
@@ -98,20 +99,20 @@ const StatCardWrapper = styled.View`
 `;
 
 const StatCard = styled.TouchableOpacity`
-    background-color: ${colors.backgroundMedium};
+    background-color: ${({ theme }) => theme.colors.backgroundMedium};
     border-radius: 16px;
     padding: 20px;
     width: 100%;
     align-items: center;
     elevation: 3;
-    border: 1px solid ${colors.tertiary}40;
+    border: 1px solid ${({ theme }) => theme.colors.tertiary}40;
 `;
 
 const StatIcon = styled.View`
     width: 40px;
     height: 40px;
     border-radius: 20px;
-    background-color: ${colors.primary}20;
+    background-color: ${({ theme }) => theme.colors.primary}20;
     align-items: center;
     justify-content: center;
     margin-bottom: 8px;
@@ -120,28 +121,28 @@ const StatIcon = styled.View`
 const StatValue = styled.Text`
     font-size: 24px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.textPrimary};
     margin-top: 8px;
 `;
 
 const StatLabel = styled.Text`
     font-size: 14px;
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.textSecondary};
     margin-top: 4px;
 `;
 
 const ChartContainer = styled.View`
-    background-color: ${colors.backgroundMedium};
+    background-color: ${({ theme }) => theme.colors.backgroundMedium};
     border-radius: 16px;
     padding: 20px;
     margin: 0 20px 20px;
-    border: 1px solid ${colors.tertiary}40;
+    border: 1px solid ${({ theme }) => theme.colors.tertiary}40;
 `;
 
 const ChartTitle = styled.Text`
     font-size: 16px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.textPrimary};
     margin-bottom: 16px;
 `;
 
@@ -159,17 +160,17 @@ const SectionHeader = styled.View`
 const SectionTitle = styled.Text`
     font-size: 20px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const SeeAllButton = styled.TouchableOpacity`
     padding: 8px 16px;
-    background-color: ${colors.primary};
+    background-color: ${({ theme }) => theme.colors.primary};
     border-radius: 8px;
 `;
 
 const SeeAllButtonText = styled.Text`
-    color: ${colors.white};
+    color: ${({ theme }) => theme.colors.white};
     font-size: 14px;
     font-weight: bold;
 `;
@@ -177,11 +178,11 @@ const SeeAllButtonText = styled.Text`
 const PlayerCard = styled.TouchableOpacity`
     flex-direction: row;
     align-items: center;
-    background-color: ${colors.backgroundMedium};
+    background-color: ${({ theme }) => theme.colors.backgroundMedium};
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 12px;
-    border: 1px solid ${colors.tertiary}40;
+    border: 1px solid ${({ theme }) => theme.colors.tertiary}40;
 `;
 
 const PlayerInfo = styled.View`
@@ -192,23 +193,23 @@ const PlayerInfo = styled.View`
 const PlayerName = styled.Text`
     font-size: 16px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const PlayerStats = styled.Text`
     font-size: 14px;
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.textSecondary};
     margin-top: 4px;
 `;
 
 const ActivityCard = styled.TouchableOpacity`
     flex-direction: row;
     align-items: center;
-    background-color: ${colors.backgroundMedium};
+    background-color: ${({ theme }) => theme.colors.backgroundMedium};
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 12px;
-    border: 1px solid ${colors.tertiary}40;
+    border: 1px solid ${({ theme }) => theme.colors.tertiary}40;
 `;
 
 const ActivityInfo = styled.View`
@@ -218,27 +219,27 @@ const ActivityInfo = styled.View`
 
 const ActivityText = styled.Text`
     font-size: 14px;
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const ActivityTime = styled.Text`
     font-size: 12px;
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.textSecondary};
     margin-top: 4px;
 `;
 
 const RankingCard = styled.View`
-    background-color: ${colors.backgroundMedium};
+    background-color: ${({ theme }) => theme.colors.backgroundMedium};
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 12px;
-    border: 1px solid ${colors.tertiary}40;
+    border: 1px solid ${({ theme }) => theme.colors.tertiary}40;
 `;
 
 const RankingPosition = styled.Text`
     font-size: 16px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.textPrimary};
     margin-bottom: 8px;
 `;
 
@@ -250,7 +251,7 @@ const RankingInfo = styled.View`
 const RankingName = styled.Text`
     font-size: 16px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const RankingStats = styled.View`
@@ -260,7 +261,7 @@ const RankingStats = styled.View`
 
 const StatText = styled.Text`
     font-size: 14px;
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.textSecondary};
     margin-right: 8px;
 `;
 
@@ -274,6 +275,7 @@ const calculatePosition = (index: number, items: Array<any>): number => {
 const Dashboard: React.FC = () => {
     const router = useRouter();
     const { session } = useAuth();
+    const { colors } = useTheme();
     const [stats, setStats] = useState<{
         totalGames: number;
         totalCompetitions: number;
@@ -365,7 +367,7 @@ const Dashboard: React.FC = () => {
         backgroundGradientTo: colors.backgroundMedium,
         decimalPlaces: 0,
         color: (opacity = 1) => colors.primary,
-        labelColor: (opacity = 1) => colors.gray300,
+        labelColor: (opacity = 1) => colors.textSecondary,
         style: {
             borderRadius: 16
         },
@@ -514,7 +516,7 @@ const Dashboard: React.FC = () => {
                                     <MaterialCommunityIcons 
                                         name={position === 1 ? "crown" : "star"} 
                                         size={24} 
-                                        color={position === 1 ? "#FFD700" : colors.gray300} 
+                                        color={position === 1 ? "#FFD700" : colors.textSecondary} 
                                     />
                                     <PlayerInfo>
                                         <PlayerName>{player.name}</PlayerName>
@@ -542,7 +544,7 @@ const Dashboard: React.FC = () => {
                                     <MaterialCommunityIcons 
                                         name={position === 1 ? "crown" : "star"} 
                                         size={24} 
-                                        color={position === 1 ? "#FFD700" : colors.gray300} 
+                                        color={position === 1 ? "#FFD700" : colors.textSecondary} 
                                     />
                                     <PlayerInfo>
                                         <PlayerName>{pair.player1.name} & {pair.player2.name}</PlayerName>

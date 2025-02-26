@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, TouchableOpacityProps } from 'react-native';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
+import { useTheme } from '@/contexts/ThemeProvider';
 
 interface ButtonProps extends TouchableOpacityProps {
     title: string;
@@ -10,10 +10,12 @@ interface ButtonProps extends TouchableOpacityProps {
 }
 
 export function Button({ title, loading, variant = 'primary', ...rest }: ButtonProps) {
+    const { colors } = useTheme();
+    
     return (
         <Container variant={variant} disabled={loading || rest.disabled} {...rest}>
             {loading ? (
-                <ActivityIndicator color={variant === 'outline' ? colors.primary : colors.white} />
+                <ActivityIndicator color={variant === 'outline' ? colors.primary : colors.gray900} />
             ) : (
                 <Title variant={variant}>{title}</Title>
             )}
@@ -27,19 +29,20 @@ const Container = styled.TouchableOpacity<{ variant: string }>`
     border-radius: 8px;
     justify-content: center;
     align-items: center;
-    background-color: ${({ variant }) => 
-        variant === 'primary' ? colors.primary :
-        variant === 'secondary' ? colors.secondary :
+    background-color: ${({ variant, theme }) => 
+        variant === 'primary' ? theme.colors.primary :
+        variant === 'secondary' ? theme.colors.secondary :
         'transparent'
     };
-    border: ${({ variant }) => variant === 'outline' ? `1px solid ${colors.primary}` : 'none'};
+    border: ${({ variant, theme }) => variant === 'outline' ? `1px solid ${theme.colors.primary}` : 'none'};
     opacity: ${({ disabled }) => disabled ? 0.7 : 1};
 `;
 
 const Title = styled.Text<{ variant: string }>`
     font-size: 16px;
     font-weight: bold;
-    color: ${({ variant }) => 
-        variant === 'outline' ? colors.primary : colors.white
+    color: ${({ variant, theme }) => 
+        variant === 'outline' ? theme.colors.primary : 
+        variant === 'primary' ? theme.colors.gray900 : theme.colors.textPrimary
     };
 `;

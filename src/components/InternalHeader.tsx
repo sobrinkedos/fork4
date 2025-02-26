@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { TouchableOpacity, StatusBar, Platform, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
+import { ThemeToggle } from './ThemeToggle';
 
 type InternalHeaderProps = {
     title: string;
@@ -62,6 +63,7 @@ export function InternalHeader({ title, onBack, rightContent }: InternalHeaderPr
                 </HeaderLeft>
                 <HeaderRight>
                     {rightContent && <RightContentContainer>{rightContent}</RightContentContainer>}
+                    <ThemeToggle />
                     <IconButton onPress={handleLogout}>
                         <Feather name="log-out" size={24} color={colors.white} />
                     </IconButton>

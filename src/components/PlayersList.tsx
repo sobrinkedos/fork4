@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import styled from 'styled-components/native';
+import { useTheme } from '@/contexts/ThemeProvider';
 import { colors } from '@/styles/colors';
 import { playersService } from '@/services/playersService';
 
@@ -19,6 +20,7 @@ type PlayersListProps = {
 
 export function PlayersList({ excludeIds = [], onSelectPlayer }: PlayersListProps) {
     const router = useRouter();
+    const { colors } = useTheme();
     const [myPlayers, setMyPlayers] = useState<Player[]>([]);
     const [communityPlayers, setCommunityPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState(true);
@@ -105,6 +107,7 @@ export function PlayersList({ excludeIds = [], onSelectPlayer }: PlayersListProp
 
 const Container = styled.View`
     flex: 1;
+    background-color: ${colors.background};
 `;
 
 const Section = styled.View`
@@ -114,7 +117,7 @@ const Section = styled.View`
 const SectionTitle = styled.Text`
     font-size: 18px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${colors.textPrimary};
     margin-bottom: 12px;
 `;
 
@@ -124,25 +127,25 @@ const PlayerList = styled.FlatList`
 
 const PlayerCard = styled.TouchableOpacity`
     padding: 16px;
-    background-color: ${colors.secondary};
+    background-color: ${colors.backgroundMedium};
     border-radius: 8px;
     margin-bottom: 8px;
 `;
 
 const PlayerName = styled.Text`
     font-size: 16px;
-    color: ${colors.gray100};
+    color: ${colors.textPrimary};
 `;
 
 const LoadingText = styled.Text`
-    color: ${colors.gray100};
+    color: ${colors.textPrimary};
     font-size: 16px;
     text-align: center;
     margin-top: 20px;
 `;
 
 const EmptyText = styled.Text`
-    color: ${colors.gray300};
+    color: ${colors.textSecondary};
     font-size: 14px;
     text-align: center;
     margin-top: 12px;

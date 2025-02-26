@@ -1,18 +1,20 @@
 import React from 'react';
 import { TextInputProps as RNTextInputProps } from 'react-native';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
+import { useTheme } from '@/contexts/ThemeProvider';
 
 interface TextInputProps extends RNTextInputProps {
     label?: string;
 }
 
 export function TextInput({ label, ...rest }: TextInputProps) {
+    const { colors } = useTheme();
+    
     return (
         <Container>
             {label && <Label>{label}</Label>}
             <Input
-                placeholderTextColor={colors.gray400}
+                placeholderTextColor={colors.textDisabled}
                 {...rest}
             />
         </Container>
@@ -25,14 +27,14 @@ const Container = styled.View`
 
 const Label = styled.Text`
     font-size: 14px;
-    color: ${colors.gray200};
+    color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 const Input = styled.TextInput`
-    background-color: ${colors.secondary};
+    background-color: ${({ theme }) => theme.colors.tertiary};
     border-radius: 8px;
     padding: 12px;
     font-size: 16px;
-    color: ${colors.gray100};
-    border: 1px solid ${colors.tertiary}40;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    border: 1px solid ${({ theme }) => theme.colors.border};
 `;

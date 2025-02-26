@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import styled from 'styled-components/native';
 import { BottomNavigation } from './BottomNavigation';
-import { colors } from '@/styles/colors';
+import { useTheme } from '../contexts/ThemeProvider';
 
 type LoggedLayoutProps = {
     children: React.ReactNode;
@@ -10,6 +10,8 @@ type LoggedLayoutProps = {
 };
 
 export function LoggedLayout({ children, hideNavigation = false }: LoggedLayoutProps) {
+    const { colors } = useTheme();
+
     return (
         <Container>
             <Content>{children}</Content>
@@ -20,9 +22,10 @@ export function LoggedLayout({ children, hideNavigation = false }: LoggedLayoutP
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.background};
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
 const Content = styled.View`
     flex: 1;
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;

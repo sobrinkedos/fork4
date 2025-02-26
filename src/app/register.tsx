@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, ActivityIndicator, StatusBar, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import styled from 'styled-components/native';
-import { colors } from '../styles/colors';
 import { useAuth } from '../hooks/useAuth';
 import { userService } from '../services/userService';
+import { useTheme } from '../contexts/ThemeProvider';
 
 export default function Register() {
     const router = useRouter();
     const { signUp, signIn } = useAuth();
     const [loading, setLoading] = useState(false);
+    const { colors } = useTheme();
     const [form, setForm] = useState({
         email: '',
         password: '',
@@ -99,109 +100,147 @@ export default function Register() {
 
     return (
         <Container>
-            <Content>
-                <Title>Criar Conta</Title>
-                
-                <Input
-                    placeholder="Nome completo *"
-                    value={form.fullName}
-                    onChangeText={(text) => setForm(prev => ({ ...prev, fullName: text }))}
-                    placeholderTextColor={colors.gray400}
-                />
-                
-                <Input
-                    placeholder="E-mail *"
-                    value={form.email}
-                    onChangeText={(text) => setForm(prev => ({ ...prev, email: text }))}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    placeholderTextColor={colors.gray400}
-                />
-                
-                <Input
-                    placeholder="Senha *"
-                    value={form.password}
-                    onChangeText={(text) => setForm(prev => ({ ...prev, password: text }))}
-                    secureTextEntry
-                    placeholderTextColor={colors.gray400}
-                />
-                
-                <Input
-                    placeholder="Telefone *"
-                    value={form.phoneNumber}
-                    onChangeText={(text) => setForm(prev => ({ ...prev, phoneNumber: text }))}
-                    keyboardType="phone-pad"
-                    placeholderTextColor={colors.gray400}
-                />
-                
-                <Input
-                    placeholder="Apelido (opcional)"
-                    value={form.nickname}
-                    onChangeText={(text) => setForm(prev => ({ ...prev, nickname: text }))}
-                    placeholderTextColor={colors.gray400}
-                />
-                
-                <RegisterButton onPress={handleRegister} disabled={loading}>
-                    <ButtonText>{loading ? 'Criando conta...' : 'Criar Conta'}</ButtonText>
-                </RegisterButton>
-
-                <LoginLink onPress={() => router.push('/login')}>
-                    <LinkText>Já tem uma conta? Faça login</LinkText>
-                </LoginLink>
-            </Content>
+            <StatusBar style="light" backgroundColor={colors.primary} />
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                <Content>
+                    <Title>Cadastro</Title>
+                    
+                    <InputContainer>
+                        <InputLabel>Nome completo *</InputLabel>
+                        <Input
+                            placeholder="Digite seu nome completo"
+                            placeholderTextColor={colors.textDisabled}
+                            value={form.fullName}
+                            onChangeText={(text) => setForm(prev => ({ ...prev, fullName: text }))}
+                            editable={!loading}
+                        />
+                    </InputContainer>
+                    
+                    <InputContainer>
+                        <InputLabel>E-mail *</InputLabel>
+                        <Input
+                            placeholder="Digite seu e-mail"
+                            placeholderTextColor={colors.textDisabled}
+                            value={form.email}
+                            onChangeText={(text) => setForm(prev => ({ ...prev, email: text }))}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            editable={!loading}
+                        />
+                    </InputContainer>
+                    
+                    <InputContainer>
+                        <InputLabel>Senha *</InputLabel>
+                        <Input
+                            placeholder="Digite sua senha"
+                            placeholderTextColor={colors.textDisabled}
+                            value={form.password}
+                            onChangeText={(text) => setForm(prev => ({ ...prev, password: text }))}
+                            secureTextEntry
+                            editable={!loading}
+                        />
+                    </InputContainer>
+                    
+                    <InputContainer>
+                        <InputLabel>Telefone *</InputLabel>
+                        <Input
+                            placeholder="Digite seu telefone"
+                            placeholderTextColor={colors.textDisabled}
+                            value={form.phoneNumber}
+                            onChangeText={(text) => setForm(prev => ({ ...prev, phoneNumber: text }))}
+                            keyboardType="phone-pad"
+                            editable={!loading}
+                        />
+                    </InputContainer>
+                    
+                    <InputContainer>
+                        <InputLabel>Apelido (opcional)</InputLabel>
+                        <Input
+                            placeholder="Digite seu apelido"
+                            placeholderTextColor={colors.textDisabled}
+                            value={form.nickname}
+                            onChangeText={(text) => setForm(prev => ({ ...prev, nickname: text }))}
+                            editable={!loading}
+                        />
+                    </InputContainer>
+                    
+                    <RegisterButton onPress={handleRegister} disabled={loading}>
+                        {loading ? (
+                            <ActivityIndicator color={colors.secondary} />
+                        ) : (
+                            <RegisterButtonText>Cadastrar</RegisterButtonText>
+                        )}
+                    </RegisterButton>
+                    
+                    <LoginButton onPress={() => router.push('/login')} disabled={loading}>
+                        <LoginButtonText>Já tem uma conta? Faça login</LoginButtonText>
+                    </LoginButton>
+                </Content>
+            </ScrollView>
         </Container>
     );
 }
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
-const Content = styled.ScrollView`
+const Content = styled.View`
     flex: 1;
-    padding: 20px;
+    padding: 24px;
+    justify-content: center;
 `;
 
 const Title = styled.Text`
-    font-size: 24px;
+    font-size: 32px;
     font-weight: bold;
-    color: ${colors.gray100};
-    margin-bottom: 24px;
+    color: ${({ theme }) => theme.colors.primary};
+    margin-bottom: 32px;
     text-align: center;
-    margin-top: 40px;
+`;
+
+const InputContainer = styled.View`
+    margin-bottom: 16px;
+`;
+
+const InputLabel = styled.Text`
+    font-size: 16px;
+    font-weight: 500;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    margin-bottom: 8px;
 `;
 
 const Input = styled.TextInput`
-    background-color: ${colors.backgroundLight};
-    padding: 16px;
+    background-color: ${({ theme }) => theme.colors.tertiary};
     border-radius: 8px;
-    margin-bottom: 16px;
-    color: ${colors.gray100};
+    padding: 16px;
     font-size: 16px;
+    color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const RegisterButton = styled.TouchableOpacity`
-    background-color: ${colors.accent};
-    padding: 16px;
+    background-color: ${({ theme }) => theme.colors.primary};
     border-radius: 8px;
-    margin-top: 8px;
-    opacity: ${props => props.disabled ? 0.7 : 1};
+    padding: 16px;
+    align-items: center;
+    margin-top: 24px;
+    opacity: ${({ disabled }) => (disabled ? 0.7 : 1)};
 `;
 
-const ButtonText = styled.Text`
-    color: ${colors.gray100};
+const RegisterButtonText = styled.Text`
     font-size: 16px;
     font-weight: bold;
-    text-align: center;
+    color: ${({ theme }) => theme.colors.gray900};
 `;
 
-const LoginLink = styled.TouchableOpacity`
+const LoginButton = styled.TouchableOpacity`
+    padding: 16px;
+    align-items: center;
     margin-top: 16px;
 `;
 
-const LinkText = styled.Text`
-    color: ${colors.gray200};
-    font-size: 14px;
-    text-align: center;
+const LoginButtonText = styled.Text`
+    font-size: 16px;
+    color: ${({ theme }) => theme.colors.primary};
 `;
