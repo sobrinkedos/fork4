@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Header } from '@/components/Header';
+import { useTheme } from '@/contexts/ThemeProvider';
 
 export default function Jogadores() {
     const router = useRouter();
@@ -15,6 +16,7 @@ export default function Jogadores() {
     const [communityPlayers, setCommunityPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const { theme, colors } = useTheme();
 
     const loadPlayers = async () => {
         try {
@@ -166,7 +168,7 @@ export default function Jogadores() {
                     data={sections}
                     renderItem={renderItem}
                     keyExtractor={(item, index) => item.id || `section-${index}`}
-                    contentContainerStyle={{ padding: 16 }}
+                    contentContainerStyle={{ padding: 20 }}
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
@@ -229,17 +231,14 @@ const PlayerName = styled.Text`
 `;
 
 const LinkedUserBadge = styled.View`
-    flex-direction: row;
-    align-items: center;
-    background-color: ${colors.success}20;
-    padding: 4px 8px;
-    border-radius: 12px;
-    gap: 4px;
+    background-color: ${colors.primary};
+    padding: 2px 6px;
+    border-radius: 4px;
 `;
 
 const LinkedUserText = styled.Text`
-    color: ${colors.success};
-    font-size: 12px;
+    color: ${colors.white};
+    font-size: 10px;
     font-weight: bold;
 `;
 
@@ -279,9 +278,9 @@ const FAB = styled.TouchableOpacity`
 
 const EmptyText = styled.Text`
     color: ${colors.gray300};
-    font-size: 14px;
+    font-size: 16px;
     text-align: center;
-    margin: 12px 0;
+    margin: 16px;
 `;
 
 const Content = styled.View`

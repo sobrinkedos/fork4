@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
+import { useTheme } from '@/contexts/ThemeProvider';
 import { rankingService, PlayerRanking, PairRanking } from '@/services/rankingService';
 import { InternalHeader } from '@/components/InternalHeader';
 
 const Container = styled.View`
   flex: 1;
-  background-color: ${colors.backgroundDark};
+  background-color: ${props => props.theme.colors.backgroundDark};
 `;
 
 const Content = styled.View`
@@ -19,21 +19,21 @@ const Content = styled.View`
 const SectionTitle = styled.Text`
   font-size: 20px;
   font-weight: bold;
-  color: ${colors.textPrimary};
+  color: ${props => props.theme.colors.textPrimary};
   margin-top: 24px;
   margin-bottom: 12px;
 `;
 
 const RankingCard = styled.View`
-  background-color: ${colors.backgroundMedium};
+  background-color: ${props => props.theme.colors.backgroundMedium};
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 8px;
-  border: 1px solid ${colors.border};
+  border: 1px solid ${props => props.theme.colors.border};
 `;
 
 const RankingText = styled.Text`
-  color: ${colors.textPrimary};
+  color: ${props => props.theme.colors.textPrimary};
   font-size: 16px;
   margin-bottom: 4px;
 `;
@@ -49,18 +49,19 @@ const StatItem = styled.View`
 `;
 
 const StatLabel = styled.Text`
-  color: ${colors.textTertiary};
+  color: ${props => props.theme.colors.textTertiary};
   font-size: 12px;
 `;
 
 const StatValue = styled.Text`
-  color: ${colors.textPrimary};
+  color: ${props => props.theme.colors.textPrimary};
   font-size: 14px;
   font-weight: bold;
 `;
 
 export default function CommunityRanking() {
   const params = useLocalSearchParams();
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [players, setPlayers] = useState<PlayerRanking[]>([]);
   const [pairs, setPairs] = useState<PairRanking[]>([]);

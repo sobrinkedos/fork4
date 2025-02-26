@@ -3,7 +3,7 @@ import { Alert, Modal, TouchableOpacity, ActivityIndicator, Text, View, FlatList
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
+import { useTheme } from '@/contexts/ThemeProvider';
 import { Feather } from '@expo/vector-icons';
 import { competitionService } from '@/services/competitionService';
 import { communityMembersService } from '@/services/communityMembersService';
@@ -59,6 +59,7 @@ interface CompetitionResult {
 export default function CompetitionDetails() {
     const router = useRouter();
     const { id: communityId, competitionId } = useLocalSearchParams();
+    const { colors } = useTheme();
     const [competition, setCompetition] = useState<Competition | null>(null);
     const [games, setGames] = useState<(Game & { 
         team1_players?: { id: string; name: string; }[];
@@ -365,7 +366,7 @@ export default function CompetitionDetails() {
                                                 onPress={() => router.push(`/comunidade/${communityId}/competicao/${competitionId}/jogo/${item.id}`)}
                                             >
                                                 <GameTeams>
-                                                    <TeamScore winner={item.status === 'finished' && item.team1_score > item.team2_score}>
+                                                    <TeamScore>
                                                         <Score>{item.team1_score}</Score>
                                                         <TeamName>
                                                             {item.team1_players?.map(player => player.name).join(' e ')}
@@ -374,7 +375,7 @@ export default function CompetitionDetails() {
                                                     
                                                     <Versus>X</Versus>
                                                     
-                                                    <TeamScore winner={item.status === 'finished' && item.team2_score > item.team1_score}>
+                                                    <TeamScore>
                                                         <Score>{item.team2_score}</Score>
                                                         <TeamName>
                                                             {item.team2_players?.map(player => player.name).join(' e ')}
@@ -430,7 +431,7 @@ export default function CompetitionDetails() {
                                     }}
                                 >
                                     <GameTeams>
-                                        <TeamScore winner={item.status === 'finished' && item.team1_score > item.team2_score}>
+                                        <TeamScore>
                                             <Score>{item.team1_score}</Score>
                                             <TeamName>
                                                 {item.team1_players?.map(player => player.name).join(' e ')}
@@ -439,7 +440,7 @@ export default function CompetitionDetails() {
                                         
                                         <Versus>X</Versus>
                                         
-                                        <TeamScore winner={item.status === 'finished' && item.team2_score > item.team1_score}>
+                                        <TeamScore>
                                             <Score>{item.team2_score}</Score>
                                             <TeamName>
                                                 {item.team2_players?.map(player => player.name).join(' e ')}
@@ -594,14 +595,14 @@ export default function CompetitionDetails() {
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${props => props.theme.colors.backgroundDark};
 `;
 
 const LoadingContainer = styled.View`
     flex: 1;
     justify-content: center;
     align-items: center;
-    background-color: ${colors.backgroundDark};
+    background-color: ${props => props.theme.colors.backgroundDark};
 `;
 
 const ContentContainer = styled.View`
@@ -619,12 +620,12 @@ const SectionHeader = styled.View`
 const SectionTitle = styled.Text`
     font-size: 20px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${props => props.theme.colors.gray100};
 `;
 
 const Description = styled.Text`
     font-size: 16px;
-    color: ${colors.gray100};
+    color: ${props => props.theme.colors.gray100};
     margin-bottom: 16px;
 `;
 
@@ -632,13 +633,13 @@ const CompetitionStatus = styled.Text<{ status: 'pending' | 'in_progress' | 'fin
     color: ${props => {
         switch (props.status) {
             case 'pending':
-                return colors.gray300;
+                return props.theme.colors.gray300;
             case 'in_progress':
-                return colors.primary;
+                return props.theme.colors.primary;
             case 'finished':
-                return colors.success;
+                return props.theme.colors.success;
             default:
-                return colors.gray300;
+                return props.theme.colors.gray300;
         }
     }};
     font-size: 14px;
@@ -646,7 +647,7 @@ const CompetitionStatus = styled.Text<{ status: 'pending' | 'in_progress' | 'fin
 `;
 
 const StartButton = styled.TouchableOpacity`
-    background-color: ${colors.primary};
+    background-color: ${props => props.theme.colors.primary};
     padding: 16px;
     border-radius: 8px;
     align-items: center;
@@ -655,7 +656,7 @@ const StartButton = styled.TouchableOpacity`
 `;
 
 const StartButtonText = styled.Text`
-    color: ${colors.white};
+    color: ${props => props.theme.colors.white};
     font-size: 16px;
     font-weight: bold;
 `;
@@ -683,7 +684,7 @@ const MemberItem = styled.View`
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background-color: ${colors.surface};
+    background-color: ${props => props.theme.colors.surface};
     border-radius: 8px;
     margin-bottom: 8px;
 `;
@@ -693,13 +694,13 @@ const MemberInfo = styled.View`
 `;
 
 const MemberName = styled.Text`
-    color: ${colors.gray100};
+    color: ${props => props.theme.colors.gray100};
     font-size: 16px;
 `;
 
 const ModalContainer = styled.View`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${props => props.theme.colors.backgroundDark};
 `;
 
 const ModalHeader = styled.View`
@@ -707,7 +708,7 @@ const ModalHeader = styled.View`
     align-items: center;
     justify-content: space-between;
     padding: 20px;
-    background-color: ${colors.backgroundMedium};
+    background-color: ${props => props.theme.colors.backgroundMedium};
 `;
 
 const ModalContent = styled.View`
@@ -715,7 +716,7 @@ const ModalContent = styled.View`
 `;
 
 const ModalGameCard = styled(TouchableOpacity)`
-    background-color: ${colors.backgroundMedium};
+    background-color: ${props => props.theme.colors.backgroundMedium};
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 16px;
@@ -724,13 +725,13 @@ const ModalGameCard = styled(TouchableOpacity)`
 const ManageButton = styled.TouchableOpacity`
     flex-direction: row;
     align-items: center;
-    background-color: ${colors.primary};
+    background-color: ${props => props.theme.colors.primary};
     padding: 8px 16px;
     border-radius: 8px;
 `;
 
 const ManageButtonText = styled.Text`
-    color: ${colors.gray100};
+    color: ${props => props.theme.colors.gray100};
     font-size: 14px;
     font-weight: 500;
     margin-right: 8px;
@@ -744,13 +745,13 @@ const EmptyContainer = styled.View`
 
 const EmptyText = styled.Text`
     font-size: 16px;
-    color: ${colors.gray300};
+    color: ${props => props.theme.colors.gray300};
     margin-bottom: 8px;
 `;
 
 const EmptyDescription = styled.Text`
     font-size: 14px;
-    color: ${colors.gray300};
+    color: ${props => props.theme.colors.gray300};
     text-align: center;
 `;
 
@@ -759,7 +760,7 @@ const GamesList = styled.FlatList`
 `;
 
 const GameCard = styled.TouchableOpacity`
-    background-color: ${colors.surface};
+    background-color: ${props => props.theme.colors.surface};
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 8px;
@@ -775,25 +776,25 @@ const GameTeams = styled.View`
 const TeamScore = styled.View<{ winner?: boolean }>`
     align-items: center;
     flex: 1;
-    background-color: ${props => props.winner ? colors.primary + '20' : 'transparent'};
+    background-color: ${props => props.winner ? props.theme.colors.primary + '20' : 'transparent'};
     padding: 8px;
     border-radius: 8px;
 `;
 
 const Score = styled.Text`
-    color: ${colors.gray100};
+    color: ${props => props.theme.colors.gray100};
     font-size: 32px;
     font-weight: bold;
 `;
 
 const TeamName = styled.Text`
-    color: ${colors.gray300};
+    color: ${props => props.theme.colors.gray300};
     font-size: 14px;
     margin-top: 4px;
 `;
 
 const Versus = styled.Text`
-    color: ${colors.gray300};
+    color: ${props => props.theme.colors.gray300};
     font-size: 20px;
     margin-horizontal: 16px;
 `;
@@ -802,13 +803,13 @@ const GameStatus = styled.Text<{ status: 'pending' | 'in_progress' | 'finished' 
     color: ${props => {
         switch (props.status) {
             case 'pending':
-                return colors.gray300;
+                return props.theme.colors.gray300;
             case 'in_progress':
-                return colors.primary;
+                return props.theme.colors.primary;
             case 'finished':
-                return colors.success;
+                return props.theme.colors.success;
             default:
-                return colors.gray300;
+                return props.theme.colors.gray300;
         }
     }};
     font-size: 14px;
@@ -817,7 +818,7 @@ const GameStatus = styled.Text<{ status: 'pending' | 'in_progress' | 'finished' 
 `;
 
 const FinishButton = styled.TouchableOpacity<{ disabled?: boolean }>`
-    background-color: ${colors.error};
+    background-color: ${props => props.theme.colors.error};
     padding: 16px;
     border-radius: 8px;
     flex-direction: row;
@@ -829,14 +830,14 @@ const FinishButton = styled.TouchableOpacity<{ disabled?: boolean }>`
 `;
 
 const FinishButtonText = styled.Text`
-    color: ${colors.gray100};
+    color: ${props => props.theme.colors.gray100};
     font-size: 16px;
     font-weight: bold;
     margin-left: 8px;
 `;
 
 const ViewScoresButton = styled.TouchableOpacity`
-    background-color: ${colors.primary};
+    background-color: ${props => props.theme.colors.primary};
     padding: 16px;
     border-radius: 8px;
     flex-direction: row;
@@ -847,7 +848,7 @@ const ViewScoresButton = styled.TouchableOpacity`
 `;
 
 const ViewScoresButtonText = styled.Text`
-    color: ${colors.gray100};
+    color: ${props => props.theme.colors.gray100};
     font-size: 16px;
     font-weight: bold;
     margin-left: 8px;
@@ -862,7 +863,7 @@ const CloseButton = styled.TouchableOpacity`
 `;
 
 const Button = styled.TouchableOpacity`
-    background-color: ${colors.primary};
+    background-color: ${props => props.theme.colors.primary};
     padding: 16px;
     border-radius: 8px;
     align-items: center;
@@ -871,7 +872,7 @@ const Button = styled.TouchableOpacity`
 `;
 
 const ButtonText = styled.Text`
-    color: ${colors.white};
+    color: ${props => props.theme.colors.white};
     font-size: 16px;
     font-weight: bold;
 `;
@@ -883,7 +884,7 @@ const NewGameButton = styled.TouchableOpacity`
     width: 56px;
     height: 56px;
     border-radius: 28px;
-    background-color: ${colors.primary};
+    background-color: ${props => props.theme.colors.primary};
     align-items: center;
     justify-content: center;
     elevation: 8;
@@ -893,6 +894,6 @@ const NewGameButton = styled.TouchableOpacity`
 const HeaderTitle = styled.Text`
     font-size: 20px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${props => props.theme.colors.gray100};
     flex: 1;
 `;

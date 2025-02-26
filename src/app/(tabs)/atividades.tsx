@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
+import { useTheme } from '@/contexts/ThemeProvider';
 import { InternalHeader } from '@/components/InternalHeader';
 import { activityService, Activity } from '@/services/activityService';
 import { Feather } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ import { ptBR } from 'date-fns/locale';
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${props => props.theme.colors.backgroundDark};
 `;
 
 const LoadingContainer = styled.View`
@@ -21,7 +21,7 @@ const LoadingContainer = styled.View`
 `;
 
 const ActivityCard = styled.TouchableOpacity`
-    background-color: ${colors.backgroundLight};
+    background-color: ${props => props.theme.colors.backgroundLight};
     border-radius: 8px;
     padding: 16px;
     margin: 8px 16px;
@@ -37,11 +37,11 @@ const ActivityHeader = styled.View`
 const ActivityType = styled.View<{ type: Activity['type'] }>`
     background-color: ${props => {
         switch (props.type) {
-            case 'game': return colors.success;
-            case 'competition': return colors.primary;
-            case 'community': return colors.warning;
-            case 'player': return colors.info;
-            default: return colors.gray300;
+            case 'game': return props.theme.colors.success;
+            case 'competition': return props.theme.colors.primary;
+            case 'community': return props.theme.colors.warning;
+            case 'player': return props.theme.colors.info;
+            default: return props.theme.colors.gray300;
         }
     }};
     padding: 4px 8px;
@@ -49,14 +49,14 @@ const ActivityType = styled.View<{ type: Activity['type'] }>`
 `;
 
 const ActivityTypeText = styled.Text`
-    color: ${colors.white};
+    color: ${props => props.theme.colors.white};
     font-size: 12px;
     font-weight: bold;
     text-transform: uppercase;
 `;
 
 const ActivityDescription = styled.Text`
-    color: ${colors.textPrimary};
+    color: ${props => props.theme.colors.textPrimary};
     font-size: 16px;
     line-height: 24px;
     margin-bottom: 8px;
@@ -64,7 +64,7 @@ const ActivityDescription = styled.Text`
 `;
 
 const ActivityDate = styled.Text`
-    color: ${colors.gray300};
+    color: ${props => props.theme.colors.gray300};
     font-size: 14px;
 `;
 
@@ -74,6 +74,7 @@ const PaginationContainer = styled.View`
     align-items: center;
     padding: 16px;
     gap: 16px;
+    background-color: ${props => props.theme.colors.backgroundLight};
 `;
 
 const PaginationButton = styled.TouchableOpacity<{ disabled?: boolean }>`
@@ -81,7 +82,7 @@ const PaginationButton = styled.TouchableOpacity<{ disabled?: boolean }>`
 `;
 
 const PaginationText = styled.Text`
-    color: ${colors.white};
+    color: ${props => props.theme.colors.white};
     font-size: 14px;
 `;
 
@@ -90,10 +91,11 @@ const EmptyContainer = styled.View`
     justify-content: center;
     align-items: center;
     padding: 32px;
+    background-color: ${props => props.theme.colors.backgroundLight};
 `;
 
 const EmptyText = styled.Text`
-    color: ${colors.gray300};
+    color: ${props => props.theme.colors.gray300};
     font-size: 16px;
     text-align: center;
 `;
@@ -110,6 +112,7 @@ const getTypeLabel = (type: Activity['type']) => {
 
 export default function ActivityList() {
     const router = useRouter();
+    const { colors } = useTheme();
     const [loading, setLoading] = useState(true);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [currentPage, setCurrentPage] = useState(1);

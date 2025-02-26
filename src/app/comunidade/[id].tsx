@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Alert, Modal, TouchableOpacity, ActivityIndicator, Animated, FlatList, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
+import { useTheme } from '@/contexts/ThemeProvider';
 import { Feather } from '@expo/vector-icons';
 import { communityService } from '@/services/communityService';
 import { communityMembersService } from '@/services/communityMembersService';
@@ -54,27 +54,27 @@ type Competition = {
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${props => props.colors.backgroundDark};
 `;
 
 const MainContent = styled.View`
     flex: 1;
-    background-color: ${colors.background};
+    background-color: ${props => props.colors.background};
 `;
 
 const ScrollContainer = styled.ScrollView`
     flex: 1;
-    background-color: ${colors.background};
+    background-color: ${props => props.colors.background};
 `;
 
 const ContentContainer = styled.View`
     padding: 24px;
-    background-color: ${colors.background};
+    background-color: ${props => props.colors.background};
 `;
 
 const Section = styled.View`
     margin-bottom: 24px;
-    background-color: ${colors.gray800};
+    background-color: ${props => props.colors.gray800};
     border-radius: 8px;
     padding: 16px;
 `;
@@ -89,7 +89,7 @@ const SectionHeader = styled.View`
 const SectionTitle = styled.Text`
     font-size: 18px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${props => props.colors.gray100};
 `;
 
 const ExpandButton = styled.TouchableOpacity`
@@ -98,13 +98,13 @@ const ExpandButton = styled.TouchableOpacity`
 
 const ManageButton = styled.TouchableOpacity`
     padding: 8px;
-    background-color: ${colors.primary};
+    background-color: ${props => props.colors.primary};
     border-radius: 4px;
     margin-left: auto;
 `;
 
 const ManageButtonText = styled.Text`
-    color: ${colors.white};
+    color: ${props => props.colors.white};
     font-size: 14px;
     margin-left: 8px;
 `;
@@ -114,7 +114,7 @@ const MemberCard = styled.View`
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background-color: ${colors.gray700};
+    background-color: ${props => props.colors.gray700};
     border-radius: 8px;
     margin-top: 8px;
 `;
@@ -126,7 +126,7 @@ const MemberInfo = styled.View`
 const MemberName = styled.Text`
     font-size: 16px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${props => props.colors.gray100};
 `;
 
 const SelectAllHeader = styled.View`
@@ -139,20 +139,20 @@ const SelectAllButton = styled.TouchableOpacity`
 `;
 
 const SelectAllText = styled.Text`
-    color: ${colors.gray100};
+    color: ${props => props.colors.gray100};
     font-size: 14px;
     margin-left: 8px;
 `;
 
 const RemoveButton = styled.TouchableOpacity`
     padding: 8px;
-    background-color: ${colors.red500};
+    background-color: ${props => props.colors.red500};
     border-radius: 4px;
     margin-top: 16px;
 `;
 
 const RemoveButtonText = styled.Text`
-    color: ${colors.white};
+    color: ${props => props.colors.white};
     font-size: 14px;
 `;
 
@@ -161,7 +161,7 @@ const OrganizerCard = styled.View`
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background-color: ${colors.gray700};
+    background-color: ${props => props.colors.gray700};
     border-radius: 8px;
     margin-top: 8px;
 `;
@@ -173,18 +173,18 @@ const OrganizerInfo = styled.View`
 const OrganizerName = styled.Text`
     font-size: 16px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${props => props.colors.gray100};
 `;
 
 const OrganizerEmail = styled.Text`
     font-size: 14px;
-    color: ${colors.gray300};
+    color: ${props => props.colors.gray300};
     margin-top: 4px;
 `;
 
 const RemoveOrganizerButton = styled.TouchableOpacity`
     padding: 8px;
-    background-color: ${colors.red500};
+    background-color: ${props => props.colors.red500};
     border-radius: 4px;
     margin-left: auto;
 `;
@@ -197,7 +197,7 @@ const ModalContainer = styled.View`
 `;
 
 const ModalContent = styled.View`
-    background-color: ${colors.gray800};
+    background-color: ${props => props.colors.gray800};
     padding: 24px;
     border-radius: 8px;
     elevation: 5;
@@ -217,29 +217,29 @@ const ModalHeader = styled.View`
 const ModalTitle = styled.Text`
     font-size: 18px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${props => props.colors.gray100};
 `;
 
 const ModalInput = styled.TextInput`
     width: 100%;
     height: 48px;
-    background-color: ${colors.gray800};
+    background-color: ${props => props.colors.gray800};
     border-radius: 8px;
     padding: 0 16px;
-    color: ${colors.gray100};
+    color: ${props => props.colors.gray100};
     margin-bottom: 16px;
 `;
 
 const SaveButton = styled.TouchableOpacity<{ disabled?: boolean }>`
     padding: 8px;
-    background-color: ${props => props.disabled ? colors.gray600 : colors.primary};
+    background-color: ${props => props.disabled ? props.colors.gray600 : props.colors.primary};
     border-radius: 4px;
     align-items: center;
     opacity: ${props => props.disabled ? 0.7 : 1};
 `;
 
 const SaveButtonText = styled.Text`
-    color: ${colors.white};
+    color: ${props => props.colors.white};
     font-size: 14px;
 `;
 
@@ -248,7 +248,7 @@ const FAB = styled.TouchableOpacity`
     bottom: 24px;
     right: 24px;
     padding: 16px;
-    background-color: ${colors.primary};
+    background-color: ${props => props.colors.primary};
     border-radius: 50px;
 `;
 
@@ -265,7 +265,7 @@ const EmptyContainer = styled.View`
 
 const EmptyText = styled.Text`
     font-size: 14px;
-    color: ${colors.gray300};
+    color: ${props => props.colors.gray300};
 `;
 
 const PlayerCard = styled.TouchableOpacity`
@@ -273,7 +273,7 @@ const PlayerCard = styled.TouchableOpacity`
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background-color: ${colors.gray800};
+    background-color: ${props => props.colors.gray800};
     border-radius: 8px;
     margin-bottom: 8px;
 `;
@@ -283,7 +283,7 @@ const PlayerInfo = styled.View`
 `;
 
 const PlayerName = styled.Text`
-    color: ${colors.gray100};
+    color: ${props => props.colors.gray100};
     font-size: 16px;
     font-weight: bold;
 `;
@@ -297,7 +297,7 @@ const CompetitionCard = styled.TouchableOpacity`
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background-color: ${colors.gray800};
+    background-color: ${props => props.colors.gray800};
     border-radius: 8px;
     margin-bottom: 8px;
 `;
@@ -307,13 +307,13 @@ const CompetitionInfo = styled.View`
 `;
 
 const CompetitionName = styled.Text`
-    color: ${colors.gray100};
+    color: ${props => props.colors.gray100};
     font-size: 16px;
     font-weight: bold;
 `;
 
 const CompetitionDescription = styled.Text`
-    color: ${colors.gray300};
+    color: ${props => props.colors.gray300};
     font-size: 14px;
     margin-top: 4px;
 `;
@@ -331,7 +331,7 @@ const CompetitionDate = styled.View`
 `;
 
 const CompetitionDateText = styled.Text`
-    color: ${colors.gray300};
+    color: ${props => props.colors.gray300};
     font-size: 14px;
     margin-left: 4px;
 `;
@@ -343,18 +343,18 @@ const CompetitionStatus = styled.View`
 
 const StatusBadge = styled.View`
     padding: 4px 8px;
-    background-color: ${props => props.status === 'pending' ? colors.warning : props.status === 'in_progress' ? colors.primary : colors.success};
+    background-color: ${props => props.status === 'pending' ? props.colors.warning : props.status === 'in_progress' ? props.colors.primary : props.colors.success};
     border-radius: 4px;
     margin-left: 8px;
 `;
 
 const StatusText = styled.Text`
-    color: ${colors.white};
+    color: ${props => props.colors.white};
     font-size: 12px;
 `;
 
 const Description = styled.Text`
-    color: ${colors.gray300};
+    color: ${props => props.colors.gray300};
     font-size: 14px;
     margin-top: 8px;
 `;
@@ -366,7 +366,7 @@ const ShowMoreContainer = styled.TouchableOpacity`
 `;
 
 const ShowMoreText = styled.Text`
-    color: ${colors.primary};
+    color: ${props => props.colors.primary};
     font-size: 14px;
     margin-left: 4px;
 `;
@@ -378,14 +378,14 @@ const HeaderLeft = styled.View`
 `;
 
 const StatsButton = styled.TouchableOpacity<{ pressed?: boolean }>`
-    background-color: ${colors.primary};
+    background-color: ${props => props.colors.primary};
     padding: 8px 16px;
     border-radius: 8px;
     flex-direction: row;
     align-items: center;
     gap: 8px;
     elevation: 2;
-    shadow-color: ${colors.black};
+    shadow-color: ${props => props.colors.black};
     shadow-offset: 0px 2px;
     shadow-opacity: 0.25;
     shadow-radius: 3.84px;
@@ -393,7 +393,7 @@ const StatsButton = styled.TouchableOpacity<{ pressed?: boolean }>`
 `;
 
 const StatsButtonText = styled.Text`
-    color: ${colors.white};
+    color: ${props => props.colors.white};
     font-size: 14px;
     font-weight: bold;
 `;
@@ -402,6 +402,7 @@ export default function CommunityDetails() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const { session } = useAuth();
+    const { theme, colors } = useTheme();
     const [community, setCommunity] = useState<Community | null>(null);
     const [members, setMembers] = useState<Member[]>([]);
     const [organizers, setOrganizers] = useState<CommunityOrganizer[]>([]);
@@ -633,90 +634,85 @@ export default function CommunityDetails() {
             );
         }
 
+        if (!community) {
+            return (
+                <EmptyContainer>
+                    <EmptyText colors={colors}>Comunidade não encontrada</EmptyText>
+                </EmptyContainer>
+            );
+        }
+
         return (
             <>
-                {community?.description && (
-                    <Section>
-                        <SectionHeader>
-                            <SectionTitle>Detalhes</SectionTitle>
-                        </SectionHeader>
+                <Section colors={colors}>
+                    <Description colors={colors}>{community.description}</Description>
+                    {community.description.length > 100 && (
+                        <ShowMoreContainer onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+                            <Feather 
+                                name={isDescriptionExpanded ? "chevron-up" : "chevron-down"} 
+                                size={20} 
+                                color={colors.primary} 
+                            />
+                            <ShowMoreText colors={colors}>
+                                {isDescriptionExpanded ? 'Ver menos' : 'Ver mais'}
+                            </ShowMoreText>
+                        </ShowMoreContainer>
+                    )}
+                </Section>
 
-                        <Description numberOfLines={isDescriptionExpanded ? undefined : 2}>
-                            {community.description}
-                        </Description>
-                        {community.description.length > 80 && (
-                            <ShowMoreContainer onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
-                                <Feather 
-                                    name={isDescriptionExpanded ? "chevron-up" : "chevron-down"} 
-                                    size={20} 
-                                    color={colors.primary} 
-                                />
-                                <ShowMoreText>
-                                    {isDescriptionExpanded ? 'Ver menos' : 'Ver mais'}
-                                </ShowMoreText>
-                            </ShowMoreContainer>
-                        )}
-                    </Section>
-                )}
-
-                <Section>
+                <Section colors={colors}>
                     <SectionHeader>
                         <HeaderLeft>
-                            <SectionTitle>Membros ({members.length})</SectionTitle>
+                            <SectionTitle colors={colors}>Membros ({members.length})</SectionTitle>
                             <ExpandButton onPress={toggleMembers}>
                                 <Animated.View style={{ transform: [{ rotate: rotateMembers }] }}>
                                     <Feather name="chevron-down" size={20} color={colors.gray100} />
                                 </Animated.View>
                             </ExpandButton>
                         </HeaderLeft>
-                        <ManageButton onPress={() => setShowAddMemberModal(true)}>
+                        <ManageButton onPress={() => setShowAddMemberModal(true)} colors={colors}>
                             <Feather name="users" size={20} color={colors.white} />
                         </ManageButton>
                     </SectionHeader>
 
                     {showMembers && (
                         <>
-                            <SelectAllHeader>
-                                <SelectAllButton onPress={handleSelectAllMembers}>
-                                    <Feather 
-                                        name={selectedMembers.length === members.length ? "check-square" : "square"} 
-                                        size={24} 
-                                        color={colors.primary} 
-                                    />
-                                    <SelectAllText>Selecionar Todos</SelectAllText>
-                                </SelectAllButton>
-                            </SelectAllHeader>
-
-                            {members.length > 0 ? (
-                                members.map(item => (
-                                    <MemberCard key={item.id}>
-                                        <MemberInfo>
-                                            <MemberName>{item.players.name}</MemberName>
-                                        </MemberInfo>
-                                        <TouchableOpacity onPress={() => handleSelectMember(item.player_id)}>
-                                            <Feather 
-                                                name={selectedMembers.includes(item.player_id) ? "check-square" : "square"} 
-                                                size={24} 
-                                                color={selectedMembers.includes(item.player_id) ? colors.primary : colors.gray300} 
-                                            />
-                                        </TouchableOpacity>
-                                    </MemberCard>
-                                ))
-                            ) : (
-                                <EmptyContainer>
-                                    <EmptyText>Nenhum membro encontrado</EmptyText>
-                                </EmptyContainer>
+                            {selectedMembers.length > 0 && (
+                                <SelectAllHeader>
+                                    <SelectAllButton onPress={handleSelectAllMembers}>
+                                        <Feather 
+                                            name={selectedMembers.length === members.length ? "check-square" : "square"} 
+                                            size={24} 
+                                            color={colors.primary} 
+                                        />
+                                        <SelectAllText colors={colors}>Selecionar Todos</SelectAllText>
+                                    </SelectAllButton>
+                                </SelectAllHeader>
                             )}
-
+                            {members.map(member => (
+                                <MemberCard key={member.player_id} colors={colors}>
+                                    <MemberInfo>
+                                        <MemberName colors={colors}>{member.players.name}</MemberName>
+                                    </MemberInfo>
+                                    <TouchableOpacity onPress={() => handleSelectMember(member.player_id)}>
+                                        <Feather 
+                                            name={selectedMembers.includes(member.player_id) ? "check-square" : "square"} 
+                                            size={24} 
+                                            color={selectedMembers.includes(member.player_id) ? colors.primary : colors.gray300} 
+                                        />
+                                    </TouchableOpacity>
+                                </MemberCard>
+                            ))}
                             {selectedMembers.length > 0 && (
                                 <RemoveButton 
                                     onPress={handleRemoveMembers}
                                     disabled={loading}
+                                    colors={colors}
                                 >
                                     {loading ? (
                                         <ActivityIndicator color={colors.white} />
                                     ) : (
-                                        <RemoveButtonText>
+                                        <RemoveButtonText colors={colors}>
                                             Remover {selectedMembers.length} {selectedMembers.length === 1 ? 'membro' : 'membros'}
                                         </RemoveButtonText>
                                     )}
@@ -726,80 +722,80 @@ export default function CommunityDetails() {
                     )}
                 </Section>
 
-                <Section>
+                <Section colors={colors}>
                     <SectionHeader>
                         <HeaderLeft>
-                            <SectionTitle>Organizadores</SectionTitle>
+                            <SectionTitle colors={colors}>Organizadores</SectionTitle>
                             <ExpandButton onPress={toggleOrganizers}>
                                 <Animated.View style={{ transform: [{ rotate: rotateOrganizers }] }}>
                                     <Feather name="chevron-down" size={20} color={colors.gray100} />
                                 </Animated.View>
                             </ExpandButton>
                         </HeaderLeft>
-                        <ManageButton onPress={() => setShowAddOrganizerModal(true)}>
+                        <ManageButton onPress={() => setShowAddOrganizerModal(true)} colors={colors}>
                             <Feather name="user-plus" size={20} color={colors.white} />
                         </ManageButton>
                     </SectionHeader>
 
                     {showOrganizers && (
-                        organizers.length > 0 ? (
-                            organizers.map(item => (
-                                <OrganizerCard key={item.id}>
+                        <>
+                            {organizers.map(item => (
+                                <OrganizerCard key={item.id} colors={colors}>
                                     <OrganizerInfo>
-                                        <OrganizerName>{item.user_profile?.name}</OrganizerName>
-                                        <OrganizerEmail>{item.user_profile?.email}</OrganizerEmail>
+                                        <OrganizerName colors={colors}>{item.user_profile?.name}</OrganizerName>
+                                        <OrganizerEmail colors={colors}>{item.user_profile?.email}</OrganizerEmail>
                                     </OrganizerInfo>
-                                    <TouchableOpacity
+                                    <TouchableOpacity 
                                         onPress={() => handleRemoveOrganizer(item.user_id)}
                                         disabled={loading}
                                     >
                                         <Feather name="x" size={20} color={colors.error} />
                                     </TouchableOpacity>
                                 </OrganizerCard>
-                            ))
-                        ) : (
-                            <EmptyContainer>
-                                <EmptyText>Nenhum organizador encontrado</EmptyText>
-                            </EmptyContainer>
-                        )
+                            ))}
+                        </>
                     )}
                 </Section>
 
-                <Section>
+                <Section colors={colors}>
                     <SectionHeader>
-                        <SectionTitle>Competições</SectionTitle>
+                        <HeaderLeft>
+                            <SectionTitle colors={colors}>Competições</SectionTitle>
+                            <ExpandButton onPress={() => {}}>
+                                <Animated.View style={{ transform: [{ rotate: '' }] }}>
+                                    <Feather name="chevron-down" size={20} color={colors.gray100} />
+                                </Animated.View>
+                            </ExpandButton>
+                        </HeaderLeft>
                     </SectionHeader>
-                    {competitions.length > 0 ? (
-                        competitions.map(competition => (
-                            <CompetitionCard
-                                key={competition.id}
-                                onPress={() => router.push(`/comunidade/${community?.id}/competicao/${competition.id}`)}>
-                                <CompetitionInfo>
-                                    <CompetitionName>{competition.name}</CompetitionName>
-                                    <CompetitionDescription>{competition.description}</CompetitionDescription>
-                                    <CompetitionDetails>
-                                        <CompetitionDate>
-                                            <Feather name="calendar" size={14} color={colors.gray300} />
-                                            <CompetitionDateText>
-                                                {new Date(competition.start_date).toLocaleDateString()}
-                                            </CompetitionDateText>
-                                        </CompetitionDate>
-                                    </CompetitionDetails>
-                                </CompetitionInfo>
-                            </CompetitionCard>
-                        ))
-                    ) : (
-                        <EmptyContainer>
-                            <EmptyText>Nenhuma competição encontrada</EmptyText>
-                        </EmptyContainer>
-                    )}
+
+                    {competitions.map(competition => (
+                        <CompetitionCard 
+                            key={competition.id} 
+                            onPress={() => router.push(`/comunidade/${params.id}/competicao/${competition.id}`)}
+                            colors={colors}
+                        >
+                            <CompetitionInfo>
+                                <CompetitionName colors={colors}>{competition.name}</CompetitionName>
+                                <CompetitionDescription colors={colors}>{competition.description}</CompetitionDescription>
+                                <CompetitionDetails>
+                                    <CompetitionDate>
+                                        <Feather name="calendar" size={14} color={colors.gray300} />
+                                        <CompetitionDateText colors={colors}>
+                                            {new Date(competition.start_date).toLocaleDateString()}
+                                        </CompetitionDateText>
+                                    </CompetitionDate>
+                                </CompetitionDetails>
+                            </CompetitionInfo>
+                        </CompetitionCard>
+                    ))}
                 </Section>
             </>
         );
     };
 
     return (
-        <Container>
+        <Container colors={colors}>
             <InternalHeader 
                 title={community?.name || 'Comunidade'} 
                 rightContent={
@@ -808,15 +804,16 @@ export default function CommunityDetails() {
                         onPressIn={() => setIsPressed(true)}
                         onPressOut={() => setIsPressed(false)}
                         pressed={isPressed}
+                        colors={colors}
                     >
                         <Feather name="bar-chart-2" size={16} color={colors.white} />
-                        <StatsButtonText>Estatísticas</StatsButtonText>
+                        <StatsButtonText colors={colors}>Estatísticas</StatsButtonText>
                     </StatsButton>
                 }
             />
-            <MainContent>
-                <ScrollContainer>
-                    <ContentContainer>
+            <MainContent colors={colors}>
+                <ScrollContainer colors={colors}>
+                    <ContentContainer colors={colors}>
                         {renderContent()}
                     </ContentContainer>
                 </ScrollContainer>
@@ -833,9 +830,9 @@ export default function CommunityDetails() {
                 }}
             >
                 <ModalContainer>
-                    <ModalContent>
+                    <ModalContent colors={colors}>
                         <ModalHeader>
-                            <ModalTitle>Adicionar Membros</ModalTitle>
+                            <ModalTitle colors={colors}>Adicionar Membros</ModalTitle>
                             <TouchableOpacity onPress={() => {
                                 setShowAddMemberModal(false);
                                 setSelectedPlayers([]);
@@ -852,7 +849,7 @@ export default function CommunityDetails() {
                                     size={24} 
                                     color={colors.primary} 
                                 />
-                                <SelectAllText>Selecionar Todos</SelectAllText>
+                                <SelectAllText colors={colors}>Selecionar Todos</SelectAllText>
                             </SelectAllButton>
                         </SelectAllHeader>
                         <PlayersList
@@ -864,9 +861,10 @@ export default function CommunityDetails() {
                                 <PlayerCard 
                                     onPress={() => handleSelectPlayer(item.id)}
                                     selected={selectedPlayers.includes(item.id)}
+                                    colors={colors}
                                 >
                                     <PlayerInfo>
-                                        <PlayerName>{item.name}</PlayerName>
+                                        <PlayerName colors={colors}>{item.name}</PlayerName>
                                     </PlayerInfo>
                                     <Feather 
                                         name={selectedPlayers.includes(item.id) ? "check-square" : "square"} 
@@ -877,18 +875,19 @@ export default function CommunityDetails() {
                             )}
                             ListEmptyComponent={
                                 <EmptyContainer>
-                                    <EmptyText>Nenhum jogador disponível</EmptyText>
+                                    <EmptyText colors={colors}>Nenhum jogador disponível</EmptyText>
                                 </EmptyContainer>
                             }
                         />
                         <SaveButton 
                             onPress={handleSaveMembers}
                             disabled={selectedPlayers.length === 0 || loading}
+                            colors={colors}
                         >
                             {loading ? (
                                 <ActivityIndicator color={colors.white} />
                             ) : (
-                                <SaveButtonText>
+                                <SaveButtonText colors={colors}>
                                     Adicionar {selectedPlayers.length} {selectedPlayers.length === 1 ? 'membro' : 'membros'}
                                 </SaveButtonText>
                             )}
@@ -906,9 +905,9 @@ export default function CommunityDetails() {
                 }}
             >
                 <ModalContainer>
-                    <ModalContent>
+                    <ModalContent colors={colors}>
                         <ModalHeader>
-                            <ModalTitle>Adicionar Organizador</ModalTitle>
+                            <ModalTitle colors={colors}>Adicionar Organizador</ModalTitle>
                             <TouchableOpacity onPress={() => {
                                 setShowAddOrganizerModal(false);
                                 setOrganizerEmail('');
@@ -920,15 +919,17 @@ export default function CommunityDetails() {
                             value={organizerEmail}
                             onChangeText={(text) => setOrganizerEmail(text)}
                             placeholder="E-mail do organizador"
+                            colors={colors}
                         />
                         <SaveButton 
                             onPress={handleAddOrganizer}
                             disabled={organizerEmail === '' || loading}
+                            colors={colors}
                         >
                             {loading ? (
                                 <ActivityIndicator color={colors.white} />
                             ) : (
-                                <SaveButtonText>
+                                <SaveButtonText colors={colors}>
                                     Adicionar Organizador
                                 </SaveButtonText>
                             )}
@@ -939,7 +940,7 @@ export default function CommunityDetails() {
             <FAB onPress={() => router.push({
                 pathname: '/comunidade/[id]/competicao/nova',
                 params: { id: community.id }
-            })}>
+            })} colors={colors}>
                 <Feather name="plus" size={24} color={colors.gray100} />
             </FAB>
         </Container>

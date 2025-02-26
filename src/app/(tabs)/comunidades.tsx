@@ -7,6 +7,7 @@ import { Community, communityService } from '@/services/communityService';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Header } from '@/components/Header';
+import { useTheme } from '@/contexts/ThemeProvider';
 
 const Container = styled.View`
     flex: 1;
@@ -16,7 +17,7 @@ const Container = styled.View`
 const ScrollContent = styled.ScrollView.attrs({
     contentContainerStyle: {
         flexGrow: 1,
-        padding: 16,
+        padding: 20,
         paddingBottom: 80,
     },
 })`
@@ -123,8 +124,8 @@ const ButtonsContainer = styled.View`
 `;
 
 const Button = styled.TouchableOpacity<{ variant?: 'primary' | 'secondary' | 'danger' }>`
-    background-color: ${props => {
-        switch (props.variant) {
+    background-color: ${({ variant }) => {
+        switch (variant) {
             case 'primary':
                 return colors.accent;
             case 'danger':
@@ -257,6 +258,7 @@ const Content = styled.View`
 
 export default function Comunidades() {
     const router = useRouter();
+    const { theme, colors } = useTheme();
     const [createdCommunities, setCreatedCommunities] = useState<Community[]>([]);
     const [organizedCommunities, setOrganizedCommunities] = useState<Community[]>([]);
     const [loading, setLoading] = useState(true);

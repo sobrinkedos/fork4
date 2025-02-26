@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, ScrollView, TouchableOpacity, Dimensions } from "react-native";
 import styled from "styled-components/native";
 import { useTheme } from "@/contexts/ThemeProvider";
-import { colors } from "@/styles/colors";
 import { MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { PageTransition } from "@/components/Transitions";
 import { Header } from "@/components/Header";
@@ -70,7 +69,7 @@ const Content = styled.View`
 `;
 
 const WelcomeContainer = styled.View`
-    padding: 20px;
+    padding: 20px 20px;
     margin-bottom: 10px;
 `;
 
@@ -89,7 +88,7 @@ const WelcomeSubtext = styled.Text`
 const StatisticsContainer = styled.View`
     flex-direction: row;
     flex-wrap: wrap;
-    padding: 20px;
+    padding: 0 20px;
     justify-content: space-between;
 `;
 
@@ -137,6 +136,7 @@ const ChartContainer = styled.View`
     padding: 20px;
     margin: 0 20px 20px;
     border: 1px solid ${({ theme }) => theme.colors.tertiary}40;
+    align-items: center;
 `;
 
 const ChartTitle = styled.Text`
@@ -147,7 +147,8 @@ const ChartTitle = styled.Text`
 `;
 
 const SectionContainer = styled.View`
-    padding: 20px;
+    padding: 0 20px;
+    margin-bottom: 20px;
 `;
 
 const SectionHeader = styled.View`

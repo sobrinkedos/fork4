@@ -8,16 +8,17 @@ import { useCallback, useEffect, useState, useFocusEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Competition, competitionService } from "@/services/competitionService"
 import { useRouter } from 'expo-router'
+import { useTheme } from "@/contexts/ThemeProvider"
 
 const Container = styled.View`
   flex: 1;
-  background-color: ${colors.backgroundDark};
+  background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
 const ScrollContent = styled.ScrollView.attrs({
   contentContainerStyle: {
     flexGrow: 1,
-    padding: 16,
+    padding: 20,
     paddingBottom: 80,
   },
 })`
@@ -25,7 +26,7 @@ const ScrollContent = styled.ScrollView.attrs({
 `;
 
 const CompetitionCard = styled.TouchableOpacity`
-  background-color: ${colors.secondary};
+  background-color: ${({ theme }) => theme.colors.secondary};
   border-radius: 8px;
   margin-bottom: 16px;
   padding: 16px;
@@ -45,13 +46,13 @@ const CompetitionInfo = styled.View`
 const CompetitionName = styled.Text`
   font-size: 18px;
   font-weight: bold;
-  color: ${colors.gray100};
+  color: ${({ theme }) => theme.colors.gray100};
   margin-bottom: 32px;
 `;
 
 const CompetitionDescription = styled.Text`
   font-size: 14px;
-  color: ${colors.gray300};
+  color: ${({ theme }) => theme.colors.gray300};
   margin-bottom: 16px;
 `;
 
@@ -79,7 +80,7 @@ const StatContainer = styled.View`
 `;
 
 const StatText = styled.Text`
-  color: ${colors.gray300};
+  color: ${({ theme }) => theme.colors.gray300};
   font-size: 14px;
   margin-left: 6px;
 `;
@@ -87,29 +88,38 @@ const StatText = styled.Text`
 const SectionTitle = styled.Text`
   font-size: 18px;
   font-weight: bold;
-  color: ${colors.gray100};
+  color: ${({ theme }) => theme.colors.gray100};
   margin-bottom: 16px;
 `;
 
 const ProgressBarContainer = styled.View`
   height: 4px;
-  background-color: ${colors.gray700};
+  background-color: ${({ theme }) => theme.colors.gray700};
   border-radius: 2px;
   overflow: hidden;
   margin: 8px 0;
 `;
 
-const ProgressBarFill = styled.View<{ width: string; status: string }>`
+const ProgressBarFill = styled.View<{ status: string }>`
   height: 100%;
-  width: ${props => props.width};
-  background-color: ${props => {
+  width: ${props => {
     switch (props.status) {
       case 'finished':
-        return colors.success;
+        return '100%';
       case 'in_progress':
-        return colors.primary;
+        return '50%';
       default:
-        return colors.warning;
+        return '20%';
+    }
+  }};
+  background-color: ${({ status }) => {
+    switch (status) {
+      case 'finished':
+        return '#22C55E'; 
+      case 'in_progress':
+        return '#8257E5'; 
+      default:
+        return '#FBA94C'; 
     }
   }};
 `;
@@ -121,7 +131,7 @@ const LoadingContainer = styled.View`
 `;
 
 const EmptyText = styled.Text`
-  color: ${colors.gray300};
+  color: ${({ theme }) => theme.colors.gray300};
   font-size: 16px;
   text-align: center;
 `;
@@ -130,16 +140,16 @@ const Content = styled.View`
   flex: 1;
 `;
 
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: string, theme: any) => {
   switch (status) {
     case 'pending':
-      return colors.warning;
+      return theme.colors.warning;
     case 'in_progress':
-      return colors.success;
+      return theme.colors.success;
     case 'finished':
-      return colors.primary;
+      return theme.colors.primary;
     default:
-      return colors.textSecondary;
+      return theme.colors.textSecondary;
   }
 }
 
@@ -168,6 +178,7 @@ export default function Competicoes() {
   const [competitionStats, setCompetitionStats] = useState<{[key: string]: { totalPlayers: number, totalGames: number }}>({});
   const [loading, setLoading] = useState(true);
   const router = useRouter()
+  const theme = useTheme()
 
   useEffect(() => {
     loadCompetitions()
@@ -226,7 +237,7 @@ export default function Competicoes() {
             <CompetitionDescription>{competition.description}</CompetitionDescription>
           )}
           <CompetitionStatus>
-            <StatusText style={{ color: getStatusColor(competition.status) }}>
+            <StatusText style={{ color: getStatusColor(competition.status, theme) }}>
               {getStatusText(competition.status)}
             </StatusText>
           </CompetitionStatus>
@@ -234,24 +245,23 @@ export default function Competicoes() {
         <MaterialCommunityIcons
           name="chevron-right"
           size={24}
-          color={colors.text}
+          color={theme.colors.text}
         />
       </CompetitionHeader>
 
       <ProgressBarContainer>
         <ProgressBarFill 
-          width={competition.status === 'finished' ? '100%' : competition.status === 'in_progress' ? '50%' : '0%'} 
           status={competition.status}
         />
       </ProgressBarContainer>
 
       <CompetitionStats>
         <StatContainer>
-          <MaterialCommunityIcons name="account-group" size={16} color={colors.gray300} />
+          <MaterialCommunityIcons name="account-group" size={16} color={theme.colors.gray300} />
           <StatText>{competitionStats[competition.id]?.totalPlayers || 0} jogadores</StatText>
         </StatContainer>
         <StatContainer>
-          <MaterialCommunityIcons name="gamepad-variant" size={16} color={colors.gray300} />
+          <MaterialCommunityIcons name="gamepad-variant" size={16} color={theme.colors.gray300} />
           <StatText>{competitionStats[competition.id]?.totalGames || 0} jogos</StatText>
         </StatContainer>
       </CompetitionStats>
@@ -264,7 +274,7 @@ export default function Competicoes() {
       <Content>
         {loading ? (
           <LoadingContainer>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.primary} />
           </LoadingContainer>
         ) : (
           <ScrollContent>
