@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
+import { useTheme } from 'styled-components/native';
 import { CompetitionResult, competitionService } from '@/services/competitionService';
 import { InternalHeader } from '@/components/InternalHeader';
 
@@ -12,6 +12,7 @@ export default function CompetitionScores() {
     const { id: communityId, competitionId } = useLocalSearchParams();
     const [loading, setLoading] = useState(true);
     const [results, setResults] = useState<CompetitionResult | null>(null);
+    const theme = useTheme();
 
     const loadResults = useCallback(async () => {
         try {
@@ -42,7 +43,7 @@ export default function CompetitionScores() {
             <Container>
                 <InternalHeader title="Classificação" />
                 <LoadingContainer>
-                    <ActivityIndicator size="large" color={colors.primary} />
+                    <ActivityIndicator size="large" color={theme.colors.accent} />
                 </LoadingContainer>
             </Container>
         );
@@ -125,7 +126,7 @@ export default function CompetitionScores() {
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
 const LoadingContainer = styled.View`
@@ -149,13 +150,13 @@ const Section = styled.View`
 const SectionTitle = styled.Text`
     font-size: 18px;
     font-weight: bold;
-    color: ${colors.textPrimary};
     margin-bottom: 16px;
+    color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const PlayerCard = styled.View`
     flex-direction: row;
-    background-color: ${colors.backgroundMedium};
+    background-color: ${({ theme }) => theme.colors.secondary};
     border-radius: 8px;
     padding: 12px;
     margin-bottom: 8px;
@@ -164,11 +165,10 @@ const PlayerCard = styled.View`
 const PairCard = styled(PlayerCard)``;
 
 const Position = styled.Text`
-    color: ${colors.primary};
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
     margin-right: 12px;
-    min-width: 30px;
+    color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const PlayerInfo = styled.View`
@@ -178,10 +178,10 @@ const PlayerInfo = styled.View`
 const PairInfo = styled(PlayerInfo)``;
 
 const PlayerName = styled.Text`
-    color: ${colors.textPrimary};
     font-size: 16px;
     font-weight: bold;
     margin-bottom: 4px;
+    color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const PairPlayers = styled(PlayerName)``;
@@ -201,13 +201,13 @@ const StatItem = styled.View`
 `;
 
 const StatLabel = styled.Text`
-    color: ${colors.textTertiary};
     font-size: 14px;
+    color: ${({ theme }) => theme.colors.textSecondary};
     margin-right: 4px;
 `;
 
 const StatValue = styled.Text`
-    color: ${colors.textPrimary};
     font-size: 14px;
     font-weight: bold;
+    color: ${({ theme }) => theme.colors.textPrimary};
 `;

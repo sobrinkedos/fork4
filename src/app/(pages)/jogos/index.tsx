@@ -2,16 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
 import { GameWithDetails, gamesService } from '@/services/gamesService';
 import { Feather } from '@expo/vector-icons';
 import { formatDate } from '@/utils/date';
 import { InternalHeader } from '@/components/InternalHeader';
+import { useTheme } from 'styled-components/native';
 
 export default function GamesPage() {
     const router = useRouter();
     const [games, setGames] = useState<GameWithDetails[]>([]);
     const [loading, setLoading] = useState(true);
+    const { colors } = useTheme();
 
     useEffect(() => {
         loadGames();
@@ -32,7 +33,7 @@ export default function GamesPage() {
     if (loading) {
         return (
             <LoadingContainer>
-                <ActivityIndicator size="large" color={colors.primary} />
+                <ActivityIndicator size="large" color={colors.accent} />
             </LoadingContainer>
         );
     }
@@ -72,13 +73,13 @@ export default function GamesPage() {
                             <GameDetails>
                                 {game.is_buchuda && (
                                     <GameBadge>
-                                        <Feather name="star" size={12} color={colors.yellow500} />
+                                        <Feather name="star" size={12} color={colors.accent} />
                                         <BadgeText>Buchuda</BadgeText>
                                     </GameBadge>
                                 )}
                                 {game.is_buchuda_de_re && (
                                     <GameBadge>
-                                        <Feather name="star" size={12} color={colors.yellow500} />
+                                        <Feather name="star" size={12} color={colors.accent} />
                                         <BadgeText>Buchuda de Ré</BadgeText>
                                     </GameBadge>
                                 )}
@@ -94,14 +95,14 @@ export default function GamesPage() {
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
 const LoadingContainer = styled.View`
     flex: 1;
     justify-content: center;
     align-items: center;
-    background-color: ${colors.backgroundDark};
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
 const ContentContainer = styled.View`
@@ -109,7 +110,7 @@ const ContentContainer = styled.View`
 `;
 
 const GameCard = styled.View`
-    background-color: ${colors.gray800};
+    background-color: ${({ theme }) => theme.colors.secondary};
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 12px;
@@ -117,14 +118,14 @@ const GameCard = styled.View`
 
 const CommunityName = styled.Text`
     font-size: 14px;
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.textSecondary};
     margin-bottom: 4px;
 `;
 
 const CompetitionName = styled.Text`
     font-size: 16px;
     font-weight: bold;
-    color: ${colors.gray100};
+    color: ${({ theme }) => theme.colors.textPrimary};
     margin-bottom: 12px;
 `;
 
@@ -143,19 +144,19 @@ const TeamContainer = styled.View`
 const TeamScore = styled.Text<{ winner: boolean }>`
     font-size: 24px;
     font-weight: bold;
-    color: ${props => props.winner ? colors.primary : colors.gray300};
+    color: ${props => props.winner ? props.theme.colors.accent : props.theme.colors.textSecondary};
     margin-bottom: 4px;
 `;
 
 const TeamPlayers = styled.Text`
     font-size: 14px;
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.textSecondary};
     text-align: center;
 `;
 
 const VsText = styled.Text`
     font-size: 14px;
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.textSecondary};
     margin: 0 12px;
 `;
 
@@ -170,7 +171,7 @@ const GameDetails = styled.View`
 const GameBadge = styled.View`
     flex-direction: row;
     align-items: center;
-    background-color: ${colors.gray700};
+    background-color: ${({ theme }) => theme.colors.backgroundLight};
     padding: 4px 8px;
     border-radius: 4px;
     gap: 4px;
@@ -178,11 +179,11 @@ const GameBadge = styled.View`
 
 const BadgeText = styled.Text`
     font-size: 12px;
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 const GameDate = styled.Text`
     font-size: 12px;
-    color: ${colors.gray300};
+    color: ${({ theme }) => theme.colors.textSecondary};
     margin-left: auto;
 `;
