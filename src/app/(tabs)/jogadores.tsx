@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Alert, FlatList, RefreshControl, ActivityIndicator, View } from 'react-native';
 import styled from 'styled-components/native';
-import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { MaterialCommunityIcons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import { Player, playerService } from '@/services/playerService';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -15,6 +15,7 @@ const Container = styled.View`
 
 const Content = styled.View`
     flex: 1;
+    padding: 16px;
 `;
 
 const LoadingContainer = styled.View`
@@ -23,13 +24,28 @@ const LoadingContainer = styled.View`
     align-items: center;
 `;
 
-const PlayerCard = styled.View`
+const PlayerCard = styled.TouchableOpacity`
     background-color: ${({ theme }) => theme.colors.secondary};
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 16px;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
+    elevation: 3;
+`;
+
+const PlayerHeader = styled.View`
     flex-direction: row;
-    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+`;
+
+const Avatar = styled.View`
+    width: 50px;
+    height: 50px;
+    border-radius: 25px;
+    background-color: ${({ theme }) => theme.colors.accent}20;
+    justify-content: center;
+    align-items: center;
+    margin-right: 12px;
 `;
 
 const PlayerInfo = styled.View`
@@ -39,10 +55,11 @@ const PlayerInfo = styled.View`
 const PlayerNameContainer = styled.View`
     flex-direction: row;
     align-items: center;
+    flex-wrap: wrap;
 `;
 
 const PlayerName = styled.Text`
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
     color: ${({ theme }) => theme.colors.textPrimary};
 `;
@@ -50,7 +67,7 @@ const PlayerName = styled.Text`
 const PlayerNickname = styled.Text`
     font-size: 14px;
     color: ${({ theme }) => theme.colors.textSecondary};
-    margin-top: 4px;
+    margin-top: 2px;
 `;
 
 const PlayerPhone = styled.Text`
@@ -64,7 +81,7 @@ const LinkedUserBadge = styled.View`
     align-items: center;
     background-color: ${({ theme }) => theme.colors.successLight};
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: 8px;
     margin-left: 8px;
 `;
 
@@ -74,17 +91,45 @@ const LinkedUserText = styled.Text`
     margin-left: 4px;
 `;
 
+const StatsContainer = styled.View`
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top-width: 1px;
+    border-top-color: ${({ theme }) => theme.colors.backgroundLight}40;
+`;
+
+const StatItem = styled.View`
+    align-items: center;
+`;
+
+const StatValue = styled.Text`
+    font-size: 16px;
+    font-weight: bold;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    margin-bottom: 4px;
+`;
+
+const StatLabel = styled.Text`
+    font-size: 12px;
+    color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
 const ActionsContainer = styled.View`
     flex-direction: row;
     align-items: center;
+    justify-content: flex-end;
+    margin-top: 12px;
 `;
 
 const ActionButton = styled.Pressable`
     padding: 8px;
+    margin-left: 8px;
 `;
 
 const SectionTitle = styled.Text`
-    font-size: 18px;
+    font-size: 20px;
     font-weight: bold;
     color: ${({ theme }) => theme.colors.textPrimary};
     margin-bottom: 16px;
@@ -92,10 +137,10 @@ const SectionTitle = styled.Text`
 `;
 
 const EmptyText = styled.Text`
-    font-size: 14px;
+    font-size: 16px;
     color: ${({ theme }) => theme.colors.textSecondary};
     text-align: center;
-    margin: 16px 0;
+    margin: 24px 0;
 `;
 
 const FAB = styled.Pressable`
@@ -108,7 +153,7 @@ const FAB = styled.Pressable`
     background-color: ${({ theme }) => theme.colors.accent};
     justify-content: center;
     align-items: center;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    elevation: 4;
 `;
 
 export default function Jogadores() {
@@ -176,36 +221,63 @@ export default function Jogadores() {
     };
 
     const renderPlayerItem = ({ item, isMyPlayer }: { item: Player; isMyPlayer: boolean }) => (
-        <PlayerCard>
-            <PlayerInfo>
-                <PlayerNameContainer>
-                    <PlayerName>{item.name}</PlayerName>
-                    {item.isLinkedUser && (
-                        <LinkedUserBadge>
-                            <MaterialCommunityIcons
-                                name="account-check"
-                                size={16}
-                                color={colors.success}
-                            />
-                            <LinkedUserText>Vinculado</LinkedUserText>
-                        </LinkedUserBadge>
+        <PlayerCard onPress={() => router.push(`/jogador/${item.id}/jogos`)}>
+            <PlayerHeader>
+                <Avatar>
+                    <FontAwesome5 name="user-alt" size={20} color={colors.accent} />
+                </Avatar>
+                <PlayerInfo>
+                    <PlayerNameContainer>
+                        <PlayerName>{item.name}</PlayerName>
+                        {item.isLinkedUser && (
+                            <LinkedUserBadge>
+                                <MaterialCommunityIcons
+                                    name="account-check"
+                                    size={16}
+                                    color={colors.success}
+                                />
+                                <LinkedUserText>Vinculado</LinkedUserText>
+                            </LinkedUserBadge>
+                        )}
+                    </PlayerNameContainer>
+                    {item.nickname && (
+                        <PlayerNickname>@{item.nickname}</PlayerNickname>
                     )}
-                </PlayerNameContainer>
-                {item.nickname && (
-                    <PlayerNickname>@{item.nickname}</PlayerNickname>
-                )}
-                {item.phone && (
-                    <PlayerPhone>{item.phone}</PlayerPhone>
-                )}
-            </PlayerInfo>
+                    {item.phone && (
+                        <PlayerPhone>
+                            <MaterialCommunityIcons name="phone" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
+                            {item.phone}
+                        </PlayerPhone>
+                    )}
+                </PlayerInfo>
+            </PlayerHeader>
+
+            <StatsContainer>
+                <StatItem>
+                    <StatValue>{item.stats?.total_games || 0}</StatValue>
+                    <StatLabel>Jogos</StatLabel>
+                </StatItem>
+                <StatItem>
+                    <StatValue>{item.stats?.wins || 0}</StatValue>
+                    <StatLabel>Vitórias</StatLabel>
+                </StatItem>
+                <StatItem>
+                    <StatValue>{item.stats?.losses || 0}</StatValue>
+                    <StatLabel>Derrotas</StatLabel>
+                </StatItem>
+                <StatItem>
+                    <StatValue>{item.stats?.buchudas || 0}</StatValue>
+                    <StatLabel>Buchudas</StatLabel>
+                </StatItem>
+            </StatsContainer>
+
             {isMyPlayer && (
                 <ActionsContainer>
+                    <ActionButton onPress={() => router.push(`/jogador/${item.id}/editar`)}>
+                        <Feather name="edit" size={20} color={colors.accent} />
+                    </ActionButton>
                     <ActionButton onPress={() => handleDelete(item)}>
-                        <MaterialCommunityIcons
-                            name="delete"
-                            size={24}
-                            color={colors.error}
-                        />
+                        <Feather name="trash-2" size={20} color={colors.error} />
                     </ActionButton>
                 </ActionsContainer>
             )}

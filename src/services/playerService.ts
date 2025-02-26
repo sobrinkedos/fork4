@@ -10,10 +10,18 @@ export interface Player {
     created_by: string;
     isLinkedUser?: boolean;
     isMine?: boolean;
+    stats?: PlayerStats;
     user_player_relations?: Array<{
         is_primary_user: boolean;
         user_id: string;
     }>;
+}
+
+export interface PlayerStats {
+    total_games: number;
+    wins: number;
+    losses: number;
+    buchudas: number;
 }
 
 interface CreatePlayerDTO {
@@ -121,78 +129,77 @@ class PlayerService {
         }
     }
 
-    async list() {
+    async getPlayerStats(playerId: string): Promise<PlayerStats> {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Usuário não autenticado');
+            // Buscar total de jogos
+            const { count: totalGames } = await supabase
+                .from('game_players')
+                .select('*', { count: 'exact' })
+                .eq('player_id', playerId);
 
-            // Buscar jogadores criados pelo usuário
-            const { data: createdPlayers, error: createdPlayersError } = await supabase
-                .from('players')
-                .select('*')
-                .eq('created_by', user.id)
-                .order('name');
-
-            if (createdPlayersError) {
-                console.error('Erro ao buscar jogadores criados:', createdPlayersError);
-                throw createdPlayersError;
-            }
-
-            // Buscar jogadores vinculados ao usuário
-            const { data: linkedPlayers, error: linkedPlayersError } = await supabase
-                .from('players')
+            // Buscar vitórias (quando o jogador está no time vencedor)
+            const { data: wins } = await supabase
+                .from('game_players')
                 .select(`
-                    *,
-                    user_player_relations!inner (
-                        is_primary_user
+                    games!inner (
+                        team1_score,
+                        team2_score
                     )
                 `)
-                .eq('user_player_relations.user_id', user.id)
+                .eq('player_id', playerId)
+                .or('and(team=1,games.team1_score>games.team2_score),and(team=2,games.team2_score>games.team1_score)');
+
+            // Buscar buchudas dadas
+            const { data: buchudas } = await supabase
+                .from('game_players')
+                .select(`
+                    games!inner (
+                        is_buchuda
+                    )
+                `)
+                .eq('player_id', playerId)
+                .eq('games.is_buchuda', true);
+
+            return {
+                total_games: totalGames || 0,
+                wins: wins?.length || 0,
+                losses: (totalGames || 0) - (wins?.length || 0),
+                buchudas: buchudas?.length || 0
+            };
+        } catch (error) {
+            console.error('Erro ao buscar estatísticas do jogador:', error);
+            return {
+                total_games: 0,
+                wins: 0,
+                losses: 0,
+                buchudas: 0
+            };
+        }
+    }
+
+    async list() {
+        try {
+            const { data: userData, error: userError } = await supabase.auth.getUser();
+            if (userError) throw userError;
+
+            // Buscar jogadores criados pelo usuário
+            const { data: myPlayers, error: myPlayersError } = await supabase
+                .from('players')
+                .select('*, user_player_relations(user_id, is_primary_user)')
+                .eq('created_by', userData.user.id)
                 .order('name');
 
-            if (linkedPlayersError) {
-                console.error('Erro ao buscar jogadores vinculados:', linkedPlayersError);
-                throw linkedPlayersError;
+            if (myPlayersError) {
+                console.error('Erro ao buscar jogadores criados:', myPlayersError);
+                throw new Error('Erro ao listar jogadores');
             }
-
-            // Combinar e remover duplicatas
-            const myPlayersMap = new Map();
-            
-            // Adicionar jogadores criados
-            createdPlayers?.forEach(player => {
-                myPlayersMap.set(player.id, {
-                    ...player,
-                    isMine: true,
-                    isLinkedUser: false
-                });
-            });
-
-            // Adicionar jogadores vinculados
-            linkedPlayers?.forEach(player => {
-                if (!myPlayersMap.has(player.id)) {
-                    myPlayersMap.set(player.id, {
-                        ...player,
-                        isMine: false,
-                        isLinkedUser: true
-                    });
-                } else {
-                    // Se já existe (foi criado pelo usuário), apenas marca como vinculado
-                    const existingPlayer = myPlayersMap.get(player.id);
-                    myPlayersMap.set(player.id, {
-                        ...existingPlayer,
-                        isLinkedUser: true
-                    });
-                }
-            });
-
-            const myPlayers = Array.from(myPlayersMap.values());
-            const myPlayerIds = myPlayers.map(p => p.id);
 
             // Buscar jogadores das comunidades onde sou organizador
             const { data: communityPlayers, error: communityPlayersError } = await supabase
                 .from('players')
                 .select(`
                     *,
+                    user_player_relations(user_id, is_primary_user),
                     community_members!inner (
                         community_id,
                         communities!inner (
@@ -203,18 +210,39 @@ class PlayerService {
                         )
                     )
                 `)
-                .eq('community_members.communities.community_organizers.user_id', user.id)
-                .filter('id', 'not.in', `(${myPlayerIds.join(',')})`)
+                .eq('community_members.communities.community_organizers.user_id', userData.user.id)
+                .neq('created_by', userData.user.id) // Excluir jogadores que já estão em myPlayers
                 .order('name');
 
             if (communityPlayersError) {
                 console.error('Erro ao buscar jogadores da comunidade:', communityPlayersError);
-                throw communityPlayersError;
+                throw new Error('Erro ao listar jogadores');
             }
 
+            // Adicionar estatísticas aos jogadores
+            const myPlayersWithStats = await Promise.all((myPlayers || []).map(async (player) => {
+                const stats = await this.getPlayerStats(player.id);
+                return {
+                    ...player,
+                    stats,
+                    isLinkedUser: player.user_player_relations?.some(rel => rel.is_primary_user),
+                    isMine: true
+                };
+            }));
+
+            const communityPlayersWithStats = await Promise.all((communityPlayers || []).map(async (player) => {
+                const stats = await this.getPlayerStats(player.id);
+                return {
+                    ...player,
+                    stats,
+                    isLinkedUser: player.user_player_relations?.some(rel => rel.is_primary_user),
+                    isMine: false
+                };
+            }));
+
             return {
-                myPlayers: myPlayers,
-                communityPlayers: communityPlayers || []
+                myPlayers: myPlayersWithStats,
+                communityPlayers: communityPlayersWithStats
             };
         } catch (error) {
             console.error('Erro ao listar jogadores:', error);
