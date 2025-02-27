@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { Alert, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
 import { communityService } from '@/services/communityService';
 import { InternalHeader } from '@/components/InternalHeader';
 import { Feather } from '@expo/vector-icons';
 import { TextInput } from 'react-native-paper';
+import { useTheme } from '@/contexts/ThemeProvider';
 
 export default function NovaComunidade() {
     const router = useRouter();
+    const { colors } = useTheme();
     const [formData, setFormData] = useState({
         name: '',
         description: ''
@@ -28,7 +29,15 @@ export default function NovaComunidade() {
                 name: formData.name.trim(),
                 description: formData.description.trim()
             });
-            router.back();
+            
+            // Limpa o formulário
+            setFormData({
+                name: '',
+                description: ''
+            });
+            
+            // Redireciona para a página de comunidades
+            router.replace('/(tabs)/comunidades');
         } catch (error: any) {
             console.error('Erro ao criar comunidade:', error);
             Alert.alert(
@@ -41,12 +50,12 @@ export default function NovaComunidade() {
     };
 
     return (
-        <Container>
+        <Container colors={colors}>
             <InternalHeader title="Nova Comunidade" />
             <ScrollView>
-                <Content>
+                <Content colors={colors}>
                     <FormGroup>
-                        <Label>Nome</Label>
+                        <Label colors={colors}>Nome</Label>
                         <TextInput
                             mode="outlined"
                             value={formData.name}
@@ -58,11 +67,11 @@ export default function NovaComunidade() {
                             theme={{
                                 colors: {
                                     primary: colors.primary,
-                                    text: colors.gray100,
+                                    text: colors.text,
                                     placeholder: colors.gray300,
                                     background: colors.backgroundDark,
                                     surface: colors.backgroundDark,
-                                    onSurface: colors.gray100,
+                                    onSurface: colors.text,
                                     outline: colors.gray700,
                                 }
                             }}
@@ -70,7 +79,7 @@ export default function NovaComunidade() {
                     </FormGroup>
 
                     <FormGroup>
-                        <Label>Descrição</Label>
+                        <Label colors={colors}>Descrição</Label>
                         <TextInput
                             mode="outlined"
                             value={formData.description}
@@ -89,22 +98,22 @@ export default function NovaComunidade() {
                             theme={{
                                 colors: {
                                     primary: colors.primary,
-                                    text: colors.gray100,
+                                    text: colors.text,
                                     placeholder: colors.gray300,
                                     background: colors.backgroundDark,
                                     surface: colors.backgroundDark,
-                                    onSurface: colors.gray100,
+                                    onSurface: colors.text,
                                     outline: colors.gray700,
                                 }
                             }}
                         />
                     </FormGroup>
 
-                    <SaveButton onPress={handleSave} disabled={loading}>
+                    <SaveButton colors={colors} disabled={loading} onPress={handleSave}>
                         {loading ? (
-                            <ActivityIndicator color={colors.gray100} />
+                            <ActivityIndicator color={colors.white} />
                         ) : (
-                            <SaveButtonText>Criar Comunidade</SaveButtonText>
+                            <SaveButtonText colors={colors}>Criar Comunidade</SaveButtonText>
                         )}
                     </SaveButton>
                 </Content>
@@ -113,35 +122,37 @@ export default function NovaComunidade() {
     );
 }
 
-const Container = styled.View`
+const Container = styled.View<{ colors: any }>`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${({ colors }) => colors.backgroundDark};
 `;
 
-const Content = styled.View`
-    padding: 20px;
+const Content = styled.View<{ colors: any }>`
+    padding: 16px;
+    gap: 16px;
+    background-color: ${({ colors }) => colors.backgroundDark};
 `;
 
 const FormGroup = styled.View`
-    margin-bottom: 20px;
+    gap: 8px;
 `;
 
-const Label = styled.Text`
+const Label = styled.Text<{ colors: any }>`
     font-size: 16px;
-    color: ${colors.gray100};
-    margin-bottom: 8px;
+    color: ${({ colors }) => colors.text};
 `;
 
-const SaveButton = styled.TouchableOpacity<{ disabled?: boolean }>`
-    background-color: ${colors.primary};
+const SaveButton = styled.TouchableOpacity<{ colors: any; disabled?: boolean }>`
+    background-color: ${({ colors }) => colors.primary};
     padding: 16px;
     border-radius: 8px;
     align-items: center;
-    opacity: ${props => props.disabled ? 0.7 : 1};
+    justify-content: center;
+    opacity: ${({ disabled }) => disabled ? 0.7 : 1};
 `;
 
-const SaveButtonText = styled.Text`
-    color: ${colors.gray100};
+const SaveButtonText = styled.Text<{ colors: any }>`
+    color: ${({ colors }) => colors.white};
     font-size: 16px;
     font-weight: bold;
 `;

@@ -21,6 +21,7 @@ type CommunityOrganizer = {
         name: string;
         email: string;
     };
+    is_creator?: boolean;
 };
 
 type Community = {
@@ -96,16 +97,20 @@ const ExpandButton = styled.TouchableOpacity`
     padding: 8px;
 `;
 
-const ManageButton = styled.TouchableOpacity`
-    padding: 8px;
-    background-color: ${props => props.colors.primary};
-    border-radius: 4px;
-    margin-left: auto;
+const ManageButton = styled.TouchableOpacity<{ colors: any }>`
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    background-color: ${({ colors }) => colors.primary};
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 8px;
 `;
 
-const ManageButtonText = styled.Text`
-    color: ${props => props.colors.white};
+const ManageButtonText = styled.Text<{ colors: any }>`
+    color: ${({ colors }) => colors.white};
     font-size: 14px;
+    font-weight: bold;
     margin-left: 8px;
 `;
 
@@ -220,6 +225,12 @@ const ModalTitle = styled.Text`
     color: ${props => props.colors.gray100};
 `;
 
+const ModalSubtitle = styled.Text`
+    font-size: 14px;
+    color: ${props => props.colors.gray300};
+    margin-bottom: 16px;
+`;
+
 const ModalInput = styled.TextInput`
     width: 100%;
     height: 48px;
@@ -228,6 +239,25 @@ const ModalInput = styled.TextInput`
     padding: 0 16px;
     color: ${props => props.colors.gray100};
     margin-bottom: 16px;
+`;
+
+const ModalButtonsContainer = styled.View`
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 16px;
+`;
+
+const ModalCancelButton = styled.TouchableOpacity`
+    padding: 8px;
+    background-color: ${props => props.colors.gray600};
+    border-radius: 4px;
+    align-items: center;
+    opacity: 0.7;
+`;
+
+const ModalButtonText = styled.Text<{ variant?: 'secondary' }>`
+    color: ${props => props.variant === 'secondary' ? props.colors.gray100 : props.colors.white};
+    font-size: 14px;
 `;
 
 const SaveButton = styled.TouchableOpacity<{ disabled?: boolean }>`
@@ -268,12 +298,12 @@ const EmptyText = styled.Text`
     color: ${props => props.colors.gray300};
 `;
 
-const PlayerCard = styled.TouchableOpacity`
+const PlayerCard = styled.View<{ colors: any }>`
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background-color: ${props => props.colors.gray800};
+    background-color: ${({ colors }) => colors.gray700};
     border-radius: 8px;
     margin-bottom: 8px;
 `;
@@ -282,8 +312,8 @@ const PlayerInfo = styled.View`
     flex: 1;
 `;
 
-const PlayerName = styled.Text`
-    color: ${props => props.colors.gray100};
+const PlayerName = styled.Text<{ colors: any }>`
+    color: ${({ colors }) => colors.text};
     font-size: 16px;
     font-weight: bold;
 `;
@@ -377,25 +407,22 @@ const HeaderLeft = styled.View`
     gap: 8px;
 `;
 
-const StatsButton = styled.TouchableOpacity<{ pressed?: boolean }>`
-    background-color: ${props => props.colors.primary};
-    padding: 8px 16px;
-    border-radius: 8px;
+const StatsButton = styled.TouchableOpacity<{ pressed?: boolean; colors: any }>`
     flex-direction: row;
     align-items: center;
-    gap: 8px;
-    elevation: 2;
-    shadow-color: ${props => props.colors.black};
-    shadow-offset: 0px 2px;
-    shadow-opacity: 0.25;
-    shadow-radius: 3.84px;
-    opacity: ${props => props.pressed ? 0.8 : 1};
+    justify-content: center;
+    background-color: ${({ colors }) => colors.primary};
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 16px;
+    opacity: ${({ pressed }) => pressed ? 0.8 : 1};
 `;
 
-const StatsButtonText = styled.Text`
-    color: ${props => props.colors.white};
-    font-size: 14px;
+const StatsButtonText = styled.Text<{ colors: any }>`
+    color: ${({ colors }) => colors.white};
+    font-size: 16px;
     font-weight: bold;
+    margin-left: 8px;
 `;
 
 export default function CommunityDetails() {
@@ -417,7 +444,7 @@ export default function CommunityDetails() {
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
     const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [organizerEmail, setOrganizerEmail] = useState('');
+    const [newOrganizerEmail, setNewOrganizerEmail] = useState('');
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [isPressed, setIsPressed] = useState(false);
 
@@ -453,31 +480,45 @@ export default function CommunityDetails() {
     }, [showOrganizers]);
 
     const handleAddOrganizer = async () => {
-        if (!community || !organizerEmail || !session?.user?.id) {
-            Alert.alert('Erro', 'Por favor, preencha o email do organizador');
+        if (!newOrganizerEmail || !session?.user?.id) {
+            Alert.alert('Erro', 'Por favor, insira um email válido');
             return;
         }
 
+        setLoading(true);
         try {
-            setLoading(true);
-            
-            // Validação básica de email
-            if (!organizerEmail.includes('@') || !organizerEmail.includes('.')) {
-                throw new Error('Por favor, insira um email válido');
-            }
-            
-            await communityOrganizersService.addOrganizer(community.id, organizerEmail, session.user.id);
-            const organizersData = await communityOrganizersService.listOrganizers(community.id);
-            setOrganizers(organizersData);
-            setOrganizerEmail('');
+            await communityOrganizersService.addOrganizer(
+                params.id as string, 
+                newOrganizerEmail,
+                session.user.id
+            );
+            const updatedOrganizers = await communityOrganizersService.listOrganizers(params.id as string);
+            setOrganizers(updatedOrganizers);
+            setNewOrganizerEmail('');
             setShowAddOrganizerModal(false);
             Alert.alert('Sucesso', 'Organizador adicionado com sucesso!');
         } catch (error) {
             console.error('Erro ao adicionar organizador:', error);
-            if (error instanceof Error) {
-                Alert.alert('Erro', error.message);
+            if (error instanceof Error && error.message.includes('não encontrado')) {
+                Alert.alert(
+                    'Usuário não encontrado',
+                    'Este usuário ainda não está cadastrado. Deseja enviar um convite por email?',
+                    [
+                        {
+                            text: 'Não',
+                            style: 'cancel',
+                        },
+                        {
+                            text: 'Sim',
+                            onPress: () => {
+                                // Aqui você poderia implementar um envio de convite
+                                Alert.alert('Informação', 'Funcionalidade de convite será implementada em breve.');
+                            },
+                        },
+                    ]
+                );
             } else {
-                Alert.alert('Erro', 'Não foi possível adicionar o organizador');
+                Alert.alert('Erro', error instanceof Error ? error.message : 'Não foi possível adicionar o organizador');
             }
         } finally {
             setLoading(false);
@@ -485,18 +526,14 @@ export default function CommunityDetails() {
     };
 
     const handleRemoveOrganizer = async (userId: string) => {
-        if (!community) return;
-
         try {
-            setLoading(true);
-            await communityOrganizersService.removeOrganizer(community.id, userId);
-            const organizersData = await communityOrganizersService.listOrganizers(community.id);
-            setOrganizers(organizersData);
+            await communityOrganizersService.removeOrganizer(params.id as string, userId);
+            const updatedOrganizers = await communityOrganizersService.listOrganizers(params.id as string);
+            setOrganizers(updatedOrganizers);
+            Alert.alert('Sucesso', 'Organizador removido com sucesso!');
         } catch (error) {
             console.error('Erro ao remover organizador:', error);
             Alert.alert('Erro', 'Não foi possível remover o organizador');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -536,6 +573,19 @@ export default function CommunityDetails() {
             setRefreshing(false);
         }
     };
+
+    useEffect(() => {
+        const loadOrganizers = async () => {
+            try {
+                const data = await communityOrganizersService.listOrganizers(params.id as string);
+                setOrganizers(data);
+            } catch (error) {
+                console.error('Erro ao carregar organizadores:', error);
+            }
+        };
+
+        loadOrganizers();
+    }, [params.id]);
 
     useFocusEffect(
         useCallback(() => {
@@ -658,11 +708,13 @@ export default function CommunityDetails() {
                     <Description colors={colors}>{community.description}</Description>
                     {community.description.length > 100 && (
                         <ShowMoreContainer onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
-                            <Feather 
-                                name={isDescriptionExpanded ? "chevron-up" : "chevron-down"} 
-                                size={20} 
-                                color={colors.primary} 
-                            />
+                            <Animated.View style={{ transform: [{ rotate: '0deg' }] }}>
+                                <Feather 
+                                    name={isDescriptionExpanded ? "chevron-up" : "chevron-down"} 
+                                    size={24} 
+                                    color={colors.text} 
+                                />
+                            </Animated.View>
                             <ShowMoreText colors={colors}>
                                 {isDescriptionExpanded ? 'Ver menos' : 'Ver mais'}
                             </ShowMoreText>
@@ -682,6 +734,7 @@ export default function CommunityDetails() {
                         </HeaderLeft>
                         <ManageButton onPress={() => setShowAddMemberModal(true)} colors={colors}>
                             <Feather name="users" size={20} color={colors.white} />
+                            <ManageButtonText colors={colors}>Adicionar Membros</ManageButtonText>
                         </ManageButton>
                     </SectionHeader>
 
@@ -744,27 +797,79 @@ export default function CommunityDetails() {
                         </HeaderLeft>
                         <ManageButton onPress={() => setShowAddOrganizerModal(true)} colors={colors}>
                             <Feather name="user-plus" size={20} color={colors.white} />
+                            <ManageButtonText colors={colors}>Adicionar Organizador</ManageButtonText>
                         </ManageButton>
                     </SectionHeader>
 
                     {showOrganizers && (
                         <>
-                            {organizers.map(item => (
-                                <OrganizerCard key={item.id} colors={colors}>
-                                    <OrganizerInfo>
-                                        <OrganizerName colors={colors}>{item.user_profile?.name}</OrganizerName>
-                                        <OrganizerEmail colors={colors}>{item.user_profile?.email}</OrganizerEmail>
-                                    </OrganizerInfo>
-                                    <TouchableOpacity 
-                                        onPress={() => handleRemoveOrganizer(item.user_id)}
-                                        disabled={loading}
-                                    >
-                                        <Feather name="x" size={20} color={colors.error} />
-                                    </TouchableOpacity>
-                                </OrganizerCard>
+                            {organizers.map((organizer) => (
+                                <PlayerCard key={organizer.id} colors={colors}>
+                                    <PlayerInfo>
+                                        <PlayerName colors={colors}>
+                                            {organizer.user_profile?.name || organizer.user_profile?.email}
+                                            {organizer.is_creator ? " (Criador)" : ""}
+                                        </PlayerName>
+                                    </PlayerInfo>
+                                    {!organizer.is_creator && (
+                                        <TouchableOpacity onPress={() => handleRemoveOrganizer(organizer.user_id)}>
+                                            <Feather name="x" size={24} color={colors.error} />
+                                        </TouchableOpacity>
+                                    )}
+                                </PlayerCard>
                             ))}
                         </>
                     )}
+
+                    <Modal
+                        visible={showAddOrganizerModal}
+                        transparent
+                        animationType="fade"
+                        onRequestClose={() => setShowAddOrganizerModal(false)}
+                    >
+                        <ModalContainer>
+                            <ModalContent colors={colors}>
+                                <ModalTitle colors={colors}>Adicionar Organizador</ModalTitle>
+                                <ModalSubtitle colors={colors}>
+                                    Digite o email de um usuário já cadastrado no sistema.
+                                </ModalSubtitle>
+                                <ModalInput
+                                    value={newOrganizerEmail}
+                                    onChangeText={setNewOrganizerEmail}
+                                    placeholder="Email do organizador"
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    colors={colors}
+                                />
+                                <ModalButtonsContainer>
+                                    <ModalCancelButton 
+                                        onPress={() => {
+                                            setShowAddOrganizerModal(false);
+                                            setNewOrganizerEmail('');
+                                        }}
+                                        colors={colors}
+                                    >
+                                        <ModalButtonText colors={colors} variant="secondary">
+                                            Cancelar
+                                        </ModalButtonText>
+                                    </ModalCancelButton>
+                                    <SaveButton 
+                                        onPress={handleAddOrganizer}
+                                        disabled={newOrganizerEmail === '' || loading}
+                                        colors={colors}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator color={colors.white} />
+                                        ) : (
+                                            <SaveButtonText colors={colors}>
+                                                Adicionar
+                                            </SaveButtonText>
+                                        )}
+                                    </SaveButton>
+                                </ModalButtonsContainer>
+                            </ModalContent>
+                        </ModalContainer>
+                    </Modal>
                 </Section>
 
                 <Section colors={colors}>
@@ -772,7 +877,7 @@ export default function CommunityDetails() {
                         <HeaderLeft>
                             <SectionTitle colors={colors}>Competições</SectionTitle>
                             <ExpandButton onPress={() => {}}>
-                                <Animated.View style={{ transform: [{ rotate: '' }] }}>
+                                <Animated.View style={{ transform: [{ rotate: '0deg' }] }}>
                                     <Feather name="chevron-down" size={20} color={colors.gray100} />
                                 </Animated.View>
                             </ExpandButton>
@@ -806,9 +911,9 @@ export default function CommunityDetails() {
 
     return (
         <Container colors={colors}>
-            <InternalHeader 
-                title={community?.name || 'Comunidade'} 
-                rightContent={
+            <InternalHeader title={community?.name || 'Comunidade'} />
+            <MainContent colors={colors}>
+                <ScrollContainer colors={colors}>
                     <StatsButton 
                         onPress={() => router.push(`/comunidade/${params.id}/estatisticas`)}
                         onPressIn={() => setIsPressed(true)}
@@ -819,10 +924,6 @@ export default function CommunityDetails() {
                         <Feather name="bar-chart-2" size={16} color={colors.white} />
                         <StatsButtonText colors={colors}>Estatísticas</StatsButtonText>
                     </StatsButton>
-                }
-            />
-            <MainContent colors={colors}>
-                <ScrollContainer colors={colors}>
                     <ContentContainer colors={colors}>
                         {renderContent()}
                     </ContentContainer>
@@ -899,48 +1000,6 @@ export default function CommunityDetails() {
                             ) : (
                                 <SaveButtonText colors={colors}>
                                     Adicionar {selectedPlayers.length} {selectedPlayers.length === 1 ? 'membro' : 'membros'}
-                                </SaveButtonText>
-                            )}
-                        </SaveButton>
-                    </ModalContent>
-                </ModalContainer>
-            </Modal>
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={showAddOrganizerModal}
-                onRequestClose={() => {
-                    setShowAddOrganizerModal(false);
-                    setOrganizerEmail('');
-                }}
-            >
-                <ModalContainer>
-                    <ModalContent colors={colors}>
-                        <ModalHeader>
-                            <ModalTitle colors={colors}>Adicionar Organizador</ModalTitle>
-                            <TouchableOpacity onPress={() => {
-                                setShowAddOrganizerModal(false);
-                                setOrganizerEmail('');
-                            }}>
-                                <Feather name="x" size={24} color={colors.gray100} />
-                            </TouchableOpacity>
-                        </ModalHeader>
-                        <ModalInput
-                            value={organizerEmail}
-                            onChangeText={(text) => setOrganizerEmail(text)}
-                            placeholder="E-mail do organizador"
-                            colors={colors}
-                        />
-                        <SaveButton 
-                            onPress={handleAddOrganizer}
-                            disabled={organizerEmail === '' || loading}
-                            colors={colors}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color={colors.white} />
-                            ) : (
-                                <SaveButtonText colors={colors}>
-                                    Adicionar Organizador
                                 </SaveButtonText>
                             )}
                         </SaveButton>
