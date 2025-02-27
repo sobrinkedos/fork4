@@ -351,7 +351,7 @@ export default function Jogadores() {
                     }
                 />
 
-                <FAB onPress={() => router.push('/jogador/novo')}>
+                <FAB onPress={() => router.push('/jogador/jogador/novo')}>
                     <Feather name="plus" size={24} color={colors.backgroundLight} />
                 </FAB>
             </Content>
