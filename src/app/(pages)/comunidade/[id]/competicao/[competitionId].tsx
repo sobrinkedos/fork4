@@ -209,11 +209,6 @@ export default function CompetitionDetails() {
         <Container colors={colors}>
             <InternalHeader 
                 title={competition?.name || ''} 
-                rightContent={
-                    <TouchableOpacity onPress={() => router.push(`/comunidade/${communityId}/competicao/${competitionId}/jogo/novo`)}>
-                        <Feather name="plus" size={24} color={colors.gray100} />
-                    </TouchableOpacity>
-                }
             />
             <ContentContainer>
                 <SectionHeader>
@@ -402,6 +397,15 @@ export default function CompetitionDetails() {
                     </View>
                 )}
             </ContentContainer>
+
+            {competition?.status === 'in_progress' && (
+                <NewGameButton 
+                    onPress={() => router.push(`/comunidade/${communityId}/competicao/${competitionId}/jogo/novo`)}
+                    colors={colors}
+                >
+                    <Feather name="plus" size={24} color={colors.gray100} />
+                </NewGameButton>
+            )}
 
             <Modal
                 visible={isGamesModalVisible}
