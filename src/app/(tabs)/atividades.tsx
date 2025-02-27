@@ -11,7 +11,7 @@ import { ptBR } from 'date-fns/locale';
 
 const Container = styled.View`
     flex: 1;
-    background-color: ${props => props.theme.colors.backgroundDark};
+    background-color: ${({ theme }) => theme.colors.backgroundDark};
 `;
 
 const LoadingContainer = styled.View`
@@ -21,7 +21,7 @@ const LoadingContainer = styled.View`
 `;
 
 const ActivityCard = styled.TouchableOpacity`
-    background-color: ${props => props.theme.colors.backgroundLight};
+    background-color: ${({ theme }) => theme.colors.backgroundLight};
     border-radius: 8px;
     padding: 16px;
     margin: 8px 16px;
@@ -35,13 +35,13 @@ const ActivityHeader = styled.View`
 `;
 
 const ActivityType = styled.View<{ type: Activity['type'] }>`
-    background-color: ${props => {
-        switch (props.type) {
-            case 'game': return props.theme.colors.success;
-            case 'competition': return props.theme.colors.primary;
-            case 'community': return props.theme.colors.warning;
-            case 'player': return props.theme.colors.info;
-            default: return props.theme.colors.gray300;
+    background-color: ${({ theme, type }) => {
+        switch (type) {
+            case 'game': return theme.colors.success;
+            case 'competition': return theme.colors.primary;
+            case 'community': return theme.colors.warning;
+            case 'player': return theme.colors.info;
+            default: return theme.colors.gray300;
         }
     }};
     padding: 4px 8px;
@@ -49,14 +49,14 @@ const ActivityType = styled.View<{ type: Activity['type'] }>`
 `;
 
 const ActivityTypeText = styled.Text`
-    color: ${props => props.theme.colors.white};
+    color: ${({ theme }) => theme.colors.white};
     font-size: 12px;
     font-weight: bold;
     text-transform: uppercase;
 `;
 
 const ActivityDescription = styled.Text`
-    color: ${props => props.theme.colors.textPrimary};
+    color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 16px;
     line-height: 24px;
     margin-bottom: 8px;
@@ -64,7 +64,7 @@ const ActivityDescription = styled.Text`
 `;
 
 const ActivityDate = styled.Text`
-    color: ${props => props.theme.colors.gray300};
+    color: ${({ theme }) => theme.colors.gray300};
     font-size: 14px;
 `;
 
@@ -74,15 +74,15 @@ const PaginationContainer = styled.View`
     align-items: center;
     padding: 16px;
     gap: 16px;
-    background-color: ${props => props.theme.colors.backgroundLight};
+    background-color: ${({ theme }) => theme.colors.backgroundLight};
 `;
 
 const PaginationButton = styled.TouchableOpacity<{ disabled?: boolean }>`
-    opacity: ${props => props.disabled ? 0.5 : 1};
+    opacity: ${({ disabled }) => disabled ? 0.5 : 1};
 `;
 
 const PaginationText = styled.Text`
-    color: ${props => props.theme.colors.white};
+    color: ${({ theme }) => theme.colors.white};
     font-size: 14px;
 `;
 
@@ -91,13 +91,22 @@ const EmptyContainer = styled.View`
     justify-content: center;
     align-items: center;
     padding: 32px;
-    background-color: ${props => props.theme.colors.backgroundLight};
+    background-color: ${({ theme }) => theme.colors.backgroundLight};
 `;
 
 const EmptyText = styled.Text`
-    color: ${props => props.theme.colors.gray300};
+    color: ${({ theme }) => theme.colors.gray300};
     font-size: 16px;
     text-align: center;
+`;
+
+const HeaderSubtitle = styled.Text`
+    color: ${({ theme }) => theme.colors.gray300};
+    font-size: 14px;
+    text-align: center;
+    margin-top: 8px;
+    margin-bottom: 16px;
+    padding-horizontal: 16px;
 `;
 
 const getTypeLabel = (type: Activity['type']) => {
@@ -112,7 +121,7 @@ const getTypeLabel = (type: Activity['type']) => {
 
 export default function ActivityList() {
     const router = useRouter();
-    const { colors } = useTheme();
+    const { colors, theme } = useTheme();
     const [loading, setLoading] = useState(true);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -121,7 +130,7 @@ export default function ActivityList() {
     const loadActivities = async (page: number) => {
         try {
             setLoading(true);
-            const result = await activityService.getAllActivities(page);
+            const result = await activityService.getUserActivities(page);
             setActivities(result.activities);
             setTotalPages(result.totalPages);
             setCurrentPage(result.currentPage);
@@ -170,7 +179,7 @@ export default function ActivityList() {
             <Container>
                 <InternalHeader title="Atividades Recentes" />
                 <LoadingContainer>
-                    <ActivityIndicator size="large" color={colors.primary} />
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
                 </LoadingContainer>
             </Container>
         );
@@ -179,6 +188,9 @@ export default function ActivityList() {
     return (
         <Container>
             <InternalHeader title="Atividades Recentes" />
+            <HeaderSubtitle>
+                Mostrando atividades das suas comunidades e competições
+            </HeaderSubtitle>
             <FlatList
                 data={activities}
                 renderItem={renderItem}
@@ -198,7 +210,7 @@ export default function ActivityList() {
                         <Feather 
                             name="chevron-left" 
                             size={24} 
-                            color={currentPage === 1 ? colors.gray300 : colors.white} 
+                            color={currentPage === 1 ? theme.colors.gray300 : theme.colors.white} 
                         />
                     </PaginationButton>
                     <PaginationText>
@@ -211,7 +223,7 @@ export default function ActivityList() {
                         <Feather 
                             name="chevron-right" 
                             size={24} 
-                            color={currentPage === totalPages ? colors.gray300 : colors.white} 
+                            color={currentPage === totalPages ? theme.colors.gray300 : theme.colors.white} 
                         />
                     </PaginationButton>
                 </PaginationContainer>

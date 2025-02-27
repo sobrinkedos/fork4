@@ -112,6 +112,75 @@ export const activityService = {
         }
     },
 
+    async getUserActivities(page: number = 1, pageSize: number = 20) {
+        try {
+            // Obter o usuário atual
+            const { data: userData, error: userError } = await supabase.auth.getUser();
+            if (userError || !userData.user) {
+                throw new Error('Usuário não autenticado');
+            }
+            
+            const userId = userData.user.id;
+            const from = (page - 1) * pageSize;
+            const to = from + pageSize - 1;
+
+            // Obter comunidades onde o usuário é organizador
+            const { data: organizerData, error: organizerError } = await supabase
+                .from('community_organizers')
+                .select('community_id')
+                .eq('user_id', userId);
+
+            if (organizerError) {
+                console.error('Erro ao buscar comunidades do organizador:', organizerError);
+                throw organizerError;
+            }
+
+            // Obter comunidades onde o usuário é criador
+            const { data: creatorData, error: creatorError } = await supabase
+                .from('communities')
+                .select('id')
+                .eq('created_by', userId);
+
+            if (creatorError) {
+                console.error('Erro ao buscar comunidades do criador:', creatorError);
+                throw creatorError;
+            }
+
+            // Combinar IDs de comunidades (organizador + criador)
+            const communityIds = [
+                ...(organizerData?.map(org => org.community_id) || []),
+                ...(creatorData?.map(comm => comm.id) || [])
+            ];
+
+            // Buscar atividades onde o usuário é criador ou relacionadas às comunidades onde é organizador
+            const { data, error, count } = await supabase
+                .from('activities')
+                .select('*', { count: 'exact' })
+                .or(`created_by.eq.${userId},metadata->community_id.in.(${communityIds.join(',')})`)
+                .order('created_at', { ascending: false })
+                .range(from, to);
+
+            if (error) {
+                console.error('Erro ao buscar atividades do usuário:', error);
+                throw error;
+            }
+
+            // Remove possíveis duplicatas baseado no id
+            const uniqueActivities = data ? Array.from(new Map(data.map(item => [item.id, item])).values()) : [];
+
+            return {
+                activities: uniqueActivities as Activity[],
+                totalCount: count || 0,
+                currentPage: page,
+                pageSize,
+                totalPages: count ? Math.ceil(count / pageSize) : 0
+            };
+        } catch (error) {
+            console.error('Erro ao buscar atividades do usuário:', error);
+            throw error;
+        }
+    },
+
     async getRecentActivities() {
         try {
             const { data: userData } = await supabase.auth.getUser();
