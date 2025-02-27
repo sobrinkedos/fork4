@@ -23,15 +23,16 @@ export function useAuth() {
         return () => subscription.unsubscribe();
     }, []);
 
-    return {
-        session,
+    const user = session?.user ?? null;
+    const value = {
+        user,
+        isAuthenticated: !!user,
         loading,
-        user: session?.user ?? null,
         signIn: async (email: string, password: string) => {
             return await authService.signIn(email, password);
         },
-        signUp: async (email: string, password: string) => {
-            return await authService.signUp(email, password);
+        signUp: async (email: string, password: string, name?: string) => {
+            return await authService.signUp(email, password, name);
         },
         signOut: async () => {
             return await authService.signOut();
@@ -40,4 +41,6 @@ export function useAuth() {
             return await authService.resetPassword(email);
         }
     };
+
+    return value;
 }

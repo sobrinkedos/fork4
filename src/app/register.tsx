@@ -39,7 +39,7 @@ export default function Register() {
         setLoading(true);
         try {
             // 1. Criar conta de autenticação
-            const { data, error: signUpError } = await signUp(form.email, form.password);
+            const { data, error: signUpError } = await signUp(form.email, form.password, form.fullName);
             
             if (signUpError) {
                 throw new Error(signUpError);

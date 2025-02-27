@@ -99,7 +99,8 @@ export default function SignUp() {
                     {
                         id: user.id,
                         name: formData.name.trim(),
-                        email: formData.email.trim().toLowerCase()
+                        email: formData.email.trim().toLowerCase(),
+                        updated_at: new Date().toISOString()
                     }
                 ]);
 

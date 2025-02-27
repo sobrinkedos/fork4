@@ -55,11 +55,16 @@ class AuthService {
         }
     }
 
-    async signUp(email: string, password: string): Promise<AuthResponse> {
+    async signUp(email: string, password: string, name?: string): Promise<AuthResponse> {
         try {
             const { data, error } = await supabase.auth.signUp({
                 email: email.trim().toLowerCase(),
-                password
+                password,
+                options: {
+                    data: {
+                        name: name || email.split('@')[0]
+                    }
+                }
             });
 
             if (error) {
@@ -68,6 +73,28 @@ class AuthService {
                     success: false,
                     error: this.getErrorMessage(error)
                 };
+            }
+
+            // Criar perfil na tabela profile
+            if (data?.user) {
+                try {
+                    const { error: profileError } = await supabase
+                        .from('profiles')
+                        .insert([
+                            {
+                                id: data.user.id,
+                                name: name || email.split('@')[0],
+                                email: email.trim().toLowerCase(),
+                                updated_at: new Date().toISOString()
+                            }
+                        ]);
+                    
+                    if (profileError) {
+                        console.error('Erro ao criar perfil:', profileError);
+                    }
+                } catch (profileError) {
+                    console.error('Exceção ao criar perfil:', profileError);
+                }
             }
 
             return {
