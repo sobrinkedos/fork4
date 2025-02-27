@@ -416,6 +416,93 @@ export default function CompetitionDetails() {
             )}
 
             <Modal
+                animationType="slide"
+                transparent={true}
+                visible={isAddMemberModalVisible}
+                onRequestClose={() => setIsAddMemberModalVisible(false)}
+            >
+                <ModalOverlay>
+                    <MemberModalContainer colors={colors}>
+                        <ModalHeader colors={colors}>
+                            <HeaderTitle colors={colors}>Gerenciar Membros</HeaderTitle>
+                            <CloseButton onPress={() => setIsAddMemberModalVisible(false)}>
+                                <Feather name="x" size={24} color={colors.gray100} />
+                            </CloseButton>
+                        </ModalHeader>
+
+                        <ModalBody>
+                            <SelectAllButton 
+                                onPress={() => {
+                                    // Verificar se todos os membros da comunidade já estão na competição
+                                    const allSelected = communityMembers.every(cm => 
+                                        members.some(m => m.player_id === cm.player_id)
+                                    );
+                                    
+                                    // Se todos já estiverem selecionados, remover todos
+                                    // Caso contrário, adicionar todos
+                                    Promise.all(
+                                        communityMembers.map(async (cm) => {
+                                            const isMember = members.some(m => m.player_id === cm.player_id);
+                                            if (allSelected && isMember) {
+                                                await competitionService.removeMember(competitionId as string, cm.player_id);
+                                            } else if (!allSelected && !isMember) {
+                                                await competitionService.addMember(competitionId as string, cm.player_id);
+                                            }
+                                        })
+                                    ).then(async () => {
+                                        // Recarregar a lista de membros após a alteração
+                                        const updatedMembers = await competitionService.listMembers(competitionId as string);
+                                        setMembers(updatedMembers);
+                                    }).catch(error => {
+                                        console.error('Erro ao gerenciar membros:', error);
+                                        Alert.alert('Erro', 'Não foi possível gerenciar os membros');
+                                    });
+                                }}
+                                colors={colors}
+                            >
+                                <Feather 
+                                    name={communityMembers.every(cm => members.some(m => m.player_id === cm.player_id)) 
+                                        ? "check-circle" 
+                                        : "circle"} 
+                                    size={20} 
+                                    color={colors.primary} 
+                                />
+                                <SelectAllButtonText colors={colors}>
+                                    {communityMembers.every(cm => members.some(m => m.player_id === cm.player_id))
+                                        ? "Desmarcar Todos"
+                                        : "Selecionar Todos"}
+                                </SelectAllButtonText>
+                            </SelectAllButton>
+
+                            <MembersList 
+                                data={communityMembers} 
+                                keyExtractor={(item) => item.id}
+                                renderItem={({ item }) => (
+                                    <MemberItem key={item.id} colors={colors}>
+                                        <MemberInfo>
+                                            <MemberName colors={colors}>{item.players.name}</MemberName>
+                                        </MemberInfo>
+                                        <SelectButton
+                                            onPress={() => handleToggleMember(item.player_id)}
+                                            selected={members.some(m => m.player_id === item.player_id)}
+                                            colors={colors}
+                                        >
+                                            {members.some(m => m.player_id === item.player_id) ? (
+                                                <Feather name="check-circle" size={24} color={colors.primary} />
+                                            ) : (
+                                                <Feather name="circle" size={24} color={colors.gray300} />
+                                            )}
+                                        </SelectButton>
+                                    </MemberItem>
+                                )} 
+                                contentContainerStyle={{ paddingBottom: 16 }}
+                            />
+                        </ModalBody>
+                    </MemberModalContainer>
+                </ModalOverlay>
+            </Modal>
+
+            <Modal
                 visible={isGamesModalVisible}
                 animationType="slide"
                 onRequestClose={() => setIsGamesModalVisible(false)}
@@ -468,42 +555,6 @@ export default function CompetitionDetails() {
                             )}
                             contentContainerStyle={{ padding: 16 }}
                         />
-                    </ModalContent>
-                </ModalContainer>
-            </Modal>
-
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={isAddMemberModalVisible}
-                onRequestClose={() => setIsAddMemberModalVisible(false)}
-            >
-                <ModalContainer colors={colors}>
-                    <ModalContent>
-                        <ModalHeader colors={colors}>
-                            <CloseButton onPress={() => setIsAddMemberModalVisible(false)}>
-                                <Feather name="x" size={24} color={colors.gray100} />
-                            </CloseButton>
-                        </ModalHeader>
-
-                        <MembersList data={communityMembers} renderItem={({ item }) => (
-                            <MemberItem key={item.id} colors={colors}>
-                                <MemberInfo>
-                                    <MemberName colors={colors}>{item.players.name}</MemberName>
-                                </MemberInfo>
-                                <SelectButton
-                                    onPress={() => handleToggleMember(item.player_id)}
-                                    selected={members.some(m => m.player_id === item.player_id)}
-                                    colors={colors}
-                                >
-                                    {members.some(m => m.player_id === item.player_id) ? (
-                                        <Feather name="check-circle" size={24} color={colors.primary} />
-                                    ) : (
-                                        <Feather name="circle" size={24} color={colors.gray300} />
-                                    )}
-                                </SelectButton>
-                            </MemberItem>
-                        )} />
                     </ModalContent>
                 </ModalContainer>
             </Modal>
@@ -588,13 +639,9 @@ const MembersScrollView = styled.ScrollView`
     margin-top: 16px;
 `;
 
-const MembersList = styled.FlatList.attrs(() => ({
-    contentContainerStyle: {
-        paddingBottom: 16
-    }
-}))`
+const MembersList = styled.FlatList`
     flex: 1;
-    margin-top: 16px;
+    width: 100%;
 `;
 
 const MemberItem = styled.View`
@@ -627,6 +674,11 @@ const ModalHeader = styled.View`
     justify-content: space-between;
     padding: 20px;
     background-color: ${props => props.colors.backgroundMedium};
+`;
+
+const ModalBody = styled.View`
+    flex: 1;
+    padding: 16px;
 `;
 
 const ModalContent = styled.View`
@@ -814,4 +866,35 @@ const HeaderTitle = styled.Text`
     font-weight: bold;
     color: ${props => props.colors.gray100};
     flex: 1;
+`;
+
+const ModalOverlay = styled.View`
+    flex: 1;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+`;
+
+const MemberModalContainer = styled.View`
+    width: 90%;
+    height: 80%;
+    background-color: ${props => props.colors.backgroundDark};
+    border-radius: 16px;
+    overflow: hidden;
+    elevation: 5;
+`;
+
+const SelectAllButton = styled.TouchableOpacity`
+    flex-direction: row;
+    align-items: center;
+    padding: 8px;
+    margin-bottom: 16px;
+    background-color: ${props => props.colors.backgroundMedium};
+    border-radius: 8px;
+`;
+
+const SelectAllButtonText = styled.Text`
+    color: ${props => props.colors.gray100};
+    font-size: 16px;
+    margin-left: 8px;
 `;
