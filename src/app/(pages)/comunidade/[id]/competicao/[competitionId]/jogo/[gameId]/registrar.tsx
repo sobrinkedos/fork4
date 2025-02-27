@@ -8,10 +8,11 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import styled from 'styled-components/native';
-import { colors } from '@/styles/colors';
 import { Feather } from '@expo/vector-icons';
 import { gameService, VictoryType } from '@/services/gameService';
 import { competitionService } from '@/services/competitionService';
+import { InternalHeader } from '@/components/InternalHeader';
+import { useTheme } from '@/contexts/ThemeProvider';
 
 interface VictoryOption {
     type: VictoryType;
@@ -67,6 +68,7 @@ const victoryOptions: VictoryOption[] = [
 export default function RegisterResult() {
     const router = useRouter();
     const { id: communityId, competitionId, gameId } = useLocalSearchParams();
+    const { colors } = useTheme();
     const [selectedType, setSelectedType] = useState<VictoryType | null>(null);
     const [winnerTeam, setWinnerTeam] = useState<'team1' | 'team2' | null>(null);
     const [loading, setLoading] = useState(false);
@@ -146,26 +148,20 @@ export default function RegisterResult() {
 
     if (loading) {
         return (
-            <LoadingContainer>
+            <LoadingContainer colors={colors}>
                 <ActivityIndicator size="large" color={colors.primary} />
             </LoadingContainer>
         );
     }
 
     return (
-        <Container>
-            <Header>
-                <BackButton onPress={() => router.back()}>
-                    <Feather name="arrow-left" size={24} color={colors.gray100} />
-                </BackButton>
-                <HeaderTitle>Registrar Resultado</HeaderTitle>
-            </Header>
-
+        <Container colors={colors}>
+            <InternalHeader title="Registrar Resultado" onBackPress={() => router.back()} />
             <MainContent 
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 32 }}
             >
-                <SectionTitle>Tipo de Vitória</SectionTitle>
+                <SectionTitle colors={colors}>Tipo de Vitória</SectionTitle>
 
                 <VictoryOptionsGrid>
                     {victoryOptions.map(option => (
@@ -178,13 +174,14 @@ export default function RegisterResult() {
                                     }
                                 }}
                                 selected={selectedType === option.type}
+                                colors={colors}
                             >
                                 <VictoryOptionContent>
-                                    <VictoryTitle>{option.label}</VictoryTitle>
-                                    <VictoryDescription>{option.description}</VictoryDescription>
+                                    <VictoryTitle colors={colors}>{option.label}</VictoryTitle>
+                                    <VictoryDescription colors={colors}>{option.description}</VictoryDescription>
                                 </VictoryOptionContent>
                                 {selectedType === option.type && (
-                                    <Feather name="check" size={24} color={colors.primary} />
+                                    <Feather name="check" size={24} color={colors.buttonText} />
                                 )}
                             </VictoryOption>
                         </VictoryOptionWrapper>
@@ -193,15 +190,16 @@ export default function RegisterResult() {
 
                 {selectedType && selectedType !== 'empate' && (
                     <>
-                        <SectionTitle>Time Vencedor</SectionTitle>
+                        <SectionTitle colors={colors}>Time Vencedor</SectionTitle>
                         <TeamOptions>
                             <TeamOption
                                 selected={winnerTeam === 'team1'}
                                 onPress={() => setWinnerTeam('team1')}
+                                colors={colors}
                             >
                                 <TeamOptionContent>
                                     {team1Players.map((player, index) => (
-                                        <TeamOptionText key={player.id}>
+                                        <TeamOptionText key={player.id} colors={colors}>
                                             {player.name}
                                             {index < team1Players.length - 1 ? ' e ' : ''}
                                         </TeamOptionText>
@@ -212,10 +210,11 @@ export default function RegisterResult() {
                             <TeamOption
                                 selected={winnerTeam === 'team2'}
                                 onPress={() => setWinnerTeam('team2')}
+                                colors={colors}
                             >
                                 <TeamOptionContent>
                                     {team2Players.map((player, index) => (
-                                        <TeamOptionText key={player.id}>
+                                        <TeamOptionText key={player.id} colors={colors}>
                                             {player.name}
                                             {index < team2Players.length - 1 ? ' e ' : ''}
                                         </TeamOptionText>
@@ -226,44 +225,24 @@ export default function RegisterResult() {
                     </>
                 )}
 
-                <RegisterButton onPress={handleRegisterResult}>
-                    <RegisterButtonText>Registrar Resultado</RegisterButtonText>
+                <RegisterButton onPress={handleRegisterResult} colors={colors}>
+                    <RegisterButtonText colors={colors}>Registrar Resultado</RegisterButtonText>
                 </RegisterButton>
             </MainContent>
         </Container>
     );
 }
 
-const Container = styled.View`
+const Container = styled.View<{ colors: any }>`
     flex: 1;
-    background-color: ${colors.backgroundDark};
+    background-color: ${props => props.colors.background};
 `;
 
-const LoadingContainer = styled.View`
+const LoadingContainer = styled.View<{ colors: any }>`
     flex: 1;
     align-items: center;
     justify-content: center;
-    background-color: ${colors.backgroundDark};
-`;
-
-const Header = styled.View`
-    padding: 16px;
-    padding-top: 60px;
-    background-color: ${colors.backgroundMedium};
-    border-bottom-width: 1px;
-    border-bottom-color: ${colors.border};
-    flex-direction: row;
-    align-items: center;
-`;
-
-const BackButton = styled.TouchableOpacity`
-    margin-right: 16px;
-`;
-
-const HeaderTitle = styled.Text`
-    color: ${colors.textPrimary};
-    font-size: 24px;
-    font-weight: bold;
+    background-color: ${props => props.colors.background};
 `;
 
 const MainContent = styled.ScrollView`
@@ -271,81 +250,12 @@ const MainContent = styled.ScrollView`
     padding: 16px;
 `;
 
-const SectionTitle = styled.Text`
-    color: ${colors.textPrimary};
+const SectionTitle = styled.Text<{ colors: any }>`
+    color: ${props => props.colors.text};
     font-size: 20px;
     font-weight: bold;
     margin-bottom: 16px;
     margin-top: 24px;
-`;
-
-const VictoryOption = styled.TouchableOpacity<{ selected: boolean }>`
-    background-color: ${colors.backgroundMedium};
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 8px;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    border: 1px solid ${props => props.selected ? colors.primary : colors.border};
-`;
-
-const VictoryOptionContent = styled.View`
-    flex: 1;
-    margin-right: 16px;
-`;
-
-const VictoryTitle = styled.Text`
-    color: ${colors.textPrimary};
-    font-size: 16px;
-    font-weight: bold;
-`;
-
-const VictoryDescription = styled.Text`
-    color: ${colors.textSecondary};
-    font-size: 14px;
-    margin-top: 4px;
-`;
-
-const TeamOptions = styled.View`
-    flex-direction: row;
-    margin-horizontal: -4px;
-`;
-
-const TeamOption = styled.TouchableOpacity<{ selected: boolean }>`
-    flex: 1;
-    background-color: ${colors.backgroundMedium};
-    border-radius: 8px;
-    padding: 16px;
-    margin-horizontal: 4px;
-    align-items: center;
-    border: 1px solid ${props => props.selected ? colors.primary : colors.border};
-`;
-
-const TeamOptionContent = styled.View`
-    align-items: center;
-    justify-content: center;
-`;
-
-const TeamOptionText = styled.Text`
-    color: ${colors.textPrimary};
-    font-size: 16px;
-    text-align: center;
-`;
-
-const RegisterButton = styled.TouchableOpacity`
-    background-color: ${colors.primary};
-    padding: 16px;
-    border-radius: 8px;
-    align-items: center;
-    margin-top: 24px;
-    margin-bottom: 24px;
-`;
-
-const RegisterButtonText = styled.Text`
-    color: ${colors.textPrimary};
-    font-size: 16px;
-    font-weight: bold;
 `;
 
 const VictoryOptionsGrid = styled.View`
@@ -357,4 +267,73 @@ const VictoryOptionsGrid = styled.View`
 const VictoryOptionWrapper = styled.View`
     width: 50%;
     padding: 4px;
+`;
+
+const VictoryOption = styled.TouchableOpacity<{ selected: boolean, colors: any }>`
+    background-color: ${props => props.selected ? props.colors.primary : props.colors.card};
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 8px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid ${props => props.selected ? '#fff' : props.colors.border};
+`;
+
+const VictoryOptionContent = styled.View`
+    flex: 1;
+    margin-right: 16px;
+`;
+
+const VictoryTitle = styled.Text<{ colors: any }>`
+    color: ${props => props.colors.text};
+    font-size: 16px;
+    font-weight: bold;
+`;
+
+const VictoryDescription = styled.Text<{ colors: any }>`
+    color: ${props => props.colors.textSecondary};
+    font-size: 14px;
+    margin-top: 4px;
+`;
+
+const TeamOptions = styled.View`
+    flex-direction: row;
+    margin: -4px;
+`;
+
+const TeamOption = styled.TouchableOpacity<{ selected: boolean, colors: any }>`
+    flex: 1;
+    background-color: ${props => props.selected ? props.colors.primary : props.colors.card};
+    border-radius: 8px;
+    padding: 16px;
+    margin: 4px;
+    align-items: center;
+    border: 1px solid ${props => props.selected ? '#fff' : props.colors.border};
+`;
+
+const TeamOptionContent = styled.View`
+    align-items: center;
+    justify-content: center;
+`;
+
+const TeamOptionText = styled.Text<{ colors: any }>`
+    color: ${props => props.colors.text};
+    font-size: 16px;
+    text-align: center;
+`;
+
+const RegisterButton = styled.TouchableOpacity<{ colors: any }>`
+    background-color: ${props => props.colors.primary};
+    padding: 16px;
+    border-radius: 8px;
+    align-items: center;
+    margin-top: 24px;
+    margin-bottom: 24px;
+`;
+
+const RegisterButtonText = styled.Text<{ colors: any }>`
+    color: ${props => props.colors.buttonText};
+    font-size: 16px;
+    font-weight: bold;
 `;

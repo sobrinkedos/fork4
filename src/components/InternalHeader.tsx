@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
 import { Feather } from '@expo/vector-icons';
-import { StatusBar, Platform } from 'react-native';
+import { View, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 
 type InternalHeaderProps = {
@@ -13,18 +13,6 @@ type InternalHeaderProps = {
 
 export function InternalHeader({ title, onBack, rightContent }: InternalHeaderProps) {
     const router = useRouter();
-    const statusBarHeight = StatusBar.currentHeight || 0;
-
-    useEffect(() => {
-        // Configuração explícita para Android
-        if (Platform.OS === 'android') {
-            StatusBar.setBackgroundColor(colors.primary);
-            StatusBar.setBarStyle('light-content');
-            StatusBar.setTranslucent(false);
-        } else {
-            StatusBar.setBarStyle('light-content');
-        }
-    }, []);
 
     const handleBack = () => {
         if (onBack) {
@@ -35,9 +23,13 @@ export function InternalHeader({ title, onBack, rightContent }: InternalHeaderPr
     };
 
     return (
-        <SafeAreaContainer>
+        <View style={{
+            width: '100%',
+            backgroundColor: colors.primary,
+            marginTop: 0
+        }}>
             <StatusBar backgroundColor={colors.primary} barStyle="light-content" />
-            <Container statusBarHeight={statusBarHeight}>
+            <Container>
                 <HeaderLeft>
                     <BackButton onPress={handleBack}>
                         <Feather name="arrow-left" size={24} color={colors.white} />
@@ -50,23 +42,21 @@ export function InternalHeader({ title, onBack, rightContent }: InternalHeaderPr
                     </HeaderRight>
                 )}
             </Container>
-        </SafeAreaContainer>
+        </View>
     );
 }
 
-const SafeAreaContainer = styled.View`
-    background-color: ${colors.primary};
-    width: 100%;
-`;
-
-const Container = styled.View<{ statusBarHeight: number }>`
+const Container = styled.View`
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 12px;
+    padding-bottom: 12px;
     background-color: ${colors.primary};
-    padding-top: ${({ statusBarHeight }) => Platform.OS === 'ios' ? 44 : 16}px;
     width: 100%;
+    margin: 0;
 `;
 
 const HeaderLeft = styled.View`
