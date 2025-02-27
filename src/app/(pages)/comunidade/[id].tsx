@@ -453,15 +453,25 @@ export default function CommunityDetails() {
     }, [showOrganizers]);
 
     const handleAddOrganizer = async () => {
-        if (!community || !organizerEmail || !session?.user?.id) return;
+        if (!community || !organizerEmail || !session?.user?.id) {
+            Alert.alert('Erro', 'Por favor, preencha o email do organizador');
+            return;
+        }
 
         try {
             setLoading(true);
+            
+            // Validação básica de email
+            if (!organizerEmail.includes('@') || !organizerEmail.includes('.')) {
+                throw new Error('Por favor, insira um email válido');
+            }
+            
             await communityOrganizersService.addOrganizer(community.id, organizerEmail, session.user.id);
             const organizersData = await communityOrganizersService.listOrganizers(community.id);
             setOrganizers(organizersData);
             setOrganizerEmail('');
             setShowAddOrganizerModal(false);
+            Alert.alert('Sucesso', 'Organizador adicionado com sucesso!');
         } catch (error) {
             console.error('Erro ao adicionar organizador:', error);
             if (error instanceof Error) {
