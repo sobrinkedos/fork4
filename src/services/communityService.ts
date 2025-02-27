@@ -190,19 +190,35 @@ class CommunityService {
             }
 
             // Adicionar o criador como organizador
-            const { error: organizerError } = await supabase
+            // Primeiro, verificar se já existe como organizador
+            const { data: existingOrganizer, error: checkError } = await supabase
                 .from('community_organizers')
-                .insert([
-                    {
-                        community_id: community.id,
-                        user_id: userId,
-                        created_by: userId
-                    }
-                ]);
+                .select('id')
+                .eq('community_id', community.id)
+                .eq('user_id', userId)
+                .maybeSingle();
 
-            if (organizerError) {
-                console.error('Erro ao adicionar criador como organizador:', organizerError);
+            if (checkError) {
+                console.error('Erro ao verificar organizador existente:', checkError);
                 // Não vamos lançar o erro aqui para não impedir a criação da comunidade
+            }
+
+            // Só adiciona se não existir ainda
+            if (!existingOrganizer) {
+                const { error: organizerError } = await supabase
+                    .from('community_organizers')
+                    .insert([
+                        {
+                            community_id: community.id,
+                            user_id: userId,
+                            created_by: userId
+                        }
+                    ]);
+
+                if (organizerError) {
+                    console.error('Erro ao adicionar criador como organizador:', organizerError);
+                    // Não vamos lançar o erro aqui para não impedir a criação da comunidade
+                }
             }
 
             // Registrar a atividade de criação da comunidade com sistema de retry
