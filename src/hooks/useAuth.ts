@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { authService } from '@/services/authService';
+import { Alert } from 'react-native';
+import { router } from 'expo-router';
 
 export function useAuth() {
     const [session, setSession] = useState<Session | null>(null);
@@ -11,6 +13,9 @@ export function useAuth() {
         // Verifica a sessão atual
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
+            setLoading(false);
+        }).catch(error => {
+            console.error('Erro ao obter sessão:', error);
             setLoading(false);
         });
 
@@ -23,22 +28,83 @@ export function useAuth() {
         return () => subscription.unsubscribe();
     }, []);
 
+    // Função para lidar com erros de autenticação
+    const handleAuthError = (error: any) => {
+        console.error('Erro de autenticação:', error);
+        
+        // Se for erro de refresh token, fazer logout e redirecionar para login
+        if (error?.message?.includes('Invalid Refresh Token') || 
+            error?.message?.includes('Refresh Token Not Found')) {
+            
+            Alert.alert(
+                'Sessão expirada',
+                'Sua sessão expirou. Por favor, faça login novamente.',
+                [
+                    { 
+                        text: 'OK', 
+                        onPress: async () => {
+                            await supabase.auth.signOut();
+                            setSession(null);
+                            router.replace('/login');
+                        } 
+                    }
+                ]
+            );
+        }
+    };
+
+    // Adicionar listener para erros de autenticação
+    useEffect(() => {
+        const subscription = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'TOKEN_REFRESHED') {
+                console.log('Token atualizado com sucesso');
+            }
+            
+            if (event === 'SIGNED_OUT') {
+                console.log('Usuário desconectado');
+                setSession(null);
+            }
+        });
+
+        return () => subscription.data.subscription.unsubscribe();
+    }, []);
+
     const user = session?.user ?? null;
     const value = {
         user,
         isAuthenticated: !!user,
         loading,
         signIn: async (email: string, password: string) => {
-            return await authService.signIn(email, password);
+            try {
+                return await authService.signIn(email, password);
+            } catch (error) {
+                handleAuthError(error);
+                throw error;
+            }
         },
         signUp: async (email: string, password: string, name?: string) => {
-            return await authService.signUp(email, password, name);
+            try {
+                return await authService.signUp(email, password, name);
+            } catch (error) {
+                handleAuthError(error);
+                throw error;
+            }
         },
         signOut: async () => {
-            return await authService.signOut();
+            try {
+                return await authService.signOut();
+            } catch (error) {
+                handleAuthError(error);
+                throw error;
+            }
         },
         resetPassword: async (email: string) => {
-            return await authService.resetPassword(email);
+            try {
+                return await authService.resetPassword(email);
+            } catch (error) {
+                handleAuthError(error);
+                throw error;
+            }
         }
     };
 

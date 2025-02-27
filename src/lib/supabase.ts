@@ -58,5 +58,14 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
+        onAuthStateChange: (event, session) => {
+            if (event === 'TOKEN_REFRESHED') {
+                console.log('Token atualizado com sucesso');
+            } else if (event === 'SIGNED_OUT') {
+                console.log('Usuário desconectado');
+            } else if (event === 'USER_UPDATED') {
+                console.log('Dados do usuário atualizados');
+            }
+        }
     },
 });
