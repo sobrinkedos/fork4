@@ -16,13 +16,13 @@ const tabs = [
         name: 'comunidades',
         path: '/(tabs)/comunidades',
         icon: 'users',
-        label: 'Comunidades',
+        label: 'Comunidade',
     },
     {
         name: 'competicoes',
         path: '/(tabs)/competicoes',
         icon: 'award',
-        label: 'Competições',
+        label: 'Competição',
     },
     {
         name: 'jogadores',
@@ -65,7 +65,7 @@ const Container = styled.View`
     flex-direction: row;
     justify-content: space-around;
     align-items: center;
-    padding: 8px 4px;
+    padding: 8px 0;
     background-color: ${({ theme }) => theme.colors.backgroundMedium};
     border-top-width: 1px;
     border-top-color: ${({ theme }) => theme.colors.border};
@@ -86,9 +86,11 @@ const TabIcon = styled(Feather)``;
 
 const TabLabel = styled.Text<{ isActive: boolean }>`
     margin-top: 2px;
-    font-size: 11px;
+    font-size: 10px;
     color: ${({ isActive, theme }) =>
         isActive ? theme.colors.primary : theme.colors.textSecondary};
     font-weight: ${({ isActive }) => (isActive ? 'bold' : 'normal')};
     text-align: center;
+    width: 100%;
+    white-space: nowrap;
 `;

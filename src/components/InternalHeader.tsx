@@ -2,10 +2,8 @@ import React, { useEffect } from 'react';
 import styled from 'styled-components/native';
 import { colors } from '@/styles/colors';
 import { Feather } from '@expo/vector-icons';
-import { TouchableOpacity, StatusBar, Platform, SafeAreaView } from 'react-native';
+import { StatusBar, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/hooks/useAuth';
-import { ThemeToggle } from './ThemeToggle';
 
 type InternalHeaderProps = {
     title: string;
@@ -15,7 +13,6 @@ type InternalHeaderProps = {
 
 export function InternalHeader({ title, onBack, rightContent }: InternalHeaderProps) {
     const router = useRouter();
-    const { signOut } = useAuth();
     const statusBarHeight = StatusBar.currentHeight || 0;
 
     useEffect(() => {
@@ -37,20 +34,6 @@ export function InternalHeader({ title, onBack, rightContent }: InternalHeaderPr
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            const response = await signOut();
-            if (response.success) {
-                // Redirecionar para a página de login após logout bem-sucedido
-                router.replace('/login');
-            } else {
-                console.error('Erro ao fazer logout:', response.error);
-            }
-        } catch (error) {
-            console.error('Erro ao fazer logout:', error);
-        }
-    };
-
     return (
         <SafeAreaContainer>
             <StatusBar backgroundColor={colors.primary} barStyle="light-content" />
@@ -61,13 +44,11 @@ export function InternalHeader({ title, onBack, rightContent }: InternalHeaderPr
                     </BackButton>
                     <HeaderTitle>{title}</HeaderTitle>
                 </HeaderLeft>
-                <HeaderRight>
-                    {rightContent && <RightContentContainer>{rightContent}</RightContentContainer>}
-                    <ThemeToggle />
-                    <IconButton onPress={handleLogout}>
-                        <Feather name="log-out" size={24} color={colors.white} />
-                    </IconButton>
-                </HeaderRight>
+                {rightContent && (
+                    <HeaderRight>
+                        <RightContentContainer>{rightContent}</RightContentContainer>
+                    </HeaderRight>
+                )}
             </Container>
         </SafeAreaContainer>
     );
@@ -75,6 +56,7 @@ export function InternalHeader({ title, onBack, rightContent }: InternalHeaderPr
 
 const SafeAreaContainer = styled.View`
     background-color: ${colors.primary};
+    width: 100%;
 `;
 
 const Container = styled.View<{ statusBarHeight: number }>`
@@ -84,6 +66,7 @@ const Container = styled.View<{ statusBarHeight: number }>`
     padding: 16px;
     background-color: ${colors.primary};
     padding-top: ${({ statusBarHeight }) => Platform.OS === 'ios' ? 44 : 16}px;
+    width: 100%;
 `;
 
 const HeaderLeft = styled.View`
@@ -110,8 +93,4 @@ const HeaderRight = styled.View`
 
 const RightContentContainer = styled.View`
     margin-right: 16px;
-`;
-
-const IconButton = styled.TouchableOpacity`
-    padding: 4px;
 `;

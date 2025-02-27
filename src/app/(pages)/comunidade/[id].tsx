@@ -57,12 +57,12 @@ type Competition = {
 const Container = styled.View`
     flex: 1;
     background-color: ${props => props.colors.backgroundDark};
-    padding: 16px 8px;
+    padding: 0;
 `;
 
 const MainContent = styled.View`
     flex: 1;
-    background-color: ${props => props.colors.background};
+    padding: 8px;
 `;
 
 const ScrollContainer = styled.ScrollView`
@@ -884,17 +884,13 @@ export default function CommunityDetails() {
         <Container colors={colors}>
             <InternalHeader 
                 title={community?.name || 'Carregando...'}
-                showBackButton
-                onBackPress={() => router.back()}
-                rightComponent={
-                    <TouchableOpacity onPress={() => router.push(`/comunidade/${params.id}/ranking`)}>
-                        <Feather name="award" size={24} color={colors.text} />
-                    </TouchableOpacity>
-                }
+                onBack={() => router.back()}
             />
-            <ScrollView>
-                {renderContent()}
-            </ScrollView>
+            <MainContent>
+                <ScrollView>
+                    {renderContent()}
+                </ScrollView>
+            </MainContent>
 
             <Modal
                 visible={showAddOrganizerModal}

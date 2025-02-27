@@ -9,11 +9,12 @@ import { InternalHeader } from '@/components/InternalHeader';
 const Container = styled.View`
   flex: 1;
   background-color: ${props => props.theme.colors.backgroundDark};
+  padding: 0;
 `;
 
 const Content = styled.View`
   flex: 1;
-  padding: 16px;
+  padding: 8px;
 `;
 
 const SectionTitle = styled.Text`

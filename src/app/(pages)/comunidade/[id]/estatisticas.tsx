@@ -50,75 +50,83 @@ export default function CommunityStatsPage() {
     return (
         <Container>
             <InternalHeader title={`Estatísticas - ${community?.name || ''}`} />
-            <Content>
-                <Section>
-                    <SectionTitle>Jogadores</SectionTitle>
-                    {stats?.players.map((player) => (
-                        <StatCard key={player.id}>
-                            <PlayerName>{player.name}</PlayerName>
-                            <StatRow>
-                                <StatItem>
-                                    <StatLabel>Vitórias</StatLabel>
-                                    <StatValue>{player.wins}</StatValue>
-                                </StatItem>
-                                <StatItem>
-                                    <StatLabel>Derrotas</StatLabel>
-                                    <StatValue>{player.losses}</StatValue>
-                                </StatItem>
-                                <StatItem>
-                                    <StatLabel>Pontos</StatLabel>
-                                    <StatValue>{player.score}</StatValue>
-                                </StatItem>
-                            </StatRow>
-                            <StatRow>
-                                <StatItem>
-                                    <StatLabel>Buchudas</StatLabel>
-                                    <StatValue>+{player.buchudas_given} / -{player.buchudas_taken}</StatValue>
-                                </StatItem>
-                                <StatItem>
-                                    <StatLabel>Buchudas de Ré</StatLabel>
-                                    <StatValue>+{player.buchudas_de_re_given} / -{player.buchudas_de_re_taken}</StatValue>
-                                </StatItem>
-                            </StatRow>
-                        </StatCard>
-                    ))}
-                </Section>
+            {loading ? (
+                <LoadingContainer>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </LoadingContainer>
+            ) : (
+                <Content>
+                    <ScrollView>
+                        <Section>
+                            <SectionTitle>Jogadores</SectionTitle>
+                            {stats?.players.map((player) => (
+                                <StatCard key={player.id}>
+                                    <PlayerName>{player.name}</PlayerName>
+                                    <StatRow>
+                                        <StatItem>
+                                            <StatLabel>Vitórias</StatLabel>
+                                            <StatValue>{player.wins}</StatValue>
+                                        </StatItem>
+                                        <StatItem>
+                                            <StatLabel>Derrotas</StatLabel>
+                                            <StatValue>{player.losses}</StatValue>
+                                        </StatItem>
+                                        <StatItem>
+                                            <StatLabel>Pontos</StatLabel>
+                                            <StatValue>{player.score}</StatValue>
+                                        </StatItem>
+                                    </StatRow>
+                                    <StatRow>
+                                        <StatItem>
+                                            <StatLabel>Buchudas</StatLabel>
+                                            <StatValue>+{player.buchudas_given} / -{player.buchudas_taken}</StatValue>
+                                        </StatItem>
+                                        <StatItem>
+                                            <StatLabel>Buchudas de Ré</StatLabel>
+                                            <StatValue>+{player.buchudas_de_re_given} / -{player.buchudas_de_re_taken}</StatValue>
+                                        </StatItem>
+                                    </StatRow>
+                                </StatCard>
+                            ))}
+                        </Section>
 
-                <Section>
-                    <SectionTitle>Duplas</SectionTitle>
-                    {stats?.pairs.map((pair, index) => (
-                        <StatCard key={index}>
-                            <PairNames>
-                                {pair.players.map((player) => player.name).join(' & ')}
-                            </PairNames>
-                            <StatRow>
-                                <StatItem>
-                                    <StatLabel>Vitórias</StatLabel>
-                                    <StatValue>{pair.wins}</StatValue>
-                                </StatItem>
-                                <StatItem>
-                                    <StatLabel>Derrotas</StatLabel>
-                                    <StatValue>{pair.losses}</StatValue>
-                                </StatItem>
-                                <StatItem>
-                                    <StatLabel>Pontos</StatLabel>
-                                    <StatValue>{pair.score}</StatValue>
-                                </StatItem>
-                            </StatRow>
-                            <StatRow>
-                                <StatItem>
-                                    <StatLabel>Buchudas</StatLabel>
-                                    <StatValue>+{pair.buchudas_given} / -{pair.buchudas_taken}</StatValue>
-                                </StatItem>
-                                <StatItem>
-                                    <StatLabel>Buchudas de Ré</StatLabel>
-                                    <StatValue>+{pair.buchudas_de_re_given} / -{pair.buchudas_de_re_taken}</StatValue>
-                                </StatItem>
-                            </StatRow>
-                        </StatCard>
-                    ))}
-                </Section>
-            </Content>
+                        <Section>
+                            <SectionTitle>Duplas</SectionTitle>
+                            {stats?.pairs.map((pair, index) => (
+                                <StatCard key={index}>
+                                    <PairNames>
+                                        {pair.players.map((player) => player.name).join(' & ')}
+                                    </PairNames>
+                                    <StatRow>
+                                        <StatItem>
+                                            <StatLabel>Vitórias</StatLabel>
+                                            <StatValue>{pair.wins}</StatValue>
+                                        </StatItem>
+                                        <StatItem>
+                                            <StatLabel>Derrotas</StatLabel>
+                                            <StatValue>{pair.losses}</StatValue>
+                                        </StatItem>
+                                        <StatItem>
+                                            <StatLabel>Pontos</StatLabel>
+                                            <StatValue>{pair.score}</StatValue>
+                                        </StatItem>
+                                    </StatRow>
+                                    <StatRow>
+                                        <StatItem>
+                                            <StatLabel>Buchudas</StatLabel>
+                                            <StatValue>+{pair.buchudas_given} / -{pair.buchudas_taken}</StatValue>
+                                        </StatItem>
+                                        <StatItem>
+                                            <StatLabel>Buchudas de Ré</StatLabel>
+                                            <StatValue>+{pair.buchudas_de_re_given} / -{pair.buchudas_de_re_taken}</StatValue>
+                                        </StatItem>
+                                    </StatRow>
+                                </StatCard>
+                            ))}
+                        </Section>
+                    </ScrollView>
+                </Content>
+            )}
         </Container>
     );
 }
@@ -126,6 +134,7 @@ export default function CommunityStatsPage() {
 const Container = styled.View`
     flex: 1;
     background-color: ${props => props.theme.colors.backgroundDark};
+    padding: 0;
 `;
 
 const LoadingContainer = styled.View`
@@ -134,9 +143,9 @@ const LoadingContainer = styled.View`
     align-items: center;
 `;
 
-const Content = styled.ScrollView`
+const Content = styled.View`
     flex: 1;
-    padding: 16px;
+    padding: 8px;
 `;
 
 const Section = styled.View`
