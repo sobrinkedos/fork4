@@ -29,6 +29,7 @@ type Community = {
     name: string;
     description: string;
     created_at: string;
+    created_by: string;
 };
 
 type Member = {
@@ -56,6 +57,7 @@ type Competition = {
 const Container = styled.View`
     flex: 1;
     background-color: ${props => props.colors.backgroundDark};
+    padding: 16px 8px;
 `;
 
 const MainContent = styled.View`
@@ -73,24 +75,30 @@ const ContentContainer = styled.View`
     background-color: ${props => props.colors.background};
 `;
 
-const Section = styled.View`
-    margin-bottom: 24px;
+const Section = styled.View<{ colors: any }>`
     background-color: ${props => props.colors.gray800};
     border-radius: 8px;
-    padding: 16px;
+    padding: 12px;
+    margin: 8px 0;
 `;
 
-const SectionHeader = styled.View`
+const SectionHeader = styled.TouchableOpacity`
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
 `;
 
-const SectionTitle = styled.Text`
-    font-size: 18px;
+const HeaderLeft = styled.View`
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+`;
+
+const SectionTitle = styled.Text<{ colors: any }>`
+    color: ${props => props.colors.text};
+    font-size: 16px;
     font-weight: bold;
-    color: ${props => props.colors.gray100};
 `;
 
 const ExpandButton = styled.TouchableOpacity`
@@ -383,10 +391,10 @@ const StatusText = styled.Text`
     font-size: 12px;
 `;
 
-const Description = styled.Text`
+const Description = styled.Text<{ colors: any }>`
     color: ${props => props.colors.gray300};
     font-size: 14px;
-    margin-top: 8px;
+    line-height: 20px;
 `;
 
 const ShowMoreContainer = styled.TouchableOpacity`
@@ -401,12 +409,6 @@ const ShowMoreText = styled.Text`
     margin-left: 4px;
 `;
 
-const HeaderLeft = styled.View`
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-`;
-
 const StatsButton = styled.TouchableOpacity<{ pressed?: boolean; colors: any }>`
     flex-direction: row;
     align-items: center;
@@ -414,8 +416,7 @@ const StatsButton = styled.TouchableOpacity<{ pressed?: boolean; colors: any }>`
     background-color: ${({ colors }) => colors.primary};
     padding: 12px 16px;
     border-radius: 8px;
-    margin: 16px;
-    opacity: ${({ pressed }) => pressed ? 0.8 : 1};
+    margin: 8px 16px;
 `;
 
 const StatsButtonText = styled.Text<{ colors: any }>`
@@ -447,6 +448,7 @@ export default function CommunityDetails() {
     const [newOrganizerEmail, setNewOrganizerEmail] = useState('');
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [isPressed, setIsPressed] = useState(false);
+    const [isOrganizer, setIsOrganizer] = useState(false);
 
     const rotateAnimMembers = useRef(new Animated.Value(0)).current;
     const rotateAnimOrganizers = useRef(new Animated.Value(0)).current;
@@ -502,7 +504,7 @@ export default function CommunityDetails() {
             if (error instanceof Error && error.message.includes('não encontrado')) {
                 Alert.alert(
                     'Usuário não encontrado',
-                    'Este usuário ainda não está cadastrado. Deseja enviar um convite por email?',
+                    'Este usuário ainda não está cadastrado no sistema. Deseja enviar um convite por email?',
                     [
                         {
                             text: 'Não',
@@ -586,6 +588,13 @@ export default function CommunityDetails() {
 
         loadOrganizers();
     }, [params.id]);
+
+    useEffect(() => {
+        if (session?.user?.id && organizers.length > 0) {
+            const userIsOrganizer = organizers.some(org => org.user_id === session.user?.id);
+            setIsOrganizer(userIsOrganizer);
+        }
+    }, [organizers, session?.user?.id]);
 
     useFocusEffect(
         useCallback(() => {
@@ -685,6 +694,72 @@ export default function CommunityDetails() {
         }
     };
 
+    const renderMembers = () => (
+        <>
+            {selectedMembers.length > 0 && (
+                <SelectAllHeader>
+                    <SelectAllButton onPress={handleSelectAllMembers}>
+                        <Feather 
+                            name={selectedMembers.length === members.length ? "check-square" : "square"} 
+                            size={24} 
+                            color={colors.primary} 
+                        />
+                        <SelectAllText colors={colors}>Selecionar Todos</SelectAllText>
+                    </SelectAllButton>
+                </SelectAllHeader>
+            )}
+            {members.map(member => (
+                <MemberCard key={member.player_id} colors={colors}>
+                    <MemberInfo>
+                        <MemberName colors={colors}>{member.players.name}</MemberName>
+                    </MemberInfo>
+                    <TouchableOpacity onPress={() => handleSelectMember(member.player_id)}>
+                        <Feather 
+                            name={selectedMembers.includes(member.player_id) ? "check-square" : "square"} 
+                            size={24} 
+                            color={selectedMembers.includes(member.player_id) ? colors.primary : colors.gray300} 
+                        />
+                    </TouchableOpacity>
+                </MemberCard>
+            ))}
+            {selectedMembers.length > 0 && (
+                <RemoveButton 
+                    onPress={handleRemoveMembers}
+                    disabled={loading}
+                    colors={colors}
+                >
+                    {loading ? (
+                        <ActivityIndicator color={colors.white} />
+                    ) : (
+                        <RemoveButtonText colors={colors}>
+                            Remover {selectedMembers.length} {selectedMembers.length === 1 ? 'membro' : 'membros'}
+                        </RemoveButtonText>
+                    )}
+                </RemoveButton>
+            )}
+        </>
+    );
+
+    const renderOrganizers = () => (
+        <>
+            {organizers.map((organizer) => (
+                <PlayerCard key={organizer.id} colors={colors}>
+                    <PlayerInfo>
+                        <PlayerName colors={colors}>
+                            {organizer.user_profile?.name || organizer.user_profile?.email}
+                            {organizer.is_creator ? " (Criador)" : ""}
+                        </PlayerName>
+                    </PlayerInfo>
+                    {!organizer.is_creator && (
+                        <TouchableOpacity onPress={() => handleRemoveOrganizer(organizer.user_id)}>
+                            <Feather name="x" size={24} color={colors.error} />
+                        </TouchableOpacity>
+                    )}
+                </PlayerCard>
+            ))}
+        </>
+    );
+
     const renderContent = () => {
         if (loading) {
             return (
@@ -702,310 +777,175 @@ export default function CommunityDetails() {
             );
         }
 
+        const isCreator = community.created_by === session?.user?.id;
+
         return (
             <>
                 <Section colors={colors}>
-                    <Description colors={colors}>{community.description}</Description>
-                    {community.description.length > 100 && (
-                        <ShowMoreContainer onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
-                            <Animated.View style={{ transform: [{ rotate: '0deg' }] }}>
-                                <Feather 
-                                    name={isDescriptionExpanded ? "chevron-up" : "chevron-down"} 
-                                    size={24} 
-                                    color={colors.text} 
-                                />
-                            </Animated.View>
-                            <ShowMoreText colors={colors}>
-                                {isDescriptionExpanded ? 'Ver menos' : 'Ver mais'}
-                            </ShowMoreText>
-                        </ShowMoreContainer>
-                    )}
+                    <TouchableOpacity 
+                        onPress={() => router.push(`/comunidade/${params.id}/estatisticas`)}
+                    >
+                        <HeaderLeft>
+                            <Feather name="bar-chart-2" size={24} color={colors.text} />
+                            <SectionTitle colors={colors}>Estatísticas</SectionTitle>
+                        </HeaderLeft>
+                    </TouchableOpacity>
                 </Section>
 
+                {community.description && (
+                    <Section colors={colors}>
+                        <Description colors={colors}>{community.description}</Description>
+                        {community.description.length > 100 && (
+                            <ShowMoreContainer onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+                                <Animated.View style={{ transform: [{ rotate: '0deg' }] }}>
+                                    <Feather 
+                                        name={isDescriptionExpanded ? "chevron-up" : "chevron-down"} 
+                                        size={24} 
+                                        color={colors.text} 
+                                    />
+                                </Animated.View>
+                                <ShowMoreText colors={colors}>
+                                    {isDescriptionExpanded ? 'Ver menos' : 'Ver mais'}
+                                </ShowMoreText>
+                            </ShowMoreContainer>
+                        )}
+                    </Section>
+                )}
+
                 <Section colors={colors}>
-                    <SectionHeader>
+                    <SectionHeader onPress={toggleMembers}>
                         <HeaderLeft>
                             <SectionTitle colors={colors}>Membros ({members.length})</SectionTitle>
-                            <ExpandButton onPress={toggleMembers}>
-                                <Animated.View style={{ transform: [{ rotate: rotateMembers }] }}>
-                                    <Feather name="chevron-down" size={20} color={colors.gray100} />
-                                </Animated.View>
-                            </ExpandButton>
+                            {(isCreator || isOrganizer) && (
+                                <TouchableOpacity onPress={() => setShowAddMemberModal(true)}>
+                                    <Feather name="user-plus" size={20} color={colors.primary} />
+                                </TouchableOpacity>
+                            )}
                         </HeaderLeft>
-                        <ManageButton onPress={() => setShowAddMemberModal(true)} colors={colors}>
-                            <Feather name="users" size={20} color={colors.white} />
-                            <ManageButtonText colors={colors}>Adicionar Membros</ManageButtonText>
-                        </ManageButton>
+                        <Animated.View style={{ transform: [{ rotate: rotateMembers }] }}>
+                            <Feather name="chevron-down" size={24} color={colors.text} />
+                        </Animated.View>
                     </SectionHeader>
-
-                    {showMembers && (
-                        <>
-                            {selectedMembers.length > 0 && (
-                                <SelectAllHeader>
-                                    <SelectAllButton onPress={handleSelectAllMembers}>
-                                        <Feather 
-                                            name={selectedMembers.length === members.length ? "check-square" : "square"} 
-                                            size={24} 
-                                            color={colors.primary} 
-                                        />
-                                        <SelectAllText colors={colors}>Selecionar Todos</SelectAllText>
-                                    </SelectAllButton>
-                                </SelectAllHeader>
-                            )}
-                            {members.map(member => (
-                                <MemberCard key={member.player_id} colors={colors}>
-                                    <MemberInfo>
-                                        <MemberName colors={colors}>{member.players.name}</MemberName>
-                                    </MemberInfo>
-                                    <TouchableOpacity onPress={() => handleSelectMember(member.player_id)}>
-                                        <Feather 
-                                            name={selectedMembers.includes(member.player_id) ? "check-square" : "square"} 
-                                            size={24} 
-                                            color={selectedMembers.includes(member.player_id) ? colors.primary : colors.gray300} 
-                                        />
-                                    </TouchableOpacity>
-                                </MemberCard>
-                            ))}
-                            {selectedMembers.length > 0 && (
-                                <RemoveButton 
-                                    onPress={handleRemoveMembers}
-                                    disabled={loading}
-                                    colors={colors}
-                                >
-                                    {loading ? (
-                                        <ActivityIndicator color={colors.white} />
-                                    ) : (
-                                        <RemoveButtonText colors={colors}>
-                                            Remover {selectedMembers.length} {selectedMembers.length === 1 ? 'membro' : 'membros'}
-                                        </RemoveButtonText>
-                                    )}
-                                </RemoveButton>
-                            )}
-                        </>
-                    )}
+                    {showMembers && renderMembers()}
                 </Section>
 
                 <Section colors={colors}>
-                    <SectionHeader>
+                    <SectionHeader onPress={toggleOrganizers}>
                         <HeaderLeft>
-                            <SectionTitle colors={colors}>Organizadores</SectionTitle>
-                            <ExpandButton onPress={toggleOrganizers}>
-                                <Animated.View style={{ transform: [{ rotate: rotateOrganizers }] }}>
-                                    <Feather name="chevron-down" size={20} color={colors.gray100} />
-                                </Animated.View>
-                            </ExpandButton>
+                            <SectionTitle colors={colors}>Organizadores ({organizers.length})</SectionTitle>
+                            {isCreator && (
+                                <TouchableOpacity onPress={() => setShowAddOrganizerModal(true)}>
+                                    <Feather name="user-plus" size={20} color={colors.primary} />
+                                </TouchableOpacity>
+                            )}
                         </HeaderLeft>
-                        <ManageButton onPress={() => setShowAddOrganizerModal(true)} colors={colors}>
-                            <Feather name="user-plus" size={20} color={colors.white} />
-                            <ManageButtonText colors={colors}>Adicionar Organizador</ManageButtonText>
-                        </ManageButton>
+                        <Animated.View style={{ transform: [{ rotate: rotateOrganizers }] }}>
+                            <Feather name="chevron-down" size={24} color={colors.text} />
+                        </Animated.View>
                     </SectionHeader>
-
-                    {showOrganizers && (
-                        <>
-                            {organizers.map((organizer) => (
-                                <PlayerCard key={organizer.id} colors={colors}>
-                                    <PlayerInfo>
-                                        <PlayerName colors={colors}>
-                                            {organizer.user_profile?.name || organizer.user_profile?.email}
-                                            {organizer.is_creator ? " (Criador)" : ""}
-                                        </PlayerName>
-                                    </PlayerInfo>
-                                    {!organizer.is_creator && (
-                                        <TouchableOpacity onPress={() => handleRemoveOrganizer(organizer.user_id)}>
-                                            <Feather name="x" size={24} color={colors.error} />
-                                        </TouchableOpacity>
-                                    )}
-                                </PlayerCard>
-                            ))}
-                        </>
-                    )}
-
-                    <Modal
-                        visible={showAddOrganizerModal}
-                        transparent
-                        animationType="fade"
-                        onRequestClose={() => setShowAddOrganizerModal(false)}
-                    >
-                        <ModalContainer>
-                            <ModalContent colors={colors}>
-                                <ModalTitle colors={colors}>Adicionar Organizador</ModalTitle>
-                                <ModalSubtitle colors={colors}>
-                                    Digite o email de um usuário já cadastrado no sistema.
-                                </ModalSubtitle>
-                                <ModalInput
-                                    value={newOrganizerEmail}
-                                    onChangeText={setNewOrganizerEmail}
-                                    placeholder="Email do organizador"
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    colors={colors}
-                                />
-                                <ModalButtonsContainer>
-                                    <ModalCancelButton 
-                                        onPress={() => {
-                                            setShowAddOrganizerModal(false);
-                                            setNewOrganizerEmail('');
-                                        }}
-                                        colors={colors}
-                                    >
-                                        <ModalButtonText colors={colors} variant="secondary">
-                                            Cancelar
-                                        </ModalButtonText>
-                                    </ModalCancelButton>
-                                    <SaveButton 
-                                        onPress={handleAddOrganizer}
-                                        disabled={newOrganizerEmail === '' || loading}
-                                        colors={colors}
-                                    >
-                                        {loading ? (
-                                            <ActivityIndicator color={colors.white} />
-                                        ) : (
-                                            <SaveButtonText colors={colors}>
-                                                Adicionar
-                                            </SaveButtonText>
-                                        )}
-                                    </SaveButton>
-                                </ModalButtonsContainer>
-                            </ModalContent>
-                        </ModalContainer>
-                    </Modal>
+                    {showOrganizers && renderOrganizers()}
                 </Section>
 
-                <Section colors={colors}>
-                    <SectionHeader>
-                        <HeaderLeft>
-                            <SectionTitle colors={colors}>Competições</SectionTitle>
-                            <ExpandButton onPress={() => {}}>
-                                <Animated.View style={{ transform: [{ rotate: '0deg' }] }}>
-                                    <Feather name="chevron-down" size={20} color={colors.gray100} />
-                                </Animated.View>
-                            </ExpandButton>
-                        </HeaderLeft>
-                    </SectionHeader>
+                {competitions.length > 0 && (
+                    <Section colors={colors}>
+                        <SectionHeader>
+                            <HeaderLeft>
+                                <SectionTitle colors={colors}>Competições ({competitions.length})</SectionTitle>
+                            </HeaderLeft>
+                        </SectionHeader>
 
-                    {competitions.map(competition => (
-                        <CompetitionCard 
-                            key={competition.id} 
-                            onPress={() => router.push(`/comunidade/${params.id}/competicao/${competition.id}`)}
-                            colors={colors}
-                        >
-                            <CompetitionInfo>
-                                <CompetitionName colors={colors}>{competition.name}</CompetitionName>
-                                <CompetitionDescription colors={colors}>{competition.description}</CompetitionDescription>
-                                <CompetitionDetails>
-                                    <CompetitionDate>
-                                        <Feather name="calendar" size={14} color={colors.gray300} />
-                                        <CompetitionDateText colors={colors}>
-                                            {new Date(competition.start_date).toLocaleDateString()}
-                                        </CompetitionDateText>
-                                    </CompetitionDate>
-                                </CompetitionDetails>
-                            </CompetitionInfo>
-                        </CompetitionCard>
-                    ))}
-                </Section>
+                        {competitions.map(competition => (
+                            <CompetitionCard 
+                                key={competition.id} 
+                                onPress={() => router.push(`/comunidade/${params.id}/competicao/${competition.id}`)}
+                                colors={colors}
+                            >
+                                <CompetitionInfo>
+                                    <CompetitionName colors={colors}>{competition.name}</CompetitionName>
+                                    <CompetitionDescription colors={colors}>{competition.description}</CompetitionDescription>
+                                    <CompetitionDetails>
+                                        <CompetitionDate>
+                                            <Feather name="calendar" size={14} color={colors.gray300} />
+                                            <CompetitionDateText colors={colors}>
+                                                {new Date(competition.start_date).toLocaleDateString()}
+                                            </CompetitionDateText>
+                                        </CompetitionDate>
+                                    </CompetitionDetails>
+                                </CompetitionInfo>
+                            </CompetitionCard>
+                        ))}
+                    </Section>
+                )}
             </>
         );
     };
 
     return (
         <Container colors={colors}>
-            <InternalHeader title={community?.name || 'Comunidade'} />
-            <MainContent colors={colors}>
-                <ScrollContainer colors={colors}>
-                    <StatsButton 
-                        onPress={() => router.push(`/comunidade/${params.id}/estatisticas`)}
-                        onPressIn={() => setIsPressed(true)}
-                        onPressOut={() => setIsPressed(false)}
-                        pressed={isPressed}
-                        colors={colors}
-                    >
-                        <Feather name="bar-chart-2" size={16} color={colors.white} />
-                        <StatsButtonText colors={colors}>Estatísticas</StatsButtonText>
-                    </StatsButton>
-                    <ContentContainer colors={colors}>
-                        {renderContent()}
-                    </ContentContainer>
-                </ScrollContainer>
-            </MainContent>
+            <InternalHeader 
+                title={community?.name || 'Carregando...'}
+                showBackButton
+                onBackPress={() => router.back()}
+                rightComponent={
+                    <TouchableOpacity onPress={() => router.push(`/comunidade/${params.id}/ranking`)}>
+                        <Feather name="award" size={24} color={colors.text} />
+                    </TouchableOpacity>
+                }
+            />
+            <ScrollView>
+                {renderContent()}
+            </ScrollView>
 
-            {/* Modais */}
             <Modal
-                animationType="slide"
-                transparent={true}
-                visible={showAddMemberModal}
-                onRequestClose={() => {
-                    setShowAddMemberModal(false);
-                    setSelectedPlayers([]);
-                }}
+                visible={showAddOrganizerModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowAddOrganizerModal(false)}
             >
                 <ModalContainer>
                     <ModalContent colors={colors}>
-                        <ModalHeader>
-                            <ModalTitle colors={colors}>Adicionar Membros</ModalTitle>
-                            <TouchableOpacity onPress={() => {
-                                setShowAddMemberModal(false);
-                                setSelectedPlayers([]);
-                            }}>
-                                <Feather name="x" size={24} color={colors.gray100} />
-                            </TouchableOpacity>
-                        </ModalHeader>
-                        <SelectAllHeader>
-                            <SelectAllButton onPress={handleSelectAll}>
-                                <Feather 
-                                    name={selectedPlayers.length === players.filter(player => 
-                                        !members.some(member => member.player_id === player.id)
-                                    ).length ? "check-square" : "square"} 
-                                    size={24} 
-                                    color={colors.primary} 
-                                />
-                                <SelectAllText colors={colors}>Selecionar Todos</SelectAllText>
-                            </SelectAllButton>
-                        </SelectAllHeader>
-                        <PlayersList
-                            data={players.filter(player => 
-                                !members.some(member => member.player_id === player.id)
-                            )}
-                            keyExtractor={(item) => item.id}
-                            renderItem={({ item }) => (
-                                <PlayerCard 
-                                    onPress={() => handleSelectPlayer(item.id)}
-                                    selected={selectedPlayers.includes(item.id)}
-                                    colors={colors}
-                                >
-                                    <PlayerInfo>
-                                        <PlayerName colors={colors}>{item.name}</PlayerName>
-                                    </PlayerInfo>
-                                    <Feather 
-                                        name={selectedPlayers.includes(item.id) ? "check-square" : "square"} 
-                                        size={24} 
-                                        color={selectedPlayers.includes(item.id) ? colors.primary : colors.gray300} 
-                                    />
-                                </PlayerCard>
-                            )}
-                            ListEmptyComponent={
-                                <EmptyContainer>
-                                    <EmptyText colors={colors}>Nenhum jogador disponível</EmptyText>
-                                </EmptyContainer>
-                            }
-                        />
-                        <SaveButton 
-                            onPress={handleSaveMembers}
-                            disabled={selectedPlayers.length === 0 || loading}
+                        <ModalTitle colors={colors}>Adicionar Organizador</ModalTitle>
+                        <ModalSubtitle colors={colors}>
+                            Digite o email de um usuário já cadastrado no sistema.
+                        </ModalSubtitle>
+                        <ModalInput
+                            value={newOrganizerEmail}
+                            onChangeText={setNewOrganizerEmail}
+                            placeholder="Email do organizador"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
                             colors={colors}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color={colors.white} />
-                            ) : (
-                                <SaveButtonText colors={colors}>
-                                    Adicionar {selectedPlayers.length} {selectedPlayers.length === 1 ? 'membro' : 'membros'}
-                                </SaveButtonText>
-                            )}
-                        </SaveButton>
+                        />
+                        <ModalButtonsContainer>
+                            <ModalCancelButton 
+                                onPress={() => {
+                                    setShowAddOrganizerModal(false);
+                                    setNewOrganizerEmail('');
+                                }}
+                                colors={colors}
+                            >
+                                <ModalButtonText colors={colors} variant="secondary">
+                                    Cancelar
+                                </ModalButtonText>
+                            </ModalCancelButton>
+                            <SaveButton 
+                                onPress={handleAddOrganizer}
+                                disabled={newOrganizerEmail === '' || loading}
+                                colors={colors}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color={colors.white} />
+                                ) : (
+                                    <SaveButtonText colors={colors}>
+                                        Adicionar
+                                    </SaveButtonText>
+                                )}
+                            </SaveButton>
+                        </ModalButtonsContainer>
                     </ModalContent>
                 </ModalContainer>
             </Modal>
+
             <FAB onPress={() => router.push({
                 pathname: '/comunidade/[id]/competicao/nova',
                 params: { id: community.id }

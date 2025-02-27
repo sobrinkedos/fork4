@@ -15,7 +15,7 @@ const Container = styled.View`
 
 const Content = styled.View`
     flex: 1;
-    padding: 16px;
+    padding: 8px;
 `;
 
 const LoadingContainer = styled.View`
@@ -27,15 +27,15 @@ const LoadingContainer = styled.View`
 const PlayerCard = styled.TouchableOpacity`
     background-color: ${({ theme }) => theme.colors.secondary};
     border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
+    padding: 12px;
+    margin-bottom: 8px;
     elevation: 3;
 `;
 
 const PlayerHeader = styled.View`
     flex-direction: row;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 `;
 
 const Avatar = styled.View`
