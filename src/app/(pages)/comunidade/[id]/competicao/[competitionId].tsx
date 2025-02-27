@@ -131,15 +131,6 @@ export default function CompetitionDetails() {
         }
     }, [loadGames, members]);
 
-    useEffect(() => {
-        checkCanFinish();
-    }, []);
-
-    useEffect(() => {
-        loadCompetitionAndMembers();
-    }, [loadCompetitionAndMembers]);
-
-
     const checkCanFinish = async () => {
         try {
             const canFinish = await competitionService.canFinishCompetition(competitionId as string);
@@ -148,6 +139,23 @@ export default function CompetitionDetails() {
             console.error('Erro ao verificar status:', error);
         }
     };
+
+    // Atualiza os dados quando a tela recebe foco (ex: ao voltar de outra tela)
+    useFocusEffect(
+        useCallback(() => {
+            // Recarrega os dados da competição quando a tela recebe foco
+            const loadData = async () => {
+                await loadCompetitionAndMembers();
+                checkCanFinish();
+            };
+            
+            loadData();
+            
+            return () => {
+                // Cleanup function (opcional)
+            };
+        }, [loadCompetitionAndMembers])
+    );
 
     const handleFinishCompetition = async () => {
         try {
