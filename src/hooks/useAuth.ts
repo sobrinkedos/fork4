@@ -12,6 +12,7 @@ export function useAuth() {
     useEffect(() => {
         // Verifica a sessão atual
         supabase.auth.getSession().then(({ data: { session } }) => {
+            console.log('Sessão atual obtida:', session?.user?.id);
             setSession(session);
             setLoading(false);
         }).catch(error => {
@@ -21,6 +22,7 @@ export function useAuth() {
 
         // Escuta mudanças na autenticação
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            console.log('Mudança de estado de autenticação:', _event, session?.user?.id);
             setSession(session);
             setLoading(false);
         });

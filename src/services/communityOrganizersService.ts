@@ -99,91 +99,67 @@ export const communityOrganizersService = {
 
             // Normalizar o email
             const normalizedEmail = email.toLowerCase().trim();
-            
-            // Primeiro, buscar a comunidade para validar
-            const { data: community, error: communityError } = await supabase
-                .from('communities')
-                .select('created_by')
-                .eq('id', communityId)
-                .single();
 
-            if (communityError) {
-                console.error('Erro ao buscar comunidade:', communityError);
-                throw new Error('Comunidade não encontrada');
-            }
-
-            console.log('Comunidade encontrada:', community);
-
-            // Buscar usuário pelo email na tabela profiles (tentativa com ILIKE para ser mais flexível)
-            let { data: profile, error: profileError } = await supabase
+            // Verificar se o usuário existe
+            const { data: userData, error: userError } = await supabase
                 .from('profiles')
-                .select('id, email, name')
-                .ilike('email', `%${normalizedEmail}%`)
+                .select('id, email')
+                .ilike('email', normalizedEmail)
                 .maybeSingle();
 
-            if (profileError) {
-                console.error('Erro ao buscar perfil:', profileError);
+            if (userError) {
+                console.error('Erro ao buscar usuário:', userError);
                 throw new Error('Erro ao buscar usuário');
             }
 
-            // Se não encontrou com ILIKE, tenta com EQ (exato)
-            if (!profile) {
-                const { data: exactProfile } = await supabase
-                    .from('profiles')
-                    .select('id, email, name')
-                    .eq('email', normalizedEmail)
-                    .maybeSingle();
-                
-                if (exactProfile) {
-                    profile = exactProfile;
-                } else {
-                    // Lista alguns emails para ajudar o usuário a debugar
-                    const { data: sampleProfiles } = await supabase
-                        .from('profiles')
-                        .select('email')
-                        .limit(5);
-                    
-                    const sampleEmails = sampleProfiles?.map(p => p.email).join(', ');
-                    
-                    throw new Error(`Usuário com email "${email}" não encontrado. O usuário precisa estar cadastrado no sistema antes de ser adicionado como organizador. Exemplos de emails cadastrados: ${sampleEmails}`);
-                }
+            if (!userData) {
+                console.error('Usuário não encontrado:', normalizedEmail);
+                throw new Error(`Usuário com email ${normalizedEmail} não encontrado`);
             }
 
-            // Verificar se o usuário é o criador
-            if (profile.id === community.created_by) {
-                throw new Error(`"${profile.name || profile.email}" já é o criador desta comunidade.`);
-            }
+            console.log('Usuário encontrado:', userData);
 
             // Verificar se já é organizador
-            const { data: existingOrganizer, error: existingError } = await supabase
+            const { data: existingOrganizer, error: checkError } = await supabase
                 .from('community_organizers')
                 .select('id')
                 .eq('community_id', communityId)
-                .eq('user_id', profile.id)
+                .eq('user_id', userData.id)
                 .maybeSingle();
 
-            if (existingError) {
-                console.error('Erro ao verificar organizador existente:', existingError);
-                throw new Error('Erro ao verificar organizador');
+            if (checkError) {
+                console.error('Erro ao verificar organizador existente:', checkError);
+                throw new Error('Erro ao verificar organizador existente');
             }
 
             if (existingOrganizer) {
-                throw new Error(`"${profile.name || profile.email}" já é um organizador desta comunidade.`);
+                console.log('Usuário já é organizador:', existingOrganizer);
+                throw new Error('Este usuário já é organizador desta comunidade');
             }
 
-            // Adicionar como organizador
+            // Adicionar organizador
+            console.log('Adicionando novo organizador:', {
+                community_id: communityId,
+                user_id: userData.id,
+                created_by: createdBy
+            });
+            
             const { error: insertError } = await supabase
                 .from('community_organizers')
-                .insert({
-                    community_id: communityId,
-                    user_id: profile.id,
-                    created_by: createdBy
-                });
+                .insert([
+                    {
+                        community_id: communityId,
+                        user_id: userData.id,
+                        created_by: createdBy
+                    }
+                ]);
 
             if (insertError) {
-                console.error('Erro ao inserir organizador:', insertError);
+                console.error('Erro ao adicionar organizador:', insertError);
                 throw new Error('Não foi possível adicionar o organizador');
             }
+
+            console.log('Organizador adicionado com sucesso!');
         } catch (error) {
             console.error('Erro ao adicionar organizador:', error);
             throw error;

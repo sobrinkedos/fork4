@@ -122,13 +122,20 @@ class CommunityService {
 
     async getById(id: string) {
         try {
+            console.log('Buscando comunidade por ID:', id);
+            
             const { data, error } = await supabase
                 .from('communities')
                 .select('*')
                 .eq('id', id)
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Erro ao buscar comunidade:', error);
+                throw error;
+            }
+            
+            console.log('Comunidade encontrada:', data);
             return data;
         } catch (error) {
             console.error('Erro ao buscar comunidade:', error);
