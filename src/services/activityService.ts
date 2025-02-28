@@ -156,12 +156,8 @@ export const activityService = {
             let query = supabase
                 .from('activities')
                 .select('*', { count: 'exact' })
-                .eq('created_by', userId);
+                .or(`created_by.eq.${userId}${communityIds.length ? `,metadata->>'community_id'.in.(${communityIds.map(id => `"${id}"`).join(',')})` : ''}`);
 
-            // Adicionar filtro de comunidades apenas se houver alguma
-            if (communityIds.length > 0) {
-                query = query.or(`metadata->>community_id.in.(${communityIds.join(',')})`);
-            }
 
             // Executar a query com ordenação e paginação
             const { data, error, count } = await query
@@ -189,25 +185,47 @@ export const activityService = {
         }
     },
 
-    async getRecentActivities() {
+    async getRecentActivities(page: number = 1, itemsPerPage: number = 5) {
         try {
-            const { data: userData } = await supabase.auth.getUser();
-            if (!userData.user) throw new Error('Usuário não autenticado');
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            if (authError || !user) {
+                throw new Error('Usuário não autenticado');
+            }
 
+            // Busca as comunidades onde o usuário é organizador
+            const { data: organizerCommunities, error: organizerError } = await supabase
+                .from('community_organizers')
+                .select('community_id')
+                .eq('user_id', user.id);
+
+            if (organizerError) {
+                throw organizerError;
+            }
+
+            const communityIds = organizerCommunities?.map(org => org.community_id) || [];
+
+            // Calcula o offset baseado na página atual
+            const offset = (page - 1) * itemsPerPage;
+
+            // Busca atividades criadas pelo usuário e das comunidades onde é organizador
             const { data, error } = await supabase
                 .from('activities')
                 .select('*')
+                .or(`created_by.eq.${user.id}${communityIds.length ? `,metadata->>'community_id'.in.(${communityIds.map(id => `"${id}"`).join(',')})` : ''}`)
                 .order('created_at', { ascending: false })
-                .limit(5);
+                .range(offset, offset + itemsPerPage - 1);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Erro ao buscar atividades:', error);
+                throw error;
+            }
 
             return data.map(activity => ({
                 ...activity,
-                created_at: new Date(activity.created_at)
+                time: new Date(activity.created_at)
             }));
         } catch (error) {
-            console.error('Erro ao buscar atividades recentes:', error);
+            console.error('Erro ao carregar atividades recentes:', error);
             throw error;
         }
     },
