@@ -13,10 +13,20 @@ export function useAuth() {
         // Verifica a sessão atual
         supabase.auth.getSession().then(({ data: { session } }) => {
             console.log('Sessão atual obtida:', session?.user?.id);
+            if (session?.user) {
+                console.log('Usuário autenticado:', {
+                    id: session.user.id,
+                    email: session.user.email,
+                    lastSignIn: session.user.last_sign_in_at
+                });
+            } else {
+                console.log('Nenhuma sessão ativa encontrada');
+            }
             setSession(session);
             setLoading(false);
         }).catch(error => {
             console.error('Erro ao obter sessão:', error);
+            handleAuthError(error);
             setLoading(false);
         });
 
@@ -32,11 +42,17 @@ export function useAuth() {
 
     // Função para lidar com erros de autenticação
     const handleAuthError = (error: any) => {
-        console.error('Erro de autenticação:', error);
+        console.error('Erro de autenticação:', {
+            message: error?.message,
+            status: error?.status,
+            name: error?.name,
+            stack: error?.stack
+        });
         
-        // Se for erro de refresh token, fazer logout e redirecionar para login
+        // Se for erro de refresh token ou sessão expirada, fazer logout e redirecionar para login
         if (error?.message?.includes('Invalid Refresh Token') || 
-            error?.message?.includes('Refresh Token Not Found')) {
+            error?.message?.includes('Refresh Token Not Found') ||
+            error?.message?.includes('JWT expired')) {
             
             Alert.alert(
                 'Sessão expirada',

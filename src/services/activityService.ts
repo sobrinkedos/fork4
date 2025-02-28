@@ -153,10 +153,18 @@ export const activityService = {
             ];
 
             // Buscar atividades onde o usuário é criador ou relacionadas às comunidades onde é organizador
-            const { data, error, count } = await supabase
+            let query = supabase
                 .from('activities')
                 .select('*', { count: 'exact' })
-                .or(`created_by.eq.${userId},metadata->community_id.in.(${communityIds.join(',')})`)
+                .eq('created_by', userId);
+
+            // Adicionar filtro de comunidades apenas se houver alguma
+            if (communityIds.length > 0) {
+                query = query.or(`metadata->>community_id.in.(${communityIds.join(',')})`);
+            }
+
+            // Executar a query com ordenação e paginação
+            const { data, error, count } = await query
                 .order('created_at', { ascending: false })
                 .range(from, to);
 

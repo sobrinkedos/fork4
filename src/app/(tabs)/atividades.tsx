@@ -36,6 +36,7 @@ const ActivityHeader = styled.View`
 
 const ActivityType = styled.View<{ type: Activity['type'] }>`
     background-color: ${({ theme, type }) => {
+        if (!theme?.colors) return '#8257E5'; // Fallback color
         switch (type) {
             case 'game': return theme.colors.success;
             case 'competition': return theme.colors.primary;
@@ -49,14 +50,14 @@ const ActivityType = styled.View<{ type: Activity['type'] }>`
 `;
 
 const ActivityTypeText = styled.Text`
-    color: ${({ theme }) => theme.colors.white};
+    color: ${({ theme }) => theme?.colors?.white || '#FFFFFF'};
     font-size: 12px;
     font-weight: bold;
     text-transform: uppercase;
 `;
 
 const ActivityDescription = styled.Text`
-    color: ${({ theme }) => theme.colors.textPrimary};
+    color: ${({ theme }) => theme?.colors?.textPrimary || '#E1E1E6'};
     font-size: 16px;
     line-height: 24px;
     margin-bottom: 8px;
@@ -64,7 +65,7 @@ const ActivityDescription = styled.Text`
 `;
 
 const ActivityDate = styled.Text`
-    color: ${({ theme }) => theme.colors.gray300};
+    color: ${({ theme }) => theme?.colors?.gray300 || '#7C7C8A'};
     font-size: 14px;
 `;
 
@@ -74,7 +75,7 @@ const PaginationContainer = styled.View`
     align-items: center;
     padding: 16px;
     gap: 16px;
-    background-color: ${({ theme }) => theme.colors.backgroundLight};
+    background-color: ${({ theme }) => theme?.colors?.backgroundLight || '#202024'};
 `;
 
 const PaginationButton = styled.TouchableOpacity<{ disabled?: boolean }>`
@@ -82,7 +83,7 @@ const PaginationButton = styled.TouchableOpacity<{ disabled?: boolean }>`
 `;
 
 const PaginationText = styled.Text`
-    color: ${({ theme }) => theme.colors.white};
+    color: ${({ theme }) => theme?.colors?.white || '#FFFFFF'};
     font-size: 14px;
 `;
 
@@ -91,17 +92,17 @@ const EmptyContainer = styled.View`
     justify-content: center;
     align-items: center;
     padding: 32px;
-    background-color: ${({ theme }) => theme.colors.backgroundLight};
+    background-color: ${({ theme }) => theme?.colors?.backgroundLight || '#202024'};
 `;
 
 const EmptyText = styled.Text`
-    color: ${({ theme }) => theme.colors.gray300};
+    color: ${({ theme }) => theme?.colors?.gray300 || '#7C7C8A'};
     font-size: 16px;
     text-align: center;
 `;
 
 const HeaderSubtitle = styled.Text`
-    color: ${({ theme }) => theme.colors.gray300};
+    color: ${({ theme }) => theme?.colors?.gray300 || '#7C7C8A'};
     font-size: 14px;
     text-align: center;
     margin-top: 8px;
@@ -148,39 +149,40 @@ export default function ActivityList() {
     const handleActivityPress = (activity: Activity) => {
         if (!activity.metadata) return;
 
-        const { game_id, competition_id, community_id } = activity.metadata;
-        
-        if (game_id) {
-            router.push(`/jogo/${game_id}`);
-        } else if (competition_id) {
-            const communityId = activity.metadata.community_id;
-            router.push(`/comunidade/${communityId}/competicao/${competition_id}`);
-        } else if (community_id) {
-            router.push(`/comunidade/${community_id}`);
+        switch (activity.type) {
+            case 'game':
+                router.push(`/jogos/${activity.metadata.id}`);
+                break;
+            case 'competition':
+                router.push(`/competicoes/${activity.metadata.id}`);
+                break;
+            case 'community':
+                router.push(`/comunidades/${activity.metadata.id}`);
+                break;
+            case 'player':
+                router.push(`/jogadores/${activity.metadata.id}`);
+                break;
         }
     };
 
-    const renderItem = ({ item }: { item: Activity }) => (
-        <ActivityCard onPress={() => handleActivityPress(item)}>
-            <ActivityHeader>
-                <ActivityType type={item.type}>
-                    <ActivityTypeText>{getTypeLabel(item.type)}</ActivityTypeText>
-                </ActivityType>
-            </ActivityHeader>
-            <ActivityDescription>{item.description}</ActivityDescription>
-            <ActivityDate>
-                {item.created_at && format(new Date(item.created_at), "d 'de' MMMM 'às' HH:mm", { locale: ptBR })}
-            </ActivityDate>
-        </ActivityCard>
-    );
-
-    if (loading && activities.length === 0) {
+    if (loading) {
         return (
             <Container>
                 <InternalHeader title="Atividades Recentes" />
                 <LoadingContainer>
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <ActivityIndicator size="large" color={colors?.primary || '#8257E5'} />
                 </LoadingContainer>
+            </Container>
+        );
+    }
+
+    if (!activities.length) {
+        return (
+            <Container>
+                <InternalHeader title="Atividades Recentes" />
+                <EmptyContainer>
+                    <EmptyText>Nenhuma atividade recente encontrada</EmptyText>
+                </EmptyContainer>
             </Container>
         );
     }
@@ -188,43 +190,38 @@ export default function ActivityList() {
     return (
         <Container>
             <InternalHeader title="Atividades Recentes" />
-            <HeaderSubtitle>
-                Mostrando atividades das suas comunidades e competições
-            </HeaderSubtitle>
+            <HeaderSubtitle>Acompanhe as últimas atividades do seu perfil</HeaderSubtitle>
             <FlatList
                 data={activities}
-                renderItem={renderItem}
-                keyExtractor={item => `${item.id}-${item.created_at}`}
-                ListEmptyComponent={
-                    <EmptyContainer>
-                        <EmptyText>Nenhuma atividade encontrada</EmptyText>
-                    </EmptyContainer>
-                }
+                keyExtractor={(item) => item.id}
+                renderItem={({ item: activity }) => (
+                    <ActivityCard onPress={() => handleActivityPress(activity)}>
+                        <ActivityHeader>
+                            <ActivityType type={activity.type}>
+                                <ActivityTypeText>{getTypeLabel(activity.type)}</ActivityTypeText>
+                            </ActivityType>
+                        </ActivityHeader>
+                        <ActivityDescription>{activity.description}</ActivityDescription>
+                        <ActivityDate>
+                            {format(new Date(activity.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                        </ActivityDate>
+                    </ActivityCard>
+                )}
             />
             {totalPages > 1 && (
                 <PaginationContainer>
-                    <PaginationButton 
+                    <PaginationButton
                         disabled={currentPage === 1}
-                        onPress={() => currentPage > 1 && loadActivities(currentPage - 1)}
+                        onPress={() => loadActivities(currentPage - 1)}
                     >
-                        <Feather 
-                            name="chevron-left" 
-                            size={24} 
-                            color={currentPage === 1 ? theme.colors.gray300 : theme.colors.white} 
-                        />
+                        <Feather name="chevron-left" size={24} color={colors?.white || '#FFFFFF'} />
                     </PaginationButton>
-                    <PaginationText>
-                        Página {currentPage} de {totalPages}
-                    </PaginationText>
-                    <PaginationButton 
+                    <PaginationText>{`Página ${currentPage} de ${totalPages}`}</PaginationText>
+                    <PaginationButton
                         disabled={currentPage === totalPages}
-                        onPress={() => currentPage < totalPages && loadActivities(currentPage + 1)}
+                        onPress={() => loadActivities(currentPage + 1)}
                     >
-                        <Feather 
-                            name="chevron-right" 
-                            size={24} 
-                            color={currentPage === totalPages ? theme.colors.gray300 : theme.colors.white} 
-                        />
+                        <Feather name="chevron-right" size={24} color={colors?.white || '#FFFFFF'} />
                     </PaginationButton>
                 </PaginationContainer>
             )}
