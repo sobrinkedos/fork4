@@ -10,25 +10,31 @@ export function useAuth() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        console.log('Iniciando verificação de sessão...');
         // Verifica a sessão atual
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            console.log('Sessão atual obtida:', session?.user?.id);
-            if (session?.user) {
-                console.log('Usuário autenticado:', {
-                    id: session.user.id,
-                    email: session.user.email,
-                    lastSignIn: session.user.last_sign_in_at
-                });
-            } else {
-                console.log('Nenhuma sessão ativa encontrada');
-            }
-            setSession(session);
+        try {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                console.log('Resposta da verificação de sessão recebida');
+                if (session?.user) {
+                    console.log('Usuário autenticado:', {
+                        id: session.user.id,
+                        email: session.user.email,
+                        lastSignIn: session.user.last_sign_in_at
+                    });
+                } else {
+                    console.log('Nenhuma sessão ativa encontrada');
+                }
+                setSession(session);
+                setLoading(false);
+            }).catch(error => {
+                console.error('Erro ao obter sessão:', error);
+                handleAuthError(error);
+                setLoading(false);
+            });
+        } catch (error) {
+            console.error('Erro crítico ao verificar sessão:', error);
             setLoading(false);
-        }).catch(error => {
-            console.error('Erro ao obter sessão:', error);
-            handleAuthError(error);
-            setLoading(false);
-        });
+        }
 
         // Escuta mudanças na autenticação
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

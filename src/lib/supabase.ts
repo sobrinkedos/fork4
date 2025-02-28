@@ -7,12 +7,14 @@ import { Database } from '@/types';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
+console.log('Inicializando cliente Supabase...');
 if (!supabaseUrl || !supabaseAnonKey) {
     console.error('Erro: Variáveis de ambiente do Supabase não encontradas');
     console.log('URL:', supabaseUrl);
     console.log('ANON_KEY:', supabaseAnonKey ? '[PRESENTE]' : '[AUSENTE]');
     throw new Error('Configuração do Supabase incompleta');
 }
+console.log('Variáveis de ambiente do Supabase verificadas com sucesso');
 
 // Adapter para web
 const webAdapter = {
@@ -52,6 +54,7 @@ const mobileAdapter = {
 // Escolher o adapter apropriado baseado na plataforma
 const storageAdapter = Platform.OS === 'web' ? webAdapter : mobileAdapter;
 
+console.log('Criando cliente Supabase...');
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
         storage: storageAdapter,

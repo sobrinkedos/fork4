@@ -14,14 +14,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AuthProvider: Iniciando...');
     if (typeof window === 'undefined') {
+      console.log('AuthProvider: Ambiente não-web detectado');
       setIsLoading(false);
       return;
     }
 
     // Verificar sessão atual
+    console.log('AuthProvider: Verificando sessão atual...');
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('AuthProvider: Sessão verificada:', session ? 'Ativa' : 'Inativa');
       setSession(session);
+      setIsLoading(false);
+    }).catch(error => {
+      console.error('AuthProvider: Erro ao verificar sessão:', error);
       setIsLoading(false);
     });
 
