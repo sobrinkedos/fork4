@@ -16,6 +16,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     console.log('AuthProvider: Iniciando verificação de sessão e configuração...');
     let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    // Adiciona um timeout de segurança para evitar que o app fique preso na tela de splash
+    const startTimeout = () => {
+      timeoutId = setTimeout(() => {
+        if (isMounted && isLoading) {
+          console.warn('AuthProvider: Timeout de inicialização atingido - Forçando continuação');
+          setSession(null);
+          setIsLoading(false);
+        }
+      }, 10000); // Aumentado para 10 segundos para dar mais tempo à inicialização
+    };
 
     const initializeAuth = async () => {
       try {
@@ -31,7 +44,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.error('AuthProvider: Erro ao verificar sessão:', error);
-          if (isMounted) setIsLoading(false);
+          if (isMounted) {
+            setSession(null);
+            setIsLoading(false);
+          }
           return;
         }
 
@@ -47,27 +63,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('AuthProvider: Erro crítico durante inicialização:', error);
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setSession(null);
+          setIsLoading(false);
+        }
       }
     };
 
-    initializeAuth();
-
-    // Escutar mudanças na autenticação
-    console.log('AuthProvider: Configurando listener de autenticação...');
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('AuthProvider: Mudança de estado detectada:', _event);
+    // Iniciar o processo de autenticação com prioridade
+    Promise.resolve().then(() => {
+      startTimeout();
+      return initializeAuth();
+    }).then(() => {
+      // Escutar mudanças na autenticação após inicialização bem-sucedida
+      console.log('AuthProvider: Configurando listener de autenticação...');
+      const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        console.log('AuthProvider: Mudança de estado detectada:', _event);
+        if (isMounted) {
+          setSession(session);
+        }
+      });
+      subscription = authSubscription;
+      return authSubscription;
+    }).catch(error => {
+      console.error('AuthProvider: Erro na configuração:', error);
       if (isMounted) {
-        setSession(session);
+        setSession(null);
+        setIsLoading(false);
       }
     });
 
     return () => {
       console.log('AuthProvider: Limpando recursos...');
+      clearTimeout(timeoutId);
       isMounted = false;
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
+
   return (
     <AuthContext.Provider value={{ session, isLoading }}>
       {children}

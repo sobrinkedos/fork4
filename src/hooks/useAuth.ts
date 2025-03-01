@@ -21,7 +21,10 @@ export function useAuth() {
                 if (error) {
                     console.error('[useAuth] Erro ao obter sessão:', error);
                     handleAuthError(error);
-                    if (isMounted) setLoading(false);
+                    if (isMounted) {
+                        setSession(null);
+                        setLoading(false);
+                    }
                     return;
                 }
 
@@ -41,7 +44,10 @@ export function useAuth() {
                 }
             } catch (error) {
                 console.error('[useAuth] Erro crítico ao verificar sessão:', error);
-                if (isMounted) setLoading(false);
+                if (isMounted) {
+                    setSession(null);
+                    setLoading(false);
+                }
             }
         };
 
