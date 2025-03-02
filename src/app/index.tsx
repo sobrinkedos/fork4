@@ -13,7 +13,7 @@ export default function LandingPage() {
         style={styles.header}
       >
         <Image
-          source={require('../../assets/images/icon.png')}
+          source={require('../../assets/images/dominomania-logo.svg')}
           style={styles.logo}
         />
         <Text style={styles.title}>Dominomania</Text>
@@ -101,10 +101,10 @@ const styles = StyleSheet.create({
     paddingTop: 80,
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 200,
+    height: 200,
     marginBottom: 20,
-    borderRadius: 60,
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 42,
