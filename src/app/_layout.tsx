@@ -29,12 +29,19 @@ function AppLayout() {
                 translucent
             />
             {!isAuthScreen ? (
-                <LoggedLayout>
+                session ? (
+                    <LoggedLayout>
+                        <Stack screenOptions={{ headerShown: false }}>
+                            <Stack.Screen name="(tabs)" />
+                            <Stack.Screen name="(pages)" />
+                        </Stack>
+                    </LoggedLayout>
+                ) : (
                     <Stack screenOptions={{ headerShown: false }}>
                         <Stack.Screen name="(tabs)" />
                         <Stack.Screen name="(pages)" />
                     </Stack>
-                </LoggedLayout>
+                )
             ) : (
                 <Stack screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="login" />
