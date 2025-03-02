@@ -2,10 +2,12 @@ import { View, Text, ScrollView, StyleSheet, Image, Pressable } from 'react-nati
 import { Link } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
 
 export default function LandingPage() {
   return (
     <ScrollView style={styles.container}>
+      <StatusBar style="light" backgroundColor="#8257E5" />
       <LinearGradient
         colors={['#8257E5', '#8257E5']}
         style={styles.header}
