@@ -79,6 +79,9 @@ const DeleteButton = styled.TouchableOpacity`
   background-color: ${({ theme }) => theme.colors.error};
   padding: 8px;
   border-radius: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
 `;
 
 const TeamsContainer = styled.View`
@@ -248,19 +251,16 @@ export default function CompetitionDetails() {
                       <GameStatus>{game.status === 'pending' ? 'Pendente' : game.status === 'in_progress' ? 'Em andamento' : 'Finalizado'}</GameStatus>
                       {(canDeleteGames || (game.status === 'pending')) && (
                         <DeleteButton onPress={() => showDeleteConfirmation(game.id, game.status)}>
-                          <Feather name="trash-2" size={16} color={theme.colors.white} />
+                          <Feather name="trash-2" size={16} color={theme.colors.gray100} />
                         </DeleteButton>
                       )}
                     </GameHeader>
-
                     <TeamsContainer>
                       <View style={{ flex: 1, alignItems: 'center' }}>
                         <TeamScore winner={game.team1_score > game.team2_score}>{game.team1_score}</TeamScore>
                         <TeamPlayers>{game.team1.join(' & ')}</TeamPlayers>
                       </View>
-
                       <VsText>vs</VsText>
-
                       <View style={{ flex: 1, alignItems: 'center' }}>
                         <TeamScore winner={game.team2_score > game.team1_score}>{game.team2_score}</TeamScore>
                         <TeamPlayers>{game.team2.join(' & ')}</TeamPlayers>

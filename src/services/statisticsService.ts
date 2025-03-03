@@ -64,14 +64,13 @@ export const statisticsService = {
             // Buscar total de jogos
             const { data: games, error: gamesError } = await supabase
                 .from('games')
-                .select(`
-                    *,
-                    competition:competitions (
-                        id,
-                        community_id
-                    )
-                `)
-                .in('competition.community_id', communityIds);
+                .select('*')
+                .in('competition_id', (
+                    supabase
+                        .from('competitions')
+                        .select('id')
+                        .in('community_id', communityIds)
+                ));
 
             if (gamesError) {
                 console.error('Erro ao buscar jogos:', gamesError);
@@ -109,22 +108,21 @@ export const statisticsService = {
             // Buscar média de pontos
             const { data: scores, error: scoresError } = await supabase
                 .from('games')
-                .select(`
-                    team1_score,
-                    team2_score,
-                    competition:competitions (
-                        community_id
-                    )
-                `)
-                .in('competition.community_id', communityIds);
+                .select('team1_score, team2_score')
+                .in('competition_id', (
+                    supabase
+                        .from('competitions')
+                        .select('id')
+                        .in('community_id', communityIds)
+                ));
 
             if (scoresError) {
                 console.error('Erro ao buscar pontuações:', scoresError);
                 throw new Error('Erro ao buscar pontuações');
             }
 
-            // Filtrar jogos válidos (que têm competição)
-            const validScores = scores?.filter(game => game.competition) || [];
+            // Filtrar jogos válidos
+            const validScores = scores || [];
             
             const totalScores = validScores.reduce((acc, game) => acc + (game.team1_score || 0) + (game.team2_score || 0), 0);
             const totalGamesForAverage = validScores.length || 1;
