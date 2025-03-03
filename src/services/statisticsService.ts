@@ -15,12 +15,24 @@ export const statisticsService = {
             
             // Verificar usuário autenticado
             const { data: { user }, error: userError } = await supabase.auth.getUser();
-            if (userError || !user) {
+            if (userError) {
                 console.error('[statisticsService] Erro de autenticação:', userError);
+                throw new Error('Usuário não autenticado');
+            }
+            
+            if (!user) {
+                console.error('[statisticsService] Usuário não encontrado na sessão');
                 throw new Error('Usuário não autenticado');
             }
 
             console.log('[statisticsService] Usuário autenticado:', user.id);
+
+            // Verificar se a sessão está ativa
+            const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !sessionData.session) {
+                console.error('[statisticsService] Sessão inválida:', sessionError);
+                throw new Error('Sessão de usuário inválida');
+            }
 
             // Buscar comunidades onde o usuário é membro
             const { data: memberCommunities, error: memberError } = await supabase

@@ -390,7 +390,19 @@ const Dashboard: React.FC = () => {
         });
         
         if (!authLoading) {
-            loadStatistics();
+            if (isAuthenticated && user?.id) {
+                loadStatistics();
+            } else {
+                console.log("[Dashboard] Usuário não autenticado, não carregando estatísticas");
+                // Definir estatísticas vazias para evitar exibição de dados antigos
+                setStats({
+                    totalGames: 0,
+                    totalCompetitions: 0,
+                    totalPlayers: 0,
+                    averageScore: 0,
+                    totalCommunities: 0
+                });
+            }
         }
     }, [user?.id, authLoading, isAuthenticated]);
 
@@ -398,6 +410,13 @@ const Dashboard: React.FC = () => {
         try {
             setRefreshing(true);
             console.log('[Dashboard] Carregando estatísticas...');
+            
+            // Verificar novamente se o usuário está autenticado
+            if (!isAuthenticated || !user?.id) {
+                console.log('[Dashboard] Usuário não está autenticado, não carregando estatísticas');
+                setRefreshing(false);
+                return;
+            }
             
             try {
                 // Carregar estatísticas diretamente, sem verificações adicionais
@@ -416,7 +435,21 @@ const Dashboard: React.FC = () => {
                 setTopPlayers(topPlayers);
             } catch (serviceError) {
                 console.error('[Dashboard] Erro no serviço de estatísticas:', serviceError);
-                throw serviceError;
+                
+                // Verificar se o erro é de autenticação
+                if (serviceError.message?.includes('autenticado')) {
+                    console.log('[Dashboard] Erro de autenticação, redirecionando para login');
+                    // Não exibir alerta para erros de autenticação, apenas definir estatísticas vazias
+                    setStats({
+                        totalGames: 0,
+                        totalCompetitions: 0,
+                        totalPlayers: 0,
+                        averageScore: 0,
+                        totalCommunities: 0
+                    });
+                } else {
+                    throw serviceError;
+                }
             }
             
         } catch (error) {
@@ -455,7 +488,11 @@ const Dashboard: React.FC = () => {
                 <Content>
                     <WelcomeContainer>
                         <WelcomeText>Olá!</WelcomeText>
-                        <WelcomeSubtext>Confira as estatísticas do seu domínio</WelcomeSubtext>
+                        <WelcomeSubtext>
+                            {isAuthenticated 
+                                ? "Confira as estatísticas do seu domínio" 
+                                : "Faça login para ver suas estatísticas"}
+                        </WelcomeSubtext>
                     </WelcomeContainer>
 
                     <StatisticsContainer>
