@@ -75,189 +75,548 @@ export default function CompetitionDetails() {
     const [expandedGames, setExpandedGames] = useState(false);
     const [isGamesModalVisible, setIsGamesModalVisible] = useState(false);
 
-    useFocusEffect(
-        useCallback(() => {
-            const fetchData = async () => {
-                try {
-                    setIsLoading(true);
-                    console.log('Buscando competição com ID:', competitionId);
-                    
-                    // Verificar se o ID da competição é válido
-                    if (!competitionId || typeof competitionId !== 'string') {
-                        console.error('ID da competição inválido:', competitionId);
-                        setCompetition(null);
-                        setIsLoading(false);
-                        return;
-                    }
-                    
-                    const [competitionData, gamesData, membersData, communityMembersData] = await Promise.all([
-                        competitionService.getById(competitionId as string),
-                        gameService.listByCompetition(competitionId as string),
-                        playerService.listCompetitionMembers(competitionId as string),
-                        communityMembersService.listMembers(communityId as string)
-                    ]);
-
-                    console.log('Dados da competição recebidos:', competitionData);
-                    
-                    setCompetition(competitionData);
-                    setGames(gamesData || []);
-                    setMembers(membersData || []);
-                    setCommunityMembers(communityMembersData || []);
-                } catch (error) {
-                    console.error('Error fetching data:', error);
-                    Alert.alert('Erro', 'Falha ao carregar dados da competição');
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-
-            fetchData();
-        }, [competitionId, communityId])
-    );
-
-    const handleDeleteGame = async (gameId: string) => {
+    const loadCompetitionAndMembers = useCallback(async () => {
         try {
-            await gameService.deleteGame(gameId);
-            const updatedGames = await gameService.listByCompetition(competitionId as string);
-            setGames(updatedGames || []);
+            setIsLoading(true);
+            const competition = await competitionService.getById(competitionId as string);
+            const members = await competitionService.listMembers(competitionId as string);
+            const games = await gameService.listByCompetition(competitionId as string);
+            const communityMembers = await communityMembersService.listMembers(communityId as string);
+
+            setCompetition(competition);
+            setMembers(members);
+            setGames(games);
+            setCommunityMembers(communityMembers);
+
+            if (competition.status === 'finished') {
+                const results = await competitionService.getCompetitionResults(competitionId as string);
+                setResults(results);
+            }
         } catch (error) {
-            console.error('Error deleting game:', error);
-            Alert.alert('Erro', 'Falha ao deletar o jogo');
+            console.error('Erro ao carregar competição:', error);
+            Alert.alert('Erro', 'Não foi possível carregar a competição');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [competitionId, communityId]);
+
+    const loadGames = useCallback(async () => {
+        try {
+            const gamesData = await gameService.listByCompetition(competitionId);
+            const gamesWithPlayers = await Promise.all(gamesData.map(async (game) => {
+                const team1Players = await Promise.all(game.team1.map(async (playerId) => {
+                    const member = members.find(m => m.player_id === playerId);
+                    return member?.players || { id: playerId, name: 'Jogador não encontrado' };
+                }));
+                const team2Players = await Promise.all(game.team2.map(async (playerId) => {
+                    const member = members.find(m => m.player_id === playerId);
+                    return member?.players || { id: playerId, name: 'Jogador não encontrado' };
+                }));
+                return {
+                    ...game,
+                    team1_players: team1Players,
+                    team2_players: team2Players,
+                };
+            }));
+            setGames(gamesWithPlayers);
+        } catch (error) {
+            console.error('Erro ao carregar jogos:', error);
+            Alert.alert('Erro', 'Não foi possível carregar os jogos');
+        }
+    }, [competitionId, members]);
+
+    useEffect(() => {
+        if (members.length > 0) {
+            loadGames();
+        }
+    }, [loadGames, members]);
+
+    const checkCanFinish = async () => {
+        try {
+            const canFinish = await competitionService.canFinishCompetition(competitionId as string);
+            setCanFinish(canFinish);
+        } catch (error) {
+            console.error('Erro ao verificar status:', error);
         }
     };
 
-    const confirmDeleteGame = (gameId: string) => {
-        Alert.alert(
-            'Confirmar exclusão',
-            'Tem certeza que deseja excluir este jogo?',
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                { 
-                    text: 'Excluir', 
-                    style: 'destructive',
-                    onPress: () => handleDeleteGame(gameId)
-                }
-            ]
-        );
+    // Atualiza os dados quando a tela recebe foco (ex: ao voltar de outra tela)
+    useFocusEffect(
+        useCallback(() => {
+            // Recarrega os dados da competição quando a tela recebe foco
+            const loadData = async () => {
+                await loadCompetitionAndMembers();
+                checkCanFinish();
+            };
+            
+            loadData();
+            
+            return () => {
+                // Cleanup function (opcional)
+            };
+        }, [loadCompetitionAndMembers])
+    );
+
+    const handleFinishCompetition = async () => {
+        try {
+            setLoading(true);
+            const results = await competitionService.finishCompetition(competitionId as string);
+            setResults(results);
+            loadCompetitionAndMembers(); // Recarrega para atualizar o status
+        } catch (error) {
+            console.error('Erro ao finalizar competição:', error);
+            Alert.alert('Erro', 'Não foi possível finalizar a competição');
+        } finally {
+            setLoading(false);
+        }
     };
+
+    const handleToggleMember = async (playerId: string) => {
+        try {
+            const isMember = members.some(m => m.player_id === playerId);
+            
+            if (isMember) {
+                await competitionService.removeMember(competitionId as string, playerId);
+            } else {
+                await competitionService.addMember(competitionId as string, playerId);
+            }
+            
+            // Recarrega a lista de membros após a alteração
+            const updatedMembers = await competitionService.listMembers(competitionId as string);
+            setMembers(updatedMembers);
+        } catch (error) {
+            console.error('Erro ao gerenciar membro:', error);
+            Alert.alert('Erro', 'Não foi possível gerenciar o membro');
+        }
+    };
+
+    const handleStartCompetition = async () => {
+        try {
+            setIsLoading(true);
+            await competitionService.startCompetition(competitionId as string);
+            await loadCompetitionAndMembers();
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Erro', 'Não foi possível iniciar a competição');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (isLoading || !competition) {
+        return (
+            <LoadingContainer colors={colors}>
+                <ActivityIndicator size="large" color={colors.primary} />
+            </LoadingContainer>
+        );
+    }
+
+    const canStartCompetition = members.length >= 4 && competition.status === 'pending';
 
     return (
         <Container colors={colors}>
-            <InternalHeader title="Detalhes da Competição" />
-            
-            {isLoading ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                </View>
-            ) : (
-                <ContentContainer>
-                    {competition ? (
-                        <ScrollView>
-                            <View style={{ marginBottom: 20 }}>
-                                <Text style={{ fontSize: 24, color: colors.gray100, marginBottom: 10 }}>
-                                    {competition.name}
-                                </Text>
-                                <Text style={{ fontSize: 16, color: colors.gray300 }}>
-                                    {competition.description || 'Sem descrição'}
-                                </Text>
+            <InternalHeader 
+                title={competition?.name || ''} 
+            />
+            <ContentContainer>
+                <SectionHeader>
+                    <SectionTitle colors={colors}>Detalhes</SectionTitle>
+                    <CompetitionStatus colors={colors} status={competition?.status || 'pending'}>
+                        {competition?.status === 'pending' && 'Aguardando Início'}
+                        {competition?.status === 'in_progress' && 'Em Andamento'}
+                        {competition?.status === 'finished' && 'Finalizado'}
+                    </CompetitionStatus>
+                </SectionHeader>
+
+                {competition?.status === 'in_progress' && canFinish && (
+                    <FinishButton onPress={handleFinishCompetition} disabled={loading} colors={colors}>
+                        {loading ? (
+                            <ActivityIndicator color={colors.gray100} />
+                        ) : (
+                            <>
+                                <Feather name="flag" size={24} color={colors.gray100} />
+                                <FinishButtonText colors={colors}>Encerrar Competição</FinishButtonText>
+                            </>
+                        )}
+                    </FinishButton>
+                )}
+
+                {competition?.status === 'finished' ? (
+                    <GamesList
+                        ListHeaderComponent={() => (
+                            <View>
+                                <ViewScoresButton 
+                                    onPress={() => router.push(`/comunidade/${communityId}/competicao/${competitionId}/scores`)}
+                                    colors={colors}
+                                >
+                                    <Feather name="award" size={24} color={colors.gray100} />
+                                    <ViewScoresButtonText colors={colors}>Ver Classificação</ViewScoresButtonText>
+                                </ViewScoresButton>
+
+                                <Section>
+                                    <SectionTitle colors={colors}>Jogos</SectionTitle>
+                                </Section>
                             </View>
+                        )}
+                        data={games}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => (
+                            <GameCard 
+                                key={item.id}
+                                onPress={() => router.push(`/comunidade/${communityId}/competicao/${competitionId}/jogo/${item.id}`)}
+                                colors={colors}
+                            >
+                                <GameTeams>
+                                    <TeamScore colors={colors}>
+                                        <Score colors={colors}>{item.team1_score}</Score>
+                                        <TeamName colors={colors}>
+                                            {item.team1_players?.map(player => player.name).join(' e ')}
+                                        </TeamName>
+                                    </TeamScore>
+                                    
+                                    <Versus colors={colors}>X</Versus>
+                                    
+                                    <TeamScore colors={colors}>
+                                        <Score colors={colors}>{item.team2_score}</Score>
+                                        <TeamName colors={colors}>
+                                            {item.team2_players?.map(player => player.name).join(' e ')}
+                                        </TeamName>
+                                    </TeamScore>
+                                </GameTeams>
 
-                            <View style={{ marginBottom: 20 }}>
-                                <Text style={{ fontSize: 20, color: colors.gray100, marginBottom: 10 }}>
-                                    Jogos
-                                </Text>
-                                {games.length > 0 ? (
-                                    games.map((game) => (
-                                        <GameCard key={game.id}>
-                                            <GameTeams>
-                                                <TeamScore>
-                                                    <Score colors={colors}>{game.team1_score}</Score>
-                                                    <TeamName colors={colors}>
-                                                        {game.team1.join(' & ')}
-                                                    </TeamName>
-                                                </TeamScore>
+                                <GameStatus colors={colors} status={item.status}>
+                                    {item.status === 'pending' && 'Aguardando Início'}
+                                    {item.status === 'in_progress' && 'Em Andamento'}
+                                    {item.status === 'finished' && 'Finalizado'}
+                                </GameStatus>
+                            </GameCard>
+                        )}
+                        ListEmptyComponent={() => (
+                            <EmptyContainer>
+                                <EmptyText colors={colors}>Nenhum jogo registrado</EmptyText>
+                            </EmptyContainer>
+                        )}
+                        contentContainerStyle={{ padding: 16 }}
+                    />
+                ) : (
+                    <View style={{ flex: 1 }}>
+                        <Description colors={colors}>{competition?.description}</Description>
 
-                                                <Versus colors={colors}>vs</Versus>
+                        <Section>
+                            <SectionHeader>
+                                <SectionTitle colors={colors}>Membros ({members.length})</SectionTitle>
+                                
+                                <ManageButton onPress={() => setIsAddMemberModalVisible(true)} colors={colors}>
+                                    <Feather name="users" size={20} color={colors.primary} />
+                                    <ManageButtonText colors={colors}>Gerenciar</ManageButtonText>
+                                </ManageButton>
+                            </SectionHeader>
 
-                                                <TeamScore>
-                                                    <Score colors={colors}>{game.team2_score}</Score>
-                                                    <TeamName colors={colors}>
-                                                        {game.team2.join(' & ')}
-                                                    </TeamName>
-                                                </TeamScore>
-                                            </GameTeams>
+                            <MembersList 
+                                data={members} 
+                                renderItem={({ item }) => (
+                                    <MemberItem key={item.id} colors={colors}>
+                                        <MemberInfo>
+                                            <MemberName colors={colors}>{item.players?.name || 'Nome não disponível'}</MemberName>
+                                        </MemberInfo>
+                                    </MemberItem>
+                                )} 
+                                keyExtractor={(item) => item.id}
+                                contentContainerStyle={{ paddingBottom: 16 }}
+                            />
+                        </Section>
 
-                                            <GameStatus colors={colors}>
-                                                {game.status === 'pending' ? 'Pendente' :
-                                                 game.status === 'in_progress' ? 'Em andamento' : 'Finalizado'}
-                                            </GameStatus>
+                        {competition?.status === 'pending' && (
+                            <StartButton 
+                                onPress={handleStartCompetition}
+                                disabled={!canStartCompetition}
+                                style={{ opacity: canStartCompetition ? 1 : 0.5 }}
+                                colors={colors}
+                            >
+                                <StartButtonText colors={colors}>
+                                    {members.length < 4 
+                                        ? `Adicione mais ${4 - members.length} membro${4 - members.length === 1 ? '' : 's'}`
+                                        : 'Iniciar Competição'
+                                    }
+                                </StartButtonText>
+                            </StartButton>
+                        )}
 
-                                            {game.status === 'pending' && (
-                                                <DeleteGameButton
-                                                    colors={colors}
-                                                    onPress={() => confirmDeleteGame(game.id)}
-                                                >
-                                                    <Feather name="trash-2" size={16} color={colors.error} />
-                                                </DeleteGameButton>
-                                            )}
-                                        </GameCard>
-                                    ))
-                                ) : (
+                        {competition?.status === 'in_progress' && (
+                            <>
+                                <SectionHeader>
+                                    <SectionTitle colors={colors}>Jogos</SectionTitle>
+                                    <TouchableOpacity onPress={() => setIsGamesModalVisible(true)}>
+                                        <Feather 
+                                            name="list" 
+                                            size={24} 
+                                            color={colors.primary} 
+                                        />
+                                    </TouchableOpacity>
+                                </SectionHeader>
+
+                                {games.length === 0 ? (
                                     <EmptyContainer>
                                         <EmptyText colors={colors}>Nenhum jogo registrado</EmptyText>
                                         <EmptyDescription colors={colors}>
-                                            Crie um novo jogo para começar
+                                            Clique no botão + para adicionar um novo jogo
                                         </EmptyDescription>
                                     </EmptyContainer>
+                                ) : (
+                                    <GamesList
+                                        data={games}
+                                        keyExtractor={(item) => item.id}
+                                        renderItem={({ item }) => (
+                                            <GameCard 
+                                                key={item.id}
+                                                onPress={() => router.push(`/comunidade/${communityId}/competicao/${competitionId}/jogo/${item.id}`)}
+                                                colors={colors}
+                                            >
+                                                <GameTeams>
+                                                    <TeamScore colors={colors}>
+                                                        <Score colors={colors}>{item.team1_score}</Score>
+                                                        <TeamName colors={colors}>
+                                                            {item.team1_players?.map(player => player.name).join(' e ')}
+                                                        </TeamName>
+                                                    </TeamScore>
+                                                    
+                                                    <Versus colors={colors}>X</Versus>
+                                                    
+                                                    <TeamScore colors={colors}>
+                                                        <Score colors={colors}>{item.team2_score}</Score>
+                                                        <TeamName colors={colors}>
+                                                            {item.team2_players?.map(player => player.name).join(' e ')}
+                                                        </TeamName>
+                                                    </TeamScore>
+                                                </GameTeams>
+
+                                                <GameStatus colors={colors} status={item.status}>
+                                                    {item.status === 'pending' && 'Aguardando Início'}
+                                                    {item.status === 'in_progress' && 'Em Andamento'}
+                                                    {item.status === 'finished' && 'Finalizado'}
+                                                </GameStatus>
+                                            </GameCard>
+                                        )}
+                                        contentContainerStyle={{ padding: 16 }}
+                                    />
                                 )}
-                            </View>
-                        </ScrollView>
-                    ) : (
-                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 18, color: colors.gray100, marginBottom: 10 }}>
-                                Competição não encontrada
-                            </Text>
-                            <Text style={{ fontSize: 14, color: colors.gray300, textAlign: 'center', marginHorizontal: 20 }}>
-                                A competição que você está procurando não existe ou foi removida.
-                            </Text>
-                            <TouchableOpacity 
-                                style={{ 
-                                    marginTop: 20,
-                                    padding: 10,
-                                    backgroundColor: colors.primary,
-                                    borderRadius: 8
-                                }}
-                                onPress={() => router.back()}
-                            >
-                                <Text style={{ color: colors.white }}>
-                                    Voltar
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-                </ContentContainer>
+                            </>
+                        )}
+                    </View>
+                )}
+            </ContentContainer>
+
+            {competition?.status === 'in_progress' && (
+                <NewGameButton 
+                    onPress={() => router.push(`/comunidade/${communityId}/competicao/${competitionId}/jogo/novo`)}
+                    colors={colors}
+                >
+                    <Feather name="plus" size={24} color={colors.gray100} />
+                </NewGameButton>
             )}
+
+            <Modal
+                visible={isGamesModalVisible}
+                animationType="slide"
+                onRequestClose={() => setIsGamesModalVisible(false)}
+            >
+                <ModalContainer colors={colors}>
+                    <ModalHeader colors={colors}>
+                        <HeaderTitle colors={colors}>Lista de Jogos</HeaderTitle>
+                        <CloseButton onPress={() => setIsGamesModalVisible(false)}>
+                            <Feather name="x" size={24} color={colors.gray100} />
+                        </CloseButton>
+                    </ModalHeader>
+
+                    <ModalContent>
+                        <GamesList
+                            data={games}
+                            keyExtractor={(item) => item.id}
+                            renderItem={({ item }) => (
+                                <ModalGameCard 
+                                    key={item.id}
+                                    onPress={() => {
+                                        setIsGamesModalVisible(false);
+                                        router.push(`/comunidade/${communityId}/competicao/${competitionId}/jogo/${item.id}`);
+                                    }}
+                                    colors={colors}
+                                >
+                                    <GameTeams>
+                                        <TeamScore colors={colors}>
+                                            <Score colors={colors}>{item.team1_score}</Score>
+                                            <TeamName colors={colors}>
+                                                {item.team1_players?.map(player => player.name).join(' e ')}
+                                            </TeamName>
+                                        </TeamScore>
+                                        
+                                        <Versus colors={colors}>X</Versus>
+                                        
+                                        <TeamScore colors={colors}>
+                                            <Score colors={colors}>{item.team2_score}</Score>
+                                            <TeamName colors={colors}>
+                                                {item.team2_players?.map(player => player.name).join(' e ')}
+                                            </TeamName>
+                                        </TeamScore>
+                                    </GameTeams>
+
+                                    <GameStatus colors={colors} status={item.status}>
+                                        {item.status === 'pending' && 'Aguardando Início'}
+                                        {item.status === 'in_progress' && 'Em Andamento'}
+                                        {item.status === 'finished' && 'Finalizado'}
+                                    </GameStatus>
+                                </ModalGameCard>
+                            )}
+                            contentContainerStyle={{ padding: 16 }}
+                        />
+                    </ModalContent>
+                </ModalContainer>
+            </Modal>
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={isAddMemberModalVisible}
+                onRequestClose={() => setIsAddMemberModalVisible(false)}
+            >
+                <ModalContainer colors={colors}>
+                    <ModalContent>
+                        <ModalHeader colors={colors}>
+                            <CloseButton onPress={() => setIsAddMemberModalVisible(false)}>
+                                <Feather name="x" size={24} color={colors.gray100} />
+                            </CloseButton>
+                        </ModalHeader>
+
+                        <MembersList data={communityMembers} renderItem={({ item }) => (
+                            <MemberItem key={item.id} colors={colors}>
+                                <MemberInfo>
+                                    <MemberName colors={colors}>{item.players.name}</MemberName>
+                                </MemberInfo>
+                                <SelectButton
+                                    onPress={() => handleToggleMember(item.player_id)}
+                                    selected={members.some(m => m.player_id === item.player_id)}
+                                    colors={colors}
+                                >
+                                    {members.some(m => m.player_id === item.player_id) ? (
+                                        <Feather name="check-circle" size={24} color={colors.primary} />
+                                    ) : (
+                                        <Feather name="circle" size={24} color={colors.gray300} />
+                                    )}
+                                </SelectButton>
+                            </MemberItem>
+                        )} />
+                    </ModalContent>
+                </ModalContainer>
+            </Modal>
         </Container>
     );
 }
 
-// Styled Components
 const Container = styled.View`
     flex: 1;
     background-color: ${props => props.colors.backgroundDark};
 `;
 
-const ContentContainer = styled.View`
+const LoadingContainer = styled.View`
     flex: 1;
-    padding: 16px;
-`;
-
-const GamesModalContainer = styled.View`
-    flex: 1;
+    justify-content: center;
+    align-items: center;
     background-color: ${props => props.colors.backgroundDark};
 `;
 
-const MemberModalContainer = styled.View`
+const ContentContainer = styled.View`
+    flex: 1;
+    padding: 24px;
+`;
+
+const SectionHeader = styled.View`
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+`;
+
+const SectionTitle = styled.Text`
+    font-size: 20px;
+    font-weight: bold;
+    color: ${props => props.colors.gray100};
+`;
+
+const Description = styled.Text`
+    font-size: 16px;
+    color: ${props => props.colors.gray100};
+    margin-bottom: 16px;
+`;
+
+const CompetitionStatus = styled.Text<{ status: 'pending' | 'in_progress' | 'finished' }>`
+    color: ${props => {
+        switch (props.status) {
+            case 'pending':
+                return props.colors.gray300;
+            case 'in_progress':
+                return props.colors.primary;
+            case 'finished':
+                return props.colors.success;
+            default:
+                return props.colors.gray300;
+        }
+    }};
+    font-size: 14px;
+    font-weight: 500;
+`;
+
+const StartButton = styled.TouchableOpacity`
+    background-color: ${props => props.colors.primary};
+    padding: 16px;
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+`;
+
+const StartButtonText = styled.Text`
+    color: ${props => props.colors.white};
+    font-size: 16px;
+    font-weight: bold;
+`;
+
+const Section = styled.View`
+    margin-top: 8px;
+`;
+
+const MembersScrollView = styled.ScrollView`
+    max-height: 300px;
+    margin-top: 16px;
+`;
+
+const MembersList = styled.FlatList.attrs(() => ({
+    contentContainerStyle: {
+        paddingBottom: 16
+    }
+}))`
+    flex: 1;
+    margin-top: 16px;
+`;
+
+const MemberItem = styled.View`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background-color: ${props => props.colors.surface};
+    border-radius: 8px;
+    margin-bottom: 8px;
+`;
+
+const MemberInfo = styled.View`
+    flex: 1;
+`;
+
+const MemberName = styled.Text`
+    color: ${props => props.colors.gray100};
+    font-size: 16px;
+`;
+
+const ModalContainer = styled.View`
     flex: 1;
     background-color: ${props => props.colors.backgroundDark};
 `;
@@ -268,11 +627,6 @@ const ModalHeader = styled.View`
     justify-content: space-between;
     padding: 20px;
     background-color: ${props => props.colors.backgroundMedium};
-`;
-
-const ModalBody = styled.View`
-    flex: 1;
-    padding: 16px;
 `;
 
 const ModalContent = styled.View`
@@ -286,61 +640,19 @@ const ModalGameCard = styled(TouchableOpacity)`
     margin-bottom: 16px;
 `;
 
-const GamesList = styled.FlatList`
-    flex: 1;
-`;
-
-const GameCard = styled.TouchableOpacity`
-    background-color: ${props => props.colors.backgroundMedium};
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
-    position: relative;
-`;
-
-const GameTeams = styled.View`
+const ManageButton = styled.TouchableOpacity`
     flex-direction: row;
     align-items: center;
-    justify-content: space-between;
+    background-color: ${props => props.colors.primary};
+    padding: 8px 16px;
+    border-radius: 8px;
 `;
 
-const TeamScore = styled.View`
-    flex: 1;
-    align-items: center;
-`;
-
-const Score = styled.Text`
+const ManageButtonText = styled.Text`
     color: ${props => props.colors.gray100};
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 8px;
-`;
-
-const TeamName = styled.Text`
-    color: ${props => props.colors.gray300};
     font-size: 14px;
-    text-align: center;
-`;
-
-const Versus = styled.Text`
-    color: ${props => props.colors.gray300};
-    font-size: 16px;
-    margin: 0 16px;
-`;
-
-const GameStatus = styled.Text`
-    color: ${props => props.colors.gray300};
-    font-size: 12px;
-    margin-top: 8px;
-`;
-
-const DeleteGameButton = styled.TouchableOpacity`
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    padding: 6px;
-    border-radius: 4px;
-    background-color: ${props => props.colors.backgroundMedium};
+    font-weight: 500;
+    margin-right: 8px;
 `;
 
 const EmptyContainer = styled.View`
@@ -359,4 +671,147 @@ const EmptyDescription = styled.Text`
     color: ${props => props.colors.gray300};
     font-size: 14px;
     text-align: center;
+`;
+
+const GamesList = styled.FlatList`
+    margin-top: 16px;
+`;
+
+const GameCard = styled.TouchableOpacity`
+    background-color: ${props => props.colors.surface};
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 8px;
+`;
+
+const GameTeams = styled.View`
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+`;
+
+const TeamScore = styled.View<{ winner?: boolean }>`
+    align-items: center;
+    flex: 1;
+    background-color: ${props => props.winner ? props.colors.primary + '20' : 'transparent'};
+    padding: 8px;
+    border-radius: 8px;
+`;
+
+const Score = styled.Text`
+    color: ${props => props.colors.gray100};
+    font-size: 32px;
+    font-weight: bold;
+`;
+
+const TeamName = styled.Text`
+    color: ${props => props.colors.gray300};
+    font-size: 14px;
+    margin-top: 4px;
+`;
+
+const Versus = styled.Text`
+    color: ${props => props.colors.gray300};
+    font-size: 20px;
+    margin-horizontal: 16px;
+`;
+
+const GameStatus = styled.Text<{ status: 'pending' | 'in_progress' | 'finished' }>`
+    color: ${props => {
+        switch (props.status) {
+            case 'pending':
+                return props.colors.gray300;
+            case 'in_progress':
+                return props.colors.primary;
+            case 'finished':
+                return props.colors.success;
+            default:
+                return props.colors.gray300;
+        }
+    }};
+    font-size: 14px;
+    text-align: center;
+    margin-top: 8px;
+`;
+
+const FinishButton = styled.TouchableOpacity<{ disabled?: boolean }>`
+    background-color: ${props => props.colors.error};
+    padding: 16px;
+    border-radius: 8px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    opacity: ${props => props.disabled ? 0.7 : 1};
+`;
+
+const FinishButtonText = styled.Text`
+    color: ${props => props.colors.gray100};
+    font-size: 16px;
+    font-weight: bold;
+    margin-left: 8px;
+`;
+
+const ViewScoresButton = styled.TouchableOpacity`
+    background-color: ${props => props.colors.primary};
+    padding: 16px;
+    border-radius: 8px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+    margin-bottom: 16px;
+`;
+
+const ViewScoresButtonText = styled.Text`
+    color: ${props => props.colors.gray100};
+    font-size: 16px;
+    font-weight: bold;
+    margin-left: 8px;
+`;
+
+const SelectButton = styled.TouchableOpacity`
+    padding: 8px;
+`;
+
+const CloseButton = styled.TouchableOpacity`
+    padding: 8px;
+`;
+
+const Button = styled.TouchableOpacity`
+    background-color: ${props => props.colors.primary};
+    padding: 16px;
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 16px;
+`;
+
+const ButtonText = styled.Text`
+    color: ${props => props.colors.white};
+    font-size: 16px;
+    font-weight: bold;
+`;
+
+const NewGameButton = styled.TouchableOpacity`
+    position: absolute;
+    bottom: 32px;
+    right: 32px;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background-color: ${props => props.colors.primary};
+    align-items: center;
+    justify-content: center;
+    elevation: 8;
+    z-index: 999;
+`;
+
+const HeaderTitle = styled.Text`
+    font-size: 20px;
+    font-weight: bold;
+    color: ${props => props.colors.gray100};
+    flex: 1;
 `;
