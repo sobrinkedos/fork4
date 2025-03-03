@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, ScrollView, TouchableOpacity, Dimensions } from "react-native";
+import { View, ScrollView, TouchableOpacity, Dimensions, RefreshControl, Alert } from "react-native";
 import styled from "styled-components/native";
 import { useTheme } from "@/contexts/ThemeProvider";
 import { MaterialCommunityIcons, Feather } from "@expo/vector-icons";
@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { statisticsService } from "@/services/statisticsService";
 import { rankingService } from "@/services/rankingService";
 import { activityService } from "@/services/activityService";
+import { supabase } from "@/lib/supabase";
 
 interface Stats {
     totalGames: number;
@@ -274,16 +275,13 @@ const calculatePosition = (index: number, items: Array<any>): number => {
 };
 
 const Dashboard: React.FC = () => {
-    const router = useRouter();
-    const { session } = useAuth();
     const { colors } = useTheme();
-    const [stats, setStats] = useState<{
-        totalGames: number;
-        totalCompetitions: number;
-        totalPlayers: number;
-        averageScore: number;
-        totalCommunities: number;
-    }>({
+    const router = useRouter();
+    const { session, user, isAuthenticated, loading: authLoading } = useAuth();
+    
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [stats, setStats] = useState<Stats>({
         totalGames: 0,
         totalCompetitions: 0,
         totalPlayers: 0,
@@ -380,56 +378,61 @@ const Dashboard: React.FC = () => {
     };
 
     useEffect(() => {
-        async function loadStats() {
-            try {
-                const userStats = await statisticsService.getUserStats();
-                console.log('Estatísticas carregadas:', userStats);
-                setStats(userStats);
-            } catch (error) {
-                console.error('Dashboard: Erro ao carregar estatísticas:', error);
-                // Manter os valores anteriores em caso de erro
-                setStats(prev => ({
-                    ...prev,
-                    totalGames: prev?.totalGames || 0,
-                    totalCompetitions: prev?.totalCompetitions || 0,
-                    totalPlayers: prev?.totalPlayers || 0,
-                    averageScore: prev?.averageScore || 0,
-                    totalCommunities: prev?.totalCommunities || 0
-                }));
-            }
+        console.log("[Dashboard] Verificando sessão do usuário:", user?.id);
+        console.log("[Dashboard] Autenticado:", isAuthenticated);
+        
+        // Verificar se as variáveis de ambiente do Supabase estão definidas
+        const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+        console.log("[Dashboard] Variáveis de ambiente:", {
+            supabaseUrl: supabaseUrl ? "Definido" : "Não definido",
+            supabaseAnonKey: supabaseAnonKey ? "Definido" : "Não definido"
+        });
+        
+        if (!authLoading) {
+            loadStatistics();
         }
+    }, [user?.id, authLoading, isAuthenticated]);
 
-        loadStats();
-    }, []);
-
-    useEffect(() => {
-        async function loadStatistics() {
-            if (session?.user?.id) {
-                const userStats = await statisticsService.getUserStats();
-                setStats(userStats);
-            }
-        }
-
-        loadStatistics();
-    }, [session?.user?.id]);
-
-    const fetchStatistics = async () => {
+    const loadStatistics = async () => {
         try {
-            if (!session?.user?.id) return;
-            const userStats = await statisticsService.getUserStats();
-            setStats(userStats);
+            setRefreshing(true);
+            console.log('[Dashboard] Carregando estatísticas...');
+            
+            try {
+                // Carregar estatísticas diretamente, sem verificações adicionais
+                // Isso nos ajudará a isolar o problema
+                const userStats = await statisticsService.getUserStats();
+                console.log('[Dashboard] Estatísticas carregadas:', userStats);
+                
+                setStats(userStats);
+                
+                // Carregar atividades recentes
+                const recentActivities = await activityService.getRecentActivities();
+                setRecentActivities(recentActivities);
+                
+                // Carregar ranking
+                const topPlayers = await rankingService.getTopPlayers();
+                setTopPlayers(topPlayers);
+            } catch (serviceError) {
+                console.error('[Dashboard] Erro no serviço de estatísticas:', serviceError);
+                throw serviceError;
+            }
+            
         } catch (error) {
-            console.error('Erro ao buscar estatísticas:', error);
+            console.error('[Dashboard] Erro ao carregar estatísticas:', error);
+            Alert.alert('Erro', 'Não foi possível carregar as estatísticas. Tente novamente mais tarde.');
+        } finally {
+            setRefreshing(false);
         }
     };
 
-    const refreshStatistics = async () => {
+    const onRefresh = async () => {
         try {
             setRefreshing(true);
-            const stats = await statisticsService.getUserStats();
-            setStats(stats);
+            await loadStatistics();
         } catch (error) {
-            console.error('Erro ao atualizar estatísticas:', error);
+            console.error('[Dashboard] Erro ao atualizar estatísticas:', error);
         } finally {
             setRefreshing(false);
         }
@@ -438,7 +441,17 @@ const Dashboard: React.FC = () => {
     return (
         <Container>
             <Header isDashboard />
-            <ScrollContent showsVerticalScrollIndicator={false}>
+            <ScrollContent 
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[colors.primary]}
+                        tintColor={colors.primary}
+                    />
+                }
+            >
                 <Content>
                     <WelcomeContainer>
                         <WelcomeText>Olá!</WelcomeText>
@@ -451,7 +464,7 @@ const Dashboard: React.FC = () => {
                                 <StatIcon>
                                     <MaterialCommunityIcons name="cards-playing-outline" size={24} color={colors.primary} />
                                 </StatIcon>
-                                <StatValue>{stats?.totalGames || 0}</StatValue>
+                                <StatValue>{stats.totalGames}</StatValue>
                                 <StatLabel>Jogos</StatLabel>
                             </StatCard>
                         </StatCardWrapper>
@@ -461,7 +474,7 @@ const Dashboard: React.FC = () => {
                                 <StatIcon>
                                     <MaterialCommunityIcons name="trophy-outline" size={24} color={colors.primary} />
                                 </StatIcon>
-                                <StatValue>{stats?.totalCompetitions || 0}</StatValue>
+                                <StatValue>{stats.totalCompetitions}</StatValue>
                                 <StatLabel>Competições</StatLabel>
                             </StatCard>
                         </StatCardWrapper>
@@ -471,17 +484,17 @@ const Dashboard: React.FC = () => {
                                 <StatIcon>
                                     <MaterialCommunityIcons name="account-group-outline" size={24} color={colors.primary} />
                                 </StatIcon>
-                                <StatValue>{stats?.totalPlayers || 0}</StatValue>
+                                <StatValue>{stats.totalPlayers}</StatValue>
                                 <StatLabel>Jogadores</StatLabel>
                             </StatCard>
                         </StatCardWrapper>
 
                         <StatCardWrapper>
-                            <StatCard onPress={() => router.push('/comunidades')}>
+                            <StatCard onPress={() => router.push("/comunidades")}>
                                 <StatIcon>
-                                    <MaterialCommunityIcons name="account-multiple" size={24} color={colors.primary} />
+                                    <MaterialCommunityIcons name="home-group" size={24} color={colors.primary} />
                                 </StatIcon>
-                                <StatValue>{stats?.totalCommunities || 0}</StatValue>
+                                <StatValue>{stats.totalCommunities}</StatValue>
                                 <StatLabel>Comunidades</StatLabel>
                             </StatCard>
                         </StatCardWrapper>
