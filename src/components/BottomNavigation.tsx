@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Platform } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import styled from 'styled-components/native';
 import { Feather } from '@expo/vector-icons';
@@ -35,11 +35,31 @@ const tabs = [
 export function BottomNavigation() {
     const router = useRouter();
     const pathname = usePathname();
-    const { colors, isDarkTheme } = useTheme();
+    const { colors } = useTheme();
 
-    const isActive = (path: string) => {
-        return pathname === path;
+    const getActiveTab = () => {
+        if (pathname.includes('/comunidade/')) {
+            return '/(tabs)/comunidades';
+        } else if (pathname.includes('/competicao/')) {
+            return '/(tabs)/competicoes';
+        } else if (pathname.includes('/jogador/')) {
+            return '/(tabs)/jogadores';
+        } else if (pathname === '/' || pathname.includes('/dashboard')) {
+            return '/(tabs)/dashboard';
+        }
+        
+        // Fallback para correspondência parcial
+        for (const tab of tabs) {
+            const cleanPath = tab.path.replace('/(tabs)', '');
+            if (pathname.includes(cleanPath)) {
+                return tab.path;
+            }
+        }
+        
+        return null;
     };
+
+    const activeTab = getActiveTab();
 
     return (
         <Container>
@@ -47,14 +67,14 @@ export function BottomNavigation() {
                 <TabButton
                     key={tab.name}
                     onPress={() => router.push(tab.path)}
-                    isActive={isActive(tab.path)}
+                    isActive={activeTab === tab.path}
                 >
                     <TabIcon
-                        name={tab.icon}
+                        name={tab.icon as any}
                         size={24}
-                        color={isActive(tab.path) ? colors.primary : colors.textSecondary}
+                        color={activeTab === tab.path ? colors.primary : colors.textSecondary}
                     />
-                    <TabLabel isActive={isActive(tab.path)}>{tab.label}</TabLabel>
+                    <TabLabel isActive={activeTab === tab.path}>{tab.label}</TabLabel>
                 </TabButton>
             ))}
         </Container>
@@ -66,10 +86,8 @@ const Container = styled.View`
     justify-content: space-around;
     align-items: center;
     padding: 8px 0;
-    background-color: ${({ theme }) => theme.colors.backgroundMedium};
-    border-top-width: 1px;
-    border-top-color: ${({ theme }) => theme.colors.border};
     width: 100%;
+    height: 60px;
 `;
 
 const TabButton = styled.TouchableOpacity<{ isActive: boolean }>`
@@ -92,5 +110,4 @@ const TabLabel = styled.Text<{ isActive: boolean }>`
     font-weight: ${({ isActive }) => (isActive ? 'bold' : 'normal')};
     text-align: center;
     width: 100%;
-    white-space: nowrap;
 `;

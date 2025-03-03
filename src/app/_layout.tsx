@@ -2,14 +2,11 @@ import { Stack } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { AuthProvider } from '../contexts/AuthProvider';
 import { ThemeProvider, useTheme } from '../contexts/ThemeProvider';
-import { StatusBar, Platform } from "react-native";
+import { StatusBar, Platform, View } from "react-native";
 import { SafeAreaView } from 'react-native';
-import styled, { ThemeContext } from 'styled-components/native';
-import { colors } from '../styles/colors';
+import styled from 'styled-components/native';
 import { enGB, registerTranslation } from 'react-native-paper-dates';
-import { LoggedLayout } from '@/components/LoggedLayout';
 import { usePathname } from 'expo-router';
-import { useContext } from 'react';
 
 registerTranslation('en-GB', enGB);
 
@@ -30,12 +27,10 @@ function AppLayout() {
             />
             {!isAuthScreen ? (
                 session ? (
-                    <LoggedLayout>
-                        <Stack screenOptions={{ headerShown: false }}>
-                            <Stack.Screen name="(tabs)" />
-                            <Stack.Screen name="(pages)" />
-                        </Stack>
-                    </LoggedLayout>
+                    <Stack screenOptions={{ headerShown: false }}>
+                        <Stack.Screen name="(tabs)" />
+                        <Stack.Screen name="(pages)" />
+                    </Stack>
                 ) : (
                     <Stack screenOptions={{ headerShown: false }}>
                         <Stack.Screen name="(tabs)" />
