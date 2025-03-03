@@ -169,13 +169,28 @@ export const competitionService = {
 
     async getById(id: string) {
         try {
+            console.log('Iniciando busca da competição com ID:', id);
+            console.log('Tipo do ID:', typeof id);
+            console.log('Valor do ID após trim:', id.trim());
+            
             const { data, error } = await supabase
                 .from('competitions')
                 .select('*')
-                .eq('id', id)
+                .eq('id', id.trim())
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Erro do Supabase ao buscar competição:', error);
+                console.error('Detalhes do erro:', error.message, error.details);
+                throw error;
+            }
+
+            if (!data) {
+                console.log('Nenhuma competição encontrada com o ID:', id);
+                return null;
+            }
+
+            console.log('Competição encontrada:', data);
             return data;
         } catch (error) {
             console.error('Erro ao buscar competição:', error);

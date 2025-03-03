@@ -493,4 +493,44 @@ export const gameService = {
             throw error;
         }
     },
+
+    async deleteGame(id: string) {
+        try {
+            // Primeiro, busca o jogo para verificar a competição
+            const { data: game, error: gameError } = await supabase
+                .from('games')
+                .select('competition_id')
+                .eq('id', id)
+                .single();
+
+            if (gameError) throw gameError;
+
+            // Verifica o status da competição
+            const { data: competition, error: competitionError } = await supabase
+                .from('competitions')
+                .select('status')
+                .eq('id', game.competition_id)
+                .single();
+
+            if (competitionError) throw competitionError;
+
+            // Se a competição estiver finalizada, não permite a exclusão
+            if (competition.status === 'finished') {
+                throw new Error('Não é possível excluir jogos de uma competição finalizada');
+            }
+
+            // Exclui o jogo
+            const { error: deleteError } = await supabase
+                .from('games')
+                .delete()
+                .eq('id', id);
+
+            if (deleteError) throw deleteError;
+
+            return true;
+        } catch (error) {
+            console.error('Erro ao excluir jogo:', error);
+            throw error;
+        }
+    }
 };

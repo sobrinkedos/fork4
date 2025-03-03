@@ -5,7 +5,8 @@ import {
     Alert,
     ActivityIndicator,
     ScrollView,
-    Text
+    Text,
+    Modal
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import styled from 'styled-components/native';
@@ -29,14 +30,19 @@ export default function GameDetails() {
     const [game, setGame] = useState<Game | null>(null);
     const [team1Players, setTeam1Players] = useState<Player[]>([]);
     const [team2Players, setTeam2Players] = useState<Player[]>([]);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [competitionStatus, setCompetitionStatus] = useState<'pending' | 'in_progress' | 'finished'>('pending');
 
     const loadGame = async () => {
         try {
             setLoading(true);
-            const [gameData, membersData] = await Promise.all([
+            const [gameData, membersData, competitionData] = await Promise.all([
                 gameService.getById(gameId as string),
-                competitionService.listMembers(competitionId as string)
+                competitionService.listMembers(competitionId as string),
+                competitionService.getById(competitionId as string)
             ]);
+
+            setCompetitionStatus(competitionData.status);
 
             setGame(gameData);
 
@@ -85,6 +91,19 @@ export default function GameDetails() {
     const isBuchuda = game.is_buchuda;
     const isBuchudaDeRe = game.is_buchuda_de_re;
 
+    const handleDeleteGame = async () => {
+        try {
+            setLoading(true);
+            await gameService.deleteGame(gameId as string);
+            router.replace(`/comunidade/${communityId}/competicao/${competitionId}`);
+        } catch (error: any) {
+            Alert.alert('Erro', error.message || 'Não foi possível excluir o jogo');
+        } finally {
+            setLoading(false);
+            setShowDeleteModal(false);
+        }
+    };
+
     return (
         <Container colors={colors}>
             <InternalHeader title="Detalhes do Jogo" />
@@ -92,6 +111,35 @@ export default function GameDetails() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 32 }}
             >
+                <Modal
+                    visible={showDeleteModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowDeleteModal(false)}
+                >
+                    <ModalOverlay>
+                        <ModalContent colors={colors}>
+                            <ModalTitle colors={colors}>Confirmar Exclusão</ModalTitle>
+                            <ModalText colors={colors}>Tem certeza que deseja excluir este jogo? Esta ação não pode ser desfeita.</ModalText>
+                            <ModalButtonsContainer>
+                                <ModalButton
+                                    variant="cancel"
+                                    colors={colors}
+                                    onPress={() => setShowDeleteModal(false)}
+                                >
+                                    <ModalButtonText colors={colors}>Cancelar</ModalButtonText>
+                                </ModalButton>
+                                <ModalButton
+                                    variant="delete"
+                                    colors={colors}
+                                    onPress={handleDeleteGame}
+                                >
+                                    <ModalButtonText colors={colors}>Excluir</ModalButtonText>
+                                </ModalButton>
+                            </ModalButtonsContainer>
+                        </ModalContent>
+                    </ModalOverlay>
+                </Modal>
                 <GameStatus>
                     <StatusText colors={colors}>
                         {game.status === 'pending' && 'Aguardando Início'}
@@ -152,9 +200,16 @@ export default function GameDetails() {
                 </ScoreContainer>
 
                 {game.status === 'pending' && (
-                    <ActionButton variant="start" colors={colors} onPress={handleStartGame}>
-                        <ActionButtonText colors={colors}>Iniciar Partida</ActionButtonText>
-                    </ActionButton>
+                    <>
+                        <ActionButton variant="start" colors={colors} onPress={handleStartGame}>
+                            <ActionButtonText colors={colors}>Iniciar Partida</ActionButtonText>
+                        </ActionButton>
+                        {competitionStatus !== 'finished' && (
+                            <ActionButton variant="delete" colors={colors} onPress={() => setShowDeleteModal(true)}>
+                                <ActionButtonText colors={colors}>Excluir Jogo</ActionButtonText>
+                            </ActionButton>
+                        )}
+                    </>
                 )}
 
                 {game.status === 'in_progress' && (
@@ -347,8 +402,17 @@ const Versus = styled.Text<{ colors: any }>`
     margin-horizontal: 16px;
 `;
 
-const ActionButton = styled.TouchableOpacity<{ variant?: 'start' | 'register', colors: any }>`
-    background-color: ${props => props.variant === 'start' ? props.colors.success : props.colors.primary};
+const ActionButton = styled.TouchableOpacity<{ variant?: 'start' | 'register' | 'delete', colors: any }>`
+    background-color: ${props => {
+        switch (props.variant) {
+            case 'start':
+                return props.colors.success;
+            case 'delete':
+                return props.colors.error;
+            default:
+                return props.colors.primary;
+        }
+    }};
     padding: 16px;
     border-radius: 8px;
     align-items: center;
@@ -397,6 +461,53 @@ const VictoryTypeTag = styled.Text<{ colors: any }>`
     padding: 4px 8px;
     background-color: ${props => `${props.colors.primaryLight}20`};
     border-radius: 4px;
+`;
+
+const ModalOverlay = styled.View`
+    flex: 1;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+`;
+
+const ModalContent = styled.View<{ colors: any }>`
+    background-color: ${props => props.colors.surface};
+    border-radius: 8px;
+    padding: 20px;
+    width: 100%;
+    max-width: 400px;
+`;
+
+const ModalTitle = styled.Text<{ colors: any }>`
+    font-size: 18px;
+    font-weight: bold;
+    color: ${props => props.colors.text};
+    margin-bottom: 16px;
+`;
+
+const ModalText = styled.Text<{ colors: any }>`
+    font-size: 16px;
+    color: ${props => props.colors.textSecondary};
+    margin-bottom: 24px;
+`;
+
+const ModalButtonsContainer = styled.View`
+    flex-direction: row;
+    justify-content: flex-end;
+`;
+
+const ModalButton = styled.TouchableOpacity<{ variant: 'cancel' | 'delete', colors: any }>`
+    padding: 12px 20px;
+    border-radius: 6px;
+    margin-left: 12px;
+    background-color: ${props => props.variant === 'delete' ? props.colors.error : 'transparent'};
+`;
+
+const ModalButtonText = styled.Text<{ colors: any }>`
+    font-size: 14px;
+    font-weight: bold;
+    color: ${props => props.colors.text};
 `;
 
 const PointsTag = styled.Text<{ colors: any }>`

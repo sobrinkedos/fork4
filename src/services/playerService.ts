@@ -313,6 +313,29 @@ class PlayerService {
             throw error;
         }
     }
+
+    async listCompetitionMembers(competitionId: string) {
+        try {
+            const { data, error } = await supabase
+                .from('competition_members')
+                .select(`
+                    id,
+                    player_id,
+                    players (id, name)
+                `)
+                .eq('competition_id', competitionId);
+
+            if (error) {
+                console.error('Error fetching competition members:', error);
+                throw error;
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Error in listCompetitionMembers:', error);
+            throw error;
+        }
+    }
 }
 
 export const playerService = new PlayerService();
