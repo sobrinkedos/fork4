@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { competitionService } from './competitionService';
 
 interface UserStats {
     totalGames: number;
@@ -13,18 +14,12 @@ export const statisticsService = {
         try {
             console.log('[statisticsService] Iniciando busca de estatísticas...');
             
-            // Verificar usuário autenticado
             const { data: { user }, error: userError } = await supabase.auth.getUser();
-            if (userError) {
+            if (userError || !user) {
                 console.error('[statisticsService] Erro de autenticação:', userError);
                 throw new Error('Usuário não autenticado');
             }
             
-            if (!user) {
-                console.error('[statisticsService] Usuário não encontrado na sessão');
-                throw new Error('Usuário não autenticado');
-            }
-
             console.log('[statisticsService] Usuário autenticado:', user.id);
 
             // Verificar se a sessão está ativa
@@ -48,15 +43,13 @@ export const statisticsService = {
             console.log('[statisticsService] Comunidades como membro:', memberCommunities);
 
             // Buscar comunidades onde o usuário é organizador/criador
-            // Verificando a estrutura da tabela communities para encontrar a coluna correta
             const { data: organizerCommunities, error: organizerError } = await supabase
                 .from('communities')
-                .select('id, name, created_by')
+                .select('id')
                 .eq('created_by', user.id);
 
             if (organizerError) {
                 console.error('[statisticsService] Erro ao buscar comunidades como organizador:', organizerError);
-                // Não lançar erro aqui, apenas continuar com as comunidades como membro
                 console.log('[statisticsService] Continuando apenas com comunidades como membro');
             } else {
                 console.log('[statisticsService] Comunidades como organizador:', organizerCommunities);
@@ -81,34 +74,38 @@ export const statisticsService = {
                 };
             }
 
-            // Buscar competições das comunidades
-            const { data: competitions, error: competitionsError } = await supabase
-                .from('competitions')
-                .select('id')
-                .in('community_id', communityIds);
+            // Buscar competições usando o competitionService
+            const competitionsPromises = communityIds.map(communityId => 
+                competitionService.refreshCompetitions(communityId)
+            );
 
-            if (competitionsError) {
-                console.error('[statisticsService] Erro ao buscar competições:', competitionsError);
-                throw new Error('Erro ao buscar competições');
-            }
+            const competitionsArrays = await Promise.all(competitionsPromises);
+            const competitions = competitionsArrays.flat();
+            const competitionIds = competitions.map(c => c.id);
 
-            const competitionIds = competitions?.map(c => c.id) || [];
             console.log('[statisticsService] Total de competições encontradas:', competitionIds.length);
 
             // Buscar jogos das competições
             let totalGames = 0;
             if (competitionIds.length > 0) {
-                const { data: games, error: gamesError } = await supabase
-                    .from('games')
-                    .select('id')
-                    .in('competition_id', competitionIds);
+                const gamesPromises = competitionIds.map(async (competitionId) => {
+                    try {
+                        const { data, error } = await supabase
+                            .from('games')
+                            .select('id')
+                            .eq('competition_id', competitionId)
+                            .throwOnError();
+                        
+                        return error ? [] : (data || []);
+                    } catch (error) {
+                        console.error(`[statisticsService] Erro ao buscar jogos para competição ${competitionId}:`, error);
+                        return [];
+                    }
+                });
 
-                if (gamesError) {
-                    console.error('[statisticsService] Erro ao buscar jogos:', gamesError);
-                    throw new Error('Erro ao buscar jogos');
-                }
-
-                totalGames = games?.length || 0;
+                const gamesArrays = await Promise.all(gamesPromises);
+                const games = gamesArrays.flat();
+                totalGames = games.length;
                 console.log('[statisticsService] Total de jogos encontrados:', totalGames);
             }
 
@@ -131,24 +128,33 @@ export const statisticsService = {
             // Calcular média de pontos
             let averageScore = 0;
             if (competitionIds.length > 0) {
-                const { data: scores, error: scoresError } = await supabase
-                    .from('games')
-                    .select('team1_score, team2_score')
-                    .in('competition_id', competitionIds);
-
-                if (scoresError) {
-                    console.error('[statisticsService] Erro ao buscar pontuações:', scoresError);
-                } else {
-                    const validScores = scores?.filter(s => 
-                        s.team1_score !== null && 
-                        s.team2_score !== null) || [];
-                    
-                    if (validScores.length > 0) {
-                        const totalScores = validScores.reduce((acc, game) => 
-                            acc + (game.team1_score || 0) + (game.team2_score || 0), 0);
-                        averageScore = totalScores / (validScores.length * 2); // Dividir por 2 pois cada jogo tem 2 times
-                        averageScore = Math.round(averageScore * 10) / 10;
+                const scoresPromises = competitionIds.map(async (competitionId) => {
+                    try {
+                        const { data, error } = await supabase
+                            .from('games')
+                            .select('team1_score, team2_score')
+                            .eq('competition_id', competitionId)
+                            .throwOnError();
+                        
+                        return error ? [] : (data || []);
+                    } catch (error) {
+                        console.error(`[statisticsService] Erro ao buscar pontuações para competição ${competitionId}:`, error);
+                        return [];
                     }
+                });
+
+                const scoresArrays = await Promise.all(scoresPromises);
+                const scores = scoresArrays.flat();
+                
+                const validScores = scores.filter(s => 
+                    s.team1_score !== null && 
+                    s.team2_score !== null);
+                
+                if (validScores.length > 0) {
+                    const totalScores = validScores.reduce((acc, game) => 
+                        acc + (game.team1_score || 0) + (game.team2_score || 0), 0);
+                    averageScore = totalScores / (validScores.length * 2);
+                    averageScore = Math.round(averageScore * 10) / 10;
                 }
             }
 

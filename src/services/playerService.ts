@@ -141,13 +141,12 @@ class PlayerService {
             const { data: wins } = await supabase
                 .from('game_players')
                 .select(`
-                    games!inner (
-                        team1_score,
-                        team2_score
-                    )
+                    id,
+                    games!inner (id, team1_score, team2_score)
                 `)
                 .eq('player_id', playerId)
-                .or('and(team=1,games.team1_score>games.team2_score),and(team=2,games.team2_score>games.team1_score)');
+                .or(`and(team.eq.1,games.team1_score.gt.games.team2_score),and(team.eq.2,games.team2_score.gt.games.team1_score)`);
+
 
             // Buscar buchudas dadas
             const { data: buchudas } = await supabase

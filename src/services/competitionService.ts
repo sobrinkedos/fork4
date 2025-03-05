@@ -41,34 +41,57 @@ export interface CompetitionResult {
 export const competitionService = {
     async create(data: CreateCompetitionDTO) {
         try {
-            console.log('Criando competição:', data);
+            console.log('[competitionService] Criando competição:', data);
             const { data: user } = await supabase.auth.getUser();
             if (!user?.user?.id) {
                 throw new Error('Usuário não autenticado');
             }
 
-            const { data: newCompetition, error } = await supabase
-                .from('competitions')
-                .insert([{
-                    ...data,
-                    created_by: user.user.id,
-                    start_date: new Date().toISOString()
-                }])
-                .select('*')
-                .single();
+            // Verifica se o usuário tem permissão para criar competição nesta comunidade
+            const { data: community } = await supabase
+                .from('communities')
+                .select('id')
+                .eq('id', data.community_id)
+                .eq('created_by', user.user.id)
+                .maybeSingle();
+
+            if (!community) {
+                const { data: organizer } = await supabase
+                    .from('community_organizers')
+                    .select('id')
+                    .eq('community_id', data.community_id)
+                    .eq('user_id', user.user.id)
+                    .maybeSingle();
+
+                if (!organizer) {
+                    throw new Error('Usuário não tem permissão para criar competições nesta comunidade');
+                }
+            }
+
+            // Cria a competição
+            const { data: newCompetition, error } = await supabase.rpc(
+                'create_competition',
+                {
+                    p_name: data.name,
+                    p_description: data.description,
+                    p_community_id: data.community_id,
+                    p_created_by: user.user.id,
+                    p_start_date: data.start_date
+                }
+            );
 
             if (error) {
-                console.error('Erro Supabase:', error);
+                console.error('[competitionService] Erro ao criar competição:', error);
                 throw error;
             }
-            // Registrar a atividade de criação da competição com sistema de retry
+
             if (newCompetition) {
                 const maxRetries = 3;
-                const baseDelay = 1000; // 1 segundo
+                const baseDelay = 1000;
 
                 const createActivityWithRetry = async (attempt: number) => {
                     try {
-                        console.log(`Tentativa ${attempt} de criar atividade...`);
+                        console.log(`[competitionService] Tentativa ${attempt} de criar atividade...`);
                         await activityService.createActivity({
                             type: 'competition',
                             description: `Nova competição "${data.name}" criada!`,
@@ -76,124 +99,101 @@ export const competitionService = {
                                 competition_id: newCompetition.id
                             }
                         });
-                        console.log('Atividade criada com sucesso!');
+                        console.log('[competitionService] Atividade criada com sucesso!');
                         return true;
                     } catch (activityError) {
-                        console.error(`Erro na tentativa ${attempt}:`, activityError);
+                        console.error(`[competitionService] Erro na tentativa ${attempt}:`, activityError);
                         
                         if (attempt < maxRetries) {
-                            const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
-                            console.log(`Aguardando ${delay}ms antes da próxima tentativa...`);
+                            const delay = baseDelay * Math.pow(2, attempt - 1);
+                            console.log(`[competitionService] Aguardando ${delay}ms antes da próxima tentativa...`);
                             await new Promise(resolve => setTimeout(resolve, delay));
                             return createActivityWithRetry(attempt + 1);
                         }
                         
-                        console.error('Todas as tentativas de criar atividade falharam');
+                        console.error('[competitionService] Todas as tentativas de criar atividade falharam');
                         return false;
                     }
                 };
 
-                // Inicia o processo de retry em background
                 createActivityWithRetry(1).catch(error => {
-                    console.error('Erro no processo de retry:', error);
+                    console.error('[competitionService] Erro no processo de retry:', error);
                 });
             }
             
-            console.log('Competição criada:', newCompetition);
+            console.log('[competitionService] Competição criada:', newCompetition);
             return newCompetition;
         } catch (error) {
-            console.error('Erro ao criar competição:', error);
+            console.error('[competitionService] Erro ao criar competição:', error);
             throw error;
         }
     },
 
     async refreshCompetitions(communityId: string) {
         try {
-            const { data: competitions, error } = await supabase
-                .from('competitions')
-                .select('id, name, description, start_date, status, community_id')
-                .eq('community_id', communityId)
-                .order('start_date', { ascending: true });
-
-            if (error) {
-                console.error('Erro ao buscar competições:', error);
-                throw new Error('Erro ao buscar competições');
-            }
-
-            return competitions;
-        } catch (error) {
-            console.error('Erro ao buscar competições:', error);
-            throw error;
-        }
-    },
-
-    async listByCommunity(communityId: string) {
-        try {
+            console.log('[competitionService] Iniciando busca de competições para comunidade:', communityId);
+            
             const { data: user } = await supabase.auth.getUser();
             if (!user?.user?.id) {
                 throw new Error('Usuário não autenticado');
             }
 
-            // Verifica se o usuário é criador ou organizador da comunidade
-            const { data: community } = await supabase
-                .from('communities')
-                .select('created_by')
-                .eq('id', communityId)
-                .single();
+            // Busca as competições usando uma função RPC
+            const { data, error } = await supabase.rpc(
+                'get_community_competitions',
+                {
+                    p_community_id: communityId,
+                    p_user_id: user.user.id
+                }
+            );
 
-            const { data: organizer } = await supabase
-                .from('community_organizers')
-                .select('id')
-                .eq('community_id', communityId)
-                .eq('user_id', user.user.id)
-                .single();
-
-            // Se não for criador nem organizador, retorna array vazio
-            if (community?.created_by !== user.user.id && !organizer) {
+            if (error) {
+                console.error('[competitionService] Erro ao buscar competições:', error);
                 return [];
             }
 
-            const { data, error } = await supabase
-                .from('competitions')
-                .select('*')
-                .eq('community_id', communityId)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            return data;
+            return data || [];
         } catch (error) {
-            console.error('Erro ao listar competições:', error);
-            throw error;
+            console.error('[competitionService] Erro ao buscar competições:', error);
+            return [];
         }
+    },
+
+    async listByCommunity(communityId: string) {
+        return this.refreshCompetitions(communityId);
     },
 
     async getById(id: string) {
         try {
-            console.log('Iniciando busca da competição com ID:', id);
-            console.log('Tipo do ID:', typeof id);
-            console.log('Valor do ID após trim:', id.trim());
+            console.log('[competitionService] Iniciando busca da competição:', id);
             
-            const { data, error } = await supabase
-                .from('competitions')
-                .select('*')
-                .eq('id', id.trim())
-                .single();
+            const { data: user } = await supabase.auth.getUser();
+            if (!user?.user?.id) {
+                throw new Error('Usuário não autenticado');
+            }
+
+            // Busca a competição usando uma função RPC
+            const { data, error } = await supabase.rpc(
+                'get_competition_by_id',
+                {
+                    p_competition_id: id.trim(),
+                    p_user_id: user.user.id
+                }
+            );
 
             if (error) {
-                console.error('Erro do Supabase ao buscar competição:', error);
-                console.error('Detalhes do erro:', error.message, error.details);
+                console.error('[competitionService] Erro ao buscar competição:', error);
                 throw error;
             }
 
             if (!data) {
-                console.log('Nenhuma competição encontrada com o ID:', id);
+                console.log('[competitionService] Competição não encontrada ou usuário sem acesso');
                 return null;
             }
 
-            console.log('Competição encontrada:', data);
             return data;
         } catch (error) {
-            console.error('Erro ao buscar competição:', error);
+            console.error('[competitionService] Erro ao buscar competição:', error);
             throw error;
         }
     },
